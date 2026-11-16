@@ -51,6 +51,7 @@ module.exports = {
         `• \`/wish\` - Cầu nguyện Linh Khí, Linh Thú và Trợ Thủ\n` +
         `• \`/event\` - Thám hiểm Bí Cảnh Ngẫu Nhiên\n` +
         `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi\n` +
+        `• \`/boss channel channel:<#kênh>\` - Đặt kênh thông báo boss mới; dùng \`off\` để tắt (cần quyền Quản lý Máy chủ)\n` +
         `• \`/sect\`, \`/market\`, \`/bag\`, \`/rank\` - Tông môn, chợ, túi đồ và bảng xếp hạng\n` +
         `• \`/help\`, \`/prefix\` - Hướng dẫn và thiết lập prefix`
       );

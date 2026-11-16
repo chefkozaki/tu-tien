@@ -130,6 +130,7 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/bi-canh` | Thám hiểm Bí Cảnh Ngẫu Nhiên với các sự kiện Roguelike tương tác |
 | `/boss-the-gioi thong-tin` | Xem lượng máu và bảng sát thương Boss Hung Thú Thế Giới |
 | `/boss-the-gioi tan-cong` | Xuất chiêu công kích Boss Thế Giới chia thưởng |
+| `/boss channel channel:<#kênh>` | Đặt kênh thông báo boss mới cho máy chủ (quyền Quản lý Máy chủ); dùng `off` để tắt |
 | `/thi-luyen` | Khiêu chiến Thí Luyện Tháp PvE (Tầng 1 -> 100+) |
 | `/dau-phap` | Thách đấu 1v1 Đấu Pháp Đài với tu sĩ khác |
 | `/tong-mon thong-tin` | Xem thông tin Tông Môn và điểm cống hiến |

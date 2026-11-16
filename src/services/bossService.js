@@ -6,6 +6,7 @@ const { getEquippedHelper } = require('./helperService');
 const { getPetResonance } = require('./petConfigService');
 const { calculateCombatStats } = require('../utils/combat');
 const { addItem } = require('./itemService');
+const { announceBossSpawn } = require('./bossAnnouncementService');
 
 const BOSS_LIST = [
   { name: 'Thôn Thiên Ma Thú (Thượng Cổ)', baseHp: 50000000 },
@@ -29,6 +30,7 @@ async function getActiveBoss() {
   });
 
   res = await db.execute("SELECT * FROM tutien_world_boss WHERE status = 'alive' ORDER BY id DESC LIMIT 1");
+  await announceBossSpawn(res.rows[0]);
   return res.rows[0];
 }
 

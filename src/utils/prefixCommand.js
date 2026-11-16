@@ -142,15 +142,16 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
   };
 
   let responseMessage = null;
-  const replyToChannel = async payload => {
+  const replyToMessage = async payload => {
     const { ephemeral, ...messagePayload } = payload;
-    return message.channel.send(messagePayload);
+    return message.reply(messagePayload);
   };
 
   return {
     user: message.author,
     guild: message.guild,
     guildId: message.guildId,
+    memberPermissions: message.member?.permissions,
     channel: message.channel,
     channelId: message.channelId,
     client: message.client,
@@ -176,11 +177,11 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
       }
     },
     async reply(payload) {
-      responseMessage = await replyToChannel(payload);
+      responseMessage = await replyToMessage(payload);
       return responseMessage;
     },
     async deferReply() {
-      responseMessage = await message.channel.send('Đang xử lý lệnh...');
+      responseMessage = await message.reply('Đang xử lý lệnh...');
       return responseMessage;
     },
     async editReply(payload) {
@@ -189,7 +190,7 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
       return responseMessage.edit(messagePayload);
     },
     async followUp(payload) {
-      return replyToChannel(payload);
+      return replyToMessage(payload);
     },
     prefix
   };

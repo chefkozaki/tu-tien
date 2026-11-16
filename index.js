@@ -11,6 +11,7 @@ const { REALMS } = require('./src/config/constants');
 const { formatNumber, getRealmDisplay } = require('./src/utils/formatters');
 const { getPrefix, setPrefix } = require('./src/services/prefixService');
 const { executePrefixCommand, tokenize } = require('./src/utils/prefixCommand');
+const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementService');
 
 const client = new Client({
   intents: [
@@ -19,6 +20,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
+setBossAnnouncementClient(client);
 
 client.commands = new Collection();
 

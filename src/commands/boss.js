@@ -1,6 +1,11 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { ChannelType, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const { getPlayer } = require('../services/playerService');
 const { getActiveBoss, attackBoss } = require('../services/bossService');
+const {
+  getBossAnnouncementChannel,
+  setBossAnnouncementChannel,
+  clearBossAnnouncementChannel
+} = require('../services/bossAnnouncementService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { createProgressBar, formatNumber } = require('../utils/formatters');
 
@@ -15,10 +20,67 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('atk')
         .setDescription('Dẫn dắt Linh Khí, Linh Thú và Trợ Thủ dốc toàn lực công kích Hung Thú!')
+    )
+    .addSubcommand(sub =>
+      sub.setName('channel')
+        .setDescription('Đặt hoặc tắt kênh thông báo Boss Thế Giới (cần quyền Quản lý Máy chủ)')
+        .addStringOption(option =>
+          option.setName('channel')
+            .setDescription('Mention/ID kênh văn bản, hoặc nhập off để tắt')
+            .setRequired(false)
+        )
     ),
 
   async execute(interaction) {
     const userId = interaction.user.id;
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === 'channel') {
+      if (!interaction.guildId || !interaction.guild) {
+        return interaction.reply({ content: 'Chỉ có thể cấu hình kênh thông báo trong máy chủ Discord.', ephemeral: true });
+      }
+      if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+        return interaction.reply({ content: 'Bạn cần quyền Quản lý Máy chủ để cấu hình kênh thông báo.', ephemeral: true });
+      }
+
+      const channelInput = interaction.options.getString('channel');
+      if (!channelInput) {
+        const channelId = await getBossAnnouncementChannel(interaction.guildId);
+        return interaction.reply({
+          content: channelId
+            ? `Kênh thông báo Boss Thế Giới hiện tại: <#${channelId}>. Dùng \`/boss channel channel:off\` để tắt.`
+            : 'Chưa thiết lập kênh thông báo Boss Thế Giới. Dùng `/boss channel channel:<mention hoặc ID>` để đặt.',
+          ephemeral: true
+        });
+      }
+
+      if (channelInput.toLowerCase() === 'off') {
+        await clearBossAnnouncementChannel(interaction.guildId);
+        return interaction.reply({ content: 'Đã tắt thông báo Boss Thế Giới trong máy chủ này.', ephemeral: true });
+      }
+
+      const channelId = channelInput.match(/^<#(\d+)>$/)?.[1] || channelInput;
+      if (!/^\d+$/.test(channelId)) {
+        return interaction.reply({ content: 'Hãy nhập mention hoặc ID của kênh văn bản, hoặc `off` để tắt.', ephemeral: true });
+      }
+
+      const channel = await interaction.guild.channels.fetch(channelId);
+      if (!channel || ![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type)) {
+        return interaction.reply({ content: 'Kênh phải là kênh văn bản hoặc kênh thông báo thuộc máy chủ này.', ephemeral: true });
+      }
+      const botPermissions = channel.permissionsFor(interaction.client.user);
+      if (!botPermissions?.has([
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks
+      ])) {
+        return interaction.reply({ content: 'Bot cần quyền Xem kênh, Gửi tin nhắn và Nhúng liên kết trong kênh này.', ephemeral: true });
+      }
+
+      await setBossAnnouncementChannel(interaction.guildId, channel.id);
+      return interaction.reply({ content: `Đã đặt ${channel} làm kênh thông báo Boss Thế Giới.`, ephemeral: true });
+    }
+
     const player = await getPlayer(userId);
     if (!player) {
       return interaction.reply({
@@ -26,8 +88,6 @@ module.exports = {
         ephemeral: true
       });
     }
-
-    const sub = interaction.options.getSubcommand();
 
     if (sub === 'info') {
       const boss = await getActiveBoss();

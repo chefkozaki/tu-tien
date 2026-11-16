@@ -6,6 +6,7 @@ const { getPlayer, createPlayer, executeBreakthrough, addSilver, addXp } = requi
 const { addItem, removeItem, getInventory } = require('../../src/services/itemService');
 const { getXpRequired } = require('../../src/utils/formatters');
 const { getPetSettings } = require('../../src/services/petConfigService');
+const { announceBossSpawn } = require('../../src/services/bossAnnouncementService');
 const {
   ITEM_PRESETS,
   PET_PRESETS,
@@ -1580,6 +1581,7 @@ router.post('/boss/action', async (req, res) => {
         args: [name, hp, hp, now]
       });
 
+      await announceBossSpawn({ name, max_hp: hp, spawn_time: now });
       return res.json({ success: true, message: `Đã triệu hồi thành công Boss Thế Giới: ${name} (HP: ${Number(hp).toLocaleString()})!` });
     }
 
