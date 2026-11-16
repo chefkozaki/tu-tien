@@ -42,15 +42,23 @@ module.exports = {
 
   async execute(interaction) {
     const userId = interaction.user.id;
+    const sub = interaction.options.getSubcommand();
+    const isUpgrade = sub === 'upgrade';
+    const replyOrEdit = payload => isUpgrade
+      ? interaction.editReply(payload)
+      : interaction.reply(payload);
+
+    if (isUpgrade) {
+      await interaction.deferReply({ ephemeral: true });
+    }
+
     const player = await getPlayer(userId);
     if (!player) {
-      return interaction.reply({
+      return replyOrEdit({
         embeds: [createErrorEmbed('Chưa Tu Tiên', 'Hãy dùng `/start` trước!')],
         ephemeral: true
       });
     }
-
-    const sub = interaction.options.getSubcommand();
 
     // 1. Thu Hoạch Tụ Linh Trận (Idle)
     if (sub === 'harvest') {
@@ -80,13 +88,13 @@ module.exports = {
     if (sub === 'upgrade') {
       const res = await upgradeTuLinhTran(userId);
       if (!res.success) {
-        return interaction.reply({
+        return replyOrEdit({
           embeds: [createErrorEmbed('Nâng Cấp Thất Bại', res.message)],
           ephemeral: true
         });
       }
 
-      return interaction.reply({
+      return replyOrEdit({
         embeds: [createSuccessEmbed('Tụ Linh Trận Thăng Cấp', res.message, player.realm_id)]
       });
     }
