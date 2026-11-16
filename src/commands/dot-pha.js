@@ -4,6 +4,35 @@ const { REALMS } = require('../config/constants');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { getRealmDisplay } = require('../utils/formatters');
 
+async function acknowledgeComponent(interaction) {
+  try {
+    await interaction.deferUpdate();
+    return true;
+  } catch (error) {
+    console.error('Không thể xác nhận interaction đột phá:', error);
+    return false;
+  }
+}
+
+async function editAcknowledgedComponent(interaction, payload) {
+  try {
+    await interaction.editReply(payload);
+  } catch (error) {
+    console.error('Không thể cập nhật kết quả interaction đột phá:', error);
+  }
+}
+
+async function replyToDuplicateInteraction(interaction) {
+  try {
+    await interaction.reply({
+      content: 'Đột phá đang được xử lý, vui lòng chờ.',
+      ephemeral: true
+    });
+  } catch (error) {
+    console.error('Không thể phản hồi lần nhấn đột phá lặp:', error);
+  }
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('break')
@@ -70,21 +99,40 @@ module.exports = {
         time: 60000
       });
 
+      let isProcessing = false;
       collector.on('collect', async i => {
         if (i.customId === 'select_rule') {
-          const chosenRule = i.values[0];
-          const result = await executeBreakthrough(userId, chosenRule);
-          if (!result.success) {
-            return i.update({ embeds: [createErrorEmbed('Đột Phá Thất Bại', result.message)], components: [] });
+          if (isProcessing) {
+            return replyToDuplicateInteraction(i);
           }
+          isProcessing = true;
+          collector.stop();
+          if (!await acknowledgeComponent(i)) return;
 
-          const successEmbed = createSuccessEmbed(
-            '🌟 THẦN CẢNH ĐỘT PHÁ THÀNH CÔNG!',
-            `Đạo hữu đã lĩnh ngộ **Quy Tắc ${chosenRule}**, thoát thai hoán cốt trở thành **Chân Thần**!\n` +
-            `Cảnh Giới Mới: **${result.newRealm} Hạ Cấp (Cấp 1)**!`,
-            nextRealm.id
-          );
-          return i.update({ embeds: [successEmbed], components: [] });
+          const chosenRule = i.values[0];
+          try {
+            const result = await executeBreakthrough(userId, chosenRule);
+            if (!result.success) {
+              return editAcknowledgedComponent(i, {
+                embeds: [createErrorEmbed('Đột Phá Thất Bại', result.message)],
+                components: []
+              });
+            }
+
+            const successEmbed = createSuccessEmbed(
+              '🌟 THẦN CẢNH ĐỘT PHÁ THÀNH CÔNG!',
+              `Đạo hữu đã lĩnh ngộ **Quy Tắc ${chosenRule}**, thoát thai hoán cốt trở thành **Chân Thần**!\n` +
+              `Cảnh Giới Mới: **${result.newRealm} Hạ Cấp (Cấp 1)**!`,
+              nextRealm.id
+            );
+            return editAcknowledgedComponent(i, { embeds: [successEmbed], components: [] });
+          } catch (error) {
+            console.error('Lỗi xử lý lĩnh ngộ quy tắc đột phá:', error);
+            return editAcknowledgedComponent(i, {
+              embeds: [createErrorEmbed('Đột Phá Thất Bại', 'Có lỗi khi xử lý đột phá. Vui lòng kiểm tra lại trạng thái nhân vật trước khi thử lại.')],
+              components: []
+            });
+          }
         }
       });
       return;
@@ -119,40 +167,58 @@ module.exports = {
       time: 60000
     });
 
+    let isProcessing = false;
     collector.on('collect', async i => {
       if (i.customId === 'cancel_breakthrough') {
-        return i.update({
+        if (isProcessing) return replyToDuplicateInteraction(i);
+        isProcessing = true;
+        collector.stop();
+        if (!await acknowledgeComponent(i)) return;
+        return editAcknowledgedComponent(i, {
           embeds: [createTuTienEmbed(player.realm_id).setTitle('Đã Hủy Đột Phá').setDescription('Đạo hữu quyết định tích lũy thêm đan dược và trang bị trước khi độ kiếp.')],
           components: []
         });
       }
 
       if (i.customId === 'confirm_breakthrough') {
-        // Thực hiện đột phá
-        const result = await executeBreakthrough(userId);
-        if (!result.success) {
-          return i.update({
-            embeds: [createErrorEmbed('Đột Phá Bất Thành', result.message)],
+        if (isProcessing) {
+          return replyToDuplicateInteraction(i);
+        }
+        isProcessing = true;
+        collector.stop();
+        if (!await acknowledgeComponent(i)) return;
+
+        try {
+          const result = await executeBreakthrough(userId);
+          if (!result.success) {
+            return editAcknowledgedComponent(i, {
+              embeds: [createErrorEmbed('Đột Phá Bất Thành', result.message)],
+              components: []
+            });
+          }
+
+          let extraText = '';
+          if (req.lightningCount) {
+            extraText = `\n⚡ **${req.lightningCount} Đạo Thiên Lôi** giáng xuống kinh thiên động địa! Đạo hữu bằng vào đạo tâm kiên định đã tôi luyện kim thân thành công!`;
+          }
+
+          const successEmbed = createSuccessEmbed(
+            '🎉 ĐỘT PHÁ THÀNH CÔNG VANG DỘI TAM GIỚI!',
+            `Chúc mừng đạo hữu đã phá tan gông cùm, tiến vào **${result.newRealm}**!${extraText}\n\n` +
+            `• Cảnh Giới Mới: **${result.newRealm} Hạ Cấp (Cấp 1)**\n` +
+            `• Thuộc tính cơ bản (HP, Công, Thủ) gia tăng vượt bậc!\n` +
+            `• Hãy tiếp tục tu luyện để vươn tới cảnh giới tiếp theo!`,
+            nextRealm.id
+          );
+
+          return editAcknowledgedComponent(i, { embeds: [successEmbed], components: [] });
+        } catch (error) {
+          console.error('Lỗi xử lý đột phá cảnh giới:', error);
+          return editAcknowledgedComponent(i, {
+            embeds: [createErrorEmbed('Đột Phá Thất Bại', 'Có lỗi khi xử lý đột phá. Vui lòng kiểm tra lại trạng thái nhân vật trước khi thử lại.')],
             components: []
           });
         }
-
-        // Nếu là Lôi Kiếp (Linh Vương -> Linh Đế hoặc Linh Đế -> Chúa Tể hoặc Thần -> Tối Thượng)
-        let extraText = '';
-        if (req.lightningCount) {
-          extraText = `\n⚡ **${req.lightningCount} Đạo Thiên Lôi** giáng xuống kinh thiên động địa! Đạo hữu bằng vào đạo tâm kiên định đã tôi luyện kim thân thành công!`;
-        }
-
-        const successEmbed = createSuccessEmbed(
-          '🎉 ĐỘT PHÁ THÀNH CÔNG VANG DỘI TAM GIỚI!',
-          `Chúc mừng đạo hữu đã phá tan gông cùm, tiến vào **${result.newRealm}**!${extraText}\n\n` +
-          `• Cảnh Giới Mới: **${result.newRealm} Hạ Cấp (Cấp 1)**\n` +
-          `• Thuộc tính cơ bản (HP, Công, Thủ) gia tăng vượt bậc!\n` +
-          `• Hãy tiếp tục tu luyện để vươn tới cảnh giới tiếp theo!`,
-          nextRealm.id
-        );
-
-        return i.update({ embeds: [successEmbed], components: [] });
       }
     });
   }
