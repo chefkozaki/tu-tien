@@ -2,6 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = requi
 const { getUserHelpers, equipHelper, unequipHelper } = require('../services/helperService');
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
+const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -42,9 +43,12 @@ module.exports = {
         });
       }
 
-      const listText = helpers.map(h => {
+      const helperGroups = groupDuplicateItems(helpers, ['name', 'type', 'tier', 'effect_desc', 'image_url']);
+      const listText = helperGroups.map(({ item: h, items }) => {
         const typeBadge = h.type === 'combat' ? '⚔️ [Chiến Đấu - Hộ Đạo Giả]' : '🌾 [Sinh Hoạt - Đạo Đồng]';
-        return `**#${h.id} - ${h.name}** ${typeBadge} [Bậc ${h.tier}] ${h.is_equipped ? '👉 *(Đang Xuất Chiến)*' : ''}\n` +
+        const ids = items.map(item => `#${item.id}`).join(', ');
+        const equippedIds = items.filter(item => item.is_equipped).map(item => `#${item.id}`).join(', ');
+        return `**${ids} - ${h.name}** ${typeBadge} [Bậc ${h.tier}] ×${items.length} ${equippedIds ? `👉 *(Đang Xuất Chiến: ${equippedIds})*` : ''}\n` +
                `  • *Hiệu quả:* ${h.effect_desc}`;
       }).join('\n\n');
 

@@ -29,8 +29,9 @@ const REALMS = [
     breakthrough: {
       spiritGoldQuality: 'Tinh',
       spiritGoldAmount: 30,
-      pillRequired: 'Trúc Cơ Đan',
+      pillRequired: 'TrucCoDan',
       pillAmount: 1,
+      pillName: 'Trúc Cơ Đan',
       extraDesc: '30 Linh Kim (Phẩm chất Tinh) + 1 Trúc Cơ Đan',
       type: 'item_pill'
     }

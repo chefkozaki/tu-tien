@@ -14,6 +14,10 @@ module.exports = {
         `Dưới đây là cẩm nang chi tiết và các lệnh của hệ thống:\n\n` +
         `⚡ **LỆNH NHANH:**\n` +
         `• Prefix mặc định là \`a\`: dùng \`aprofile\`, \`aafk\`, \`abase harvest\` hoặc \`awish pull banner:weapon count:10\`.\n` +
+        `• Mỗi đạo hữu cần chờ 10 giây giữa các lệnh; cooldown dùng chung cho slash và prefix.\n` +
+        `• Hồ sơ và cẩm nang chỉ hiển thị riêng: lệnh slash dùng phản hồi riêng tư, prefix gửi kết quả qua DM.\n` +
+        `• Dùng \`/inv\` hoặc \`ainv\` để xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên.\n` +
+        `• Dùng đan dược bằng \`/bag use item_id:<ID>\` hoặc \`abag use <ID>\`; lấy ID trong \`/inv\`.\n` +
         `• Đổi prefix bằng \`/prefix value:<prefix>\` hoặc \`aprefix <prefix>\`; cần quyền Quản lý Máy chủ.\n\n` +
         `🥋 **1. CẢNH GIỚI & CẤP ĐỘ:**\n` +
         `• 9 Đại Cảnh Giới: Linh Sĩ ➔ Linh Úy ➔ Linh Tá ➔ Linh Tướng ➔ Linh Vương ➔ Linh Đế ➔ Chúa Tể ➔ Thần ➔ Tối Thượng.\n` +
@@ -36,7 +40,7 @@ module.exports = {
         `• **Đạo Đồng (Sinh Hoạt):** Tăng +30% tài nguyên AFK khi trạng thái AFK đang bật, tăng tỷ lệ luyện đan và giảm giá Chợ Đen 15%.\n\n` +
         `🏯 **6. ĐỘNG PHỦ (TREO MÁY IDLE):**\n` +
         `• Dùng \`/afk\` hoặc \`aafk\` để bật/tắt AFK. Chỉ khi bật AFK, Tụ Linh Trận mới tích lũy XP và Ngân Lượng, tối đa 24 giờ.\n` +
-        `• Nâng cấp Tụ Linh Trận bằng \`/base upgrade\` để tăng XP/phút; thu hoạch bằng \`/base harvest\` mà không tắt AFK.\n` +
+        `• Dùng \`/base upgrade\` rồi chọn số cấp muốn nâng, hoặc \`abase upgrade levels:10\` qua prefix, để nâng nhiều cấp một lần (tối đa cấp 50); thu hoạch bằng \`/base harvest\` mà không tắt AFK.\n` +
         `• Trồng linh thảo tại Dược Viên (\`/base garden\`) và Luyện Đan Dược (\`/base brew\`).\n\n` +
         `🌠 **7. CẦU NGUYỆN (WISH / GACHA):**\n` +
         `• Bảo hiểm 4★ sau tối đa 10 lượt và 5★ sau tối đa 90 lượt; tỷ lệ 5★ tăng từ lượt 74.\n` +
@@ -52,10 +56,11 @@ module.exports = {
         `• \`/event\` - Thám hiểm Bí Cảnh Ngẫu Nhiên\n` +
         `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi\n` +
         `• \`/boss channel channel:<#kênh>\` - Đặt kênh thông báo boss mới; dùng \`off\` để tắt (cần quyền Quản lý Máy chủ)\n` +
-        `• \`/sect\`, \`/market\`, \`/bag\`, \`/rank\` - Tông môn, chợ, túi đồ và bảng xếp hạng\n` +
+        `• \`/inv\`, \`/bag\` - Xem tài nguyên, Linh Kim và túi trữ vật\n` +
+        `• \`/sect\`, \`/market\`, \`/rank\` - Tông môn, chợ và bảng xếp hạng\n` +
         `• \`/help\`, \`/prefix\` - Hướng dẫn và thiết lập prefix`
       );
 
-    return interaction.reply({ embeds: [embed] });
+    return interaction.reply({ embeds: [embed], ephemeral: true });
   }
 };

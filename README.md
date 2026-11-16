@@ -2,6 +2,8 @@
 
 Hệ thống Bot Discord Tu Tiên nhập vai toàn diện dựa trên **Discord.js v14**, cơ sở dữ liệu đám mây **Turso (LibSQL)**, giao diện 100% **Rich Embeds** kèm Buttons & Select Menus tương tác trực quan, sử dụng **Slash Commands** chuẩn Discord.
 
+Hướng dẫn đầy đủ về cú pháp và danh sách lệnh prefix: [prefix.md](./prefix.md).
+
 ---
 
 ## ⚡ Tính Năng Nổi Bật
@@ -113,7 +115,7 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/dot-pha` | Đột phá Đại Cảnh Giới khi đạt Cấp 10 (Đỉnh Cấp) |
 | `/afk` hoặc `aafk` | Bật/tắt trạng thái AFK; chỉ khi bật, Động Phủ mới bắt đầu tính thời gian |
 | `/base harvest` | Thu hoạch XP và Ngân Lượng AFK, trạng thái AFK tiếp tục bật |
-| `/base upgrade` | Nâng cấp Tụ Linh Trận bằng Ngân Lượng để tăng XP AFK/phút |
+| `/base upgrade [levels]` | Nâng nhiều cấp Tụ Linh Trận trong một lần; bỏ trống `levels` để nâng 1 cấp, chi phí tính cộng dồn theo từng cấp |
 | `/dong-phu duoc-vien` | Xem tình trạng dược viên, gieo trồng và thu hoạch linh thảo |
 | `/dong-phu luyen-dan` | Luyện chế đan dược (Trúc Cơ Đan, Tụ Linh Đan, Tẩy Tủy Đan...) |
 | `/dong-phu lo-ren` | Rèn Linh Khí mới tại Lò Rèn |
@@ -144,5 +146,11 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/cho-den huy` | Hủy bài đăng bán để thu hồi vật phẩm |
 | `/tui-do xem` | Xem túi trữ vật (Linh Kim 8 phẩm, Đan Dược, Hạt Giống) |
 | `/tui-do dung-dan` | Uống đan dược (Tụ Linh Đan, Tẩy Tủy Đan) |
+| `/inv` hoặc `ainv` | Xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên |
+| `/bag use item_id:<ID>` hoặc `abag use <ID>` | Dùng đan dược theo ID hiển thị trong `/inv` |
 | `/bang-xep-hang` | Xem Thiên Đạo Bảng (Tu Vi), Thần Điện Bảng (Tối Thượng), Phú Hộ, PvP, Leo Tháp |
 | `/huong-dan` | Cẩm nang toàn tập con đường Tu Tiên |
+
+Mỗi người chơi có cooldown chung 10 giây giữa các lệnh slash và prefix.
+
+Lệnh `/profile` và `/help` chỉ hiển thị với người gọi; khi dùng qua prefix (`aprofile`, `ahelp`), nội dung được gửi qua DM.

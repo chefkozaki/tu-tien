@@ -193,7 +193,7 @@ async function executeBreakthrough(userId, extraChoice = null) {
     if (availablePills < req.pillAmount) {
       return {
         success: false,
-        message: `Đạo hữu thiếu đan dược đột phá: Cần **${req.pillAmount} ${req.pillRequired}**!`
+        message: `Đạo hữu thiếu đan dược đột phá: Cần **${req.pillAmount} ${req.pillName || req.pillRequired}**!`
       };
     }
   }

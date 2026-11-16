@@ -1028,6 +1028,26 @@
 
       <!-- ================= 12. TAB: TOOLS & SQL ================= -->
       <section id="tab-tools" class="tab-view hidden space-y-6">
+        <div class="xianxia-card rounded-xl p-5 space-y-3 border-red-500/30">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 class="text-sm font-bold text-red-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Reset dữ liệu người chơi & game
+              </h2>
+              <p class="text-xs text-slate-400 mt-2">
+                Xóa toàn bộ nhân vật, túi đồ, trang bị, tông môn, chợ, lịch sử cầu nguyện và boss hiện tại.
+                Giữ nguyên danh mục Gacha, cấu hình linh thú, mỏ linh mạch và tài khoản admin.
+              </p>
+            </div>
+            <button id="btn-reset-game-data" onclick="handleResetGameData()" class="shrink-0 px-4 py-2 text-xs font-bold rounded-lg bg-red-700 hover:bg-red-600 text-white border border-red-500/50 transition">
+              <i class="fa-solid fa-trash-can mr-1"></i>
+              Reset toàn bộ data
+            </button>
+          </div>
+          <p class="text-[11px] text-red-300/80">Thao tác không thể hoàn tác. Hệ thống sẽ yêu cầu xác nhận hai lần.</p>
+        </div>
+
         <!-- Direct SQL Console -->
         <div class="xianxia-card rounded-xl p-5 space-y-3 border-blue-500/20">
           <div class="flex items-center justify-between">

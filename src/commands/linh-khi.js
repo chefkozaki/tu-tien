@@ -7,6 +7,7 @@ const {
 } = require('../services/weaponService');
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
+const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -51,11 +52,17 @@ module.exports = {
         });
       }
 
-      const listText = weapons.map(w => 
-        `**#${w.id} - ${w.name}** [Bậc ${w.tier}] ${w.is_natal ? '🌟 *(Bản Mệnh Khí)*' : ''} ${w.is_equipped ? '👉 *(Đang Trang Bị)*' : ''}\n` +
-        `  • Công: +${w.atk} | Thủ: +${w.def} | Điểm Thôn Phệ: ${w.devour_exp || 0}\n` +
-        `  • *${w.effect_name}:* ${w.effect_desc}`
-      ).join('\n\n');
+      const weaponGroups = groupDuplicateItems(weapons, [
+        'name', 'tier', 'atk', 'def', 'effect_name', 'effect_desc', 'image_url', 'devour_exp'
+      ]);
+      const listText = weaponGroups.map(({ item: w, items }) => {
+        const ids = items.map(item => `#${item.id}`).join(', ');
+        const natalIds = items.filter(item => item.is_natal).map(item => `#${item.id}`).join(', ');
+        const equippedIds = items.filter(item => item.is_equipped).map(item => `#${item.id}`).join(', ');
+        return `**${ids} - ${w.name}** [Bậc ${w.tier}] ×${items.length} ${natalIds ? `🌟 *(Bản Mệnh: ${natalIds})*` : ''} ${equippedIds ? `👉 *(Đang Trang Bị: ${equippedIds})*` : ''}\n` +
+          `  • Công: +${w.atk} | Thủ: +${w.def} | Điểm Thôn Phệ: ${w.devour_exp || 0}\n` +
+          `  • *${w.effect_name}:* ${w.effect_desc}`;
+      }).join('\n\n');
 
       const embed = createTuTienEmbed(player.realm_id)
         .setTitle(`⚔️ Bách Binh Các • Linh Khí Của ${player.dao_hieu || player.username}`)

@@ -25,7 +25,14 @@ module.exports = {
     )
     .addSubcommand(sub =>
       sub.setName('upgrade')
-        .setDescription('Nâng cấp Tụ Linh Trận bằng Ngân Lượng để tăng XP AFK mỗi phút')
+        .setDescription('Nâng cấp Tụ Linh Trận nhiều cấp trong một lần bằng Ngân Lượng')
+        .addIntegerOption(opt =>
+          opt.setName('levels')
+            .setDescription('Số cấp muốn nâng (mặc định 1, tối đa đến cấp 50)')
+            .setMinValue(1)
+            .setMaxValue(49)
+            .setRequired(false)
+        )
     )
     .addSubcommand(sub =>
       sub.setName('garden')
@@ -86,7 +93,8 @@ module.exports = {
 
     // 2. Nâng cấp Tụ Linh Trận
     if (sub === 'upgrade') {
-      const res = await upgradeTuLinhTran(userId);
+      const levels = interaction.options.getInteger('levels') || 1;
+      const res = await upgradeTuLinhTran(userId, levels);
       if (!res.success) {
         return replyOrEdit({
           embeds: [createErrorEmbed('Nâng Cấp Thất Bại', res.message)],

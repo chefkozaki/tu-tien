@@ -59,14 +59,24 @@ async function getDongPhu(userId) {
 /**
  * Nâng cấp Tụ Linh Trận
  */
-async function upgradeTuLinhTran(userId) {
+async function upgradeTuLinhTran(userId, requestedLevels = 1) {
   const db = getDb();
   let dongPhu = await getDongPhu(userId);
   let player = await getPlayer(userId);
   if (!dongPhu || !player) return { success: false, message: 'Chưa có thông tin Động Phủ!' };
 
-  const currentLevel = dongPhu.array_level;
+  const currentLevel = Number(dongPhu.array_level);
+  const levels = Number(requestedLevels);
+  if (!Number.isInteger(levels) || levels < 1) {
+    return { success: false, message: 'Số cấp nâng phải là số nguyên lớn hơn 0!' };
+  }
   if (currentLevel >= 50) return { success: false, message: 'Tụ Linh Trận đã đạt cấp tối đa (Cấp 50)!' };
+  if (currentLevel + levels > 50) {
+    return {
+      success: false,
+      message: `Chỉ có thể nâng tối đa ${50 - currentLevel} cấp từ cấp hiện tại (${currentLevel}) để không vượt quá cấp 50.`
+    };
+  }
 
   if (Number(dongPhu.afk_enabled) === 1) {
     const settlement = await settleAfk(userId, { allowZeroMinutes: true });
@@ -75,24 +85,30 @@ async function upgradeTuLinhTran(userId) {
     player = await getPlayer(userId);
   }
 
-  const cost = currentLevel * 2000;
+  const cost = 2000 * (levels * currentLevel + (levels * (levels - 1)) / 2);
   if (player.silver < cost) {
-    return { success: false, message: `Không đủ Ngân lượng! Cần **${cost.toLocaleString()}** Ngân lượng để nâng cấp.` };
+    return {
+      success: false,
+      message: `Không đủ Ngân lượng để nâng ${levels} cấp! Cần **${cost.toLocaleString()}**, hiện có **${Number(player.silver).toLocaleString()}**.`
+    };
   }
 
   await addSilver(userId, -cost);
   await db.execute({
-    sql: 'UPDATE tutien_dongphu SET array_level = array_level + 1 WHERE user_id = ?',
-    args: [userId]
+    sql: 'UPDATE tutien_dongphu SET array_level = array_level + ? WHERE user_id = ?',
+    args: [levels, userId]
   });
 
-  const xpPerMinute = XP_PER_MINUTE_PER_LEVEL * (currentLevel + 1);
+  const newLevel = currentLevel + levels;
+  const xpPerMinute = XP_PER_MINUTE_PER_LEVEL * newLevel;
   return {
     success: true,
-    newLevel: currentLevel + 1,
+    previousLevel: currentLevel,
+    newLevel,
+    levels,
     cost,
     xpPerMinute,
-    message: `Nâng cấp Tụ Linh Trận lên **Cấp ${currentLevel + 1}** thành công! Tốc độ AFK tăng lên **${xpPerMinute} XP/phút**.`
+    message: `Nâng cấp Tụ Linh Trận từ **Cấp ${currentLevel}** lên **Cấp ${newLevel}** thành công (+${levels} cấp)! Tốc độ AFK tăng từ **${XP_PER_MINUTE_PER_LEVEL * currentLevel}** lên **${xpPerMinute} XP/phút**. Đã dùng **${cost.toLocaleString()} Ngân Lượng**.`
   };
 }
 

@@ -12,6 +12,7 @@ const { formatNumber, getRealmDisplay } = require('./src/utils/formatters');
 const { getPrefix, setPrefix } = require('./src/services/prefixService');
 const { executePrefixCommand, tokenize } = require('./src/utils/prefixCommand');
 const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementService');
+const { acquireCommandCooldown } = require('./src/utils/commandCooldown');
 
 const client = new Client({
   intents: [
@@ -63,6 +64,14 @@ client.on('interactionCreate', async interaction => {
     if (!command) {
       console.error(`Không tìm thấy lệnh: ${interaction.commandName}`);
       return;
+    }
+
+    const cooldownRemaining = acquireCommandCooldown(interaction.user.id);
+    if (cooldownRemaining > 0) {
+      return interaction.reply({
+        content: `Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`,
+        ephemeral: true
+      });
     }
 
     try {
@@ -155,6 +164,11 @@ client.on('messageCreate', async message => {
     const prefix = await getPrefix(message.guildId);
     const fixedPrefixAlias = /^aprefix(?:\s|$)/i.exec(message.content);
     if (fixedPrefixAlias) {
+      const cooldownRemaining = acquireCommandCooldown(message.author.id);
+      if (cooldownRemaining > 0) {
+        return message.reply(`Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`);
+      }
+
       const prefixArgs = tokenize(message.content.slice(fixedPrefixAlias[0].length).trim());
       if (prefixArgs.length === 0) {
         return message.reply(`Prefix hiện tại là \`${prefix}\`. Đổi bằng \`/prefix value:<prefix>\` hoặc \`aprefix <prefix>\`.`);
@@ -176,6 +190,11 @@ client.on('messageCreate', async message => {
     }
 
     if (commandName === 'prefix') {
+      const cooldownRemaining = acquireCommandCooldown(message.author.id);
+      if (cooldownRemaining > 0) {
+        return message.reply(`Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`);
+      }
+
       if (args.length === 0) {
         return message.reply(`Prefix hiện tại là \`${prefix}\`. Đổi bằng \`/prefix value:<prefix>\` hoặc \`${prefix}prefix <prefix>\`.`);
       }
@@ -190,6 +209,11 @@ client.on('messageCreate', async message => {
     const command = client.commands.get(commandName);
     if (!command) {
       return message.reply(`Không tìm thấy lệnh \`${commandName}\`. Dùng \`${prefix} help\` để xem hướng dẫn.`);
+    }
+
+    const cooldownRemaining = acquireCommandCooldown(message.author.id);
+    if (cooldownRemaining > 0) {
+      return message.reply(`Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`);
     }
 
     await executePrefixCommand(message, command, args, prefix);

@@ -9,6 +9,24 @@ async function getInventory(userId) {
   return res.rows;
 }
 
+async function getInventoryItemById(userId, itemId) {
+  const db = getDb();
+  const res = await db.execute({
+    sql: 'SELECT * FROM tutien_inventory WHERE id = ? AND user_id = ? AND amount > 0',
+    args: [itemId, userId]
+  });
+  return res.rows[0] || null;
+}
+
+async function removeInventoryItemById(userId, itemId, amount = 1) {
+  const db = getDb();
+  const res = await db.execute({
+    sql: 'UPDATE tutien_inventory SET amount = amount - ? WHERE id = ? AND user_id = ? AND amount >= ?',
+    args: [amount, itemId, userId, amount]
+  });
+  return res.rowsAffected > 0;
+}
+
 async function getItemAmount(userId, itemType, itemKey) {
   const db = getDb();
   const res = await db.execute({
@@ -47,6 +65,8 @@ async function removeItem(userId, itemType, itemKey, amount = 1) {
 
 module.exports = {
   getInventory,
+  getInventoryItemById,
+  removeInventoryItemById,
   getItemAmount,
   addItem,
   removeItem

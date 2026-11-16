@@ -2158,6 +2158,36 @@ function setSqlPreset(sql) {
   if (el) el.value = sql;
 }
 
+async function handleResetGameData() {
+  const confirmed = confirm(
+    'CẢNH BÁO: Thao tác này sẽ xóa toàn bộ dữ liệu người chơi và tiến trình game. Cấu hình Gacha, linh thú và mỏ vẫn được giữ lại. Bạn có chắc chắn muốn tiếp tục?'
+  );
+  if (!confirmed) return;
+
+  if (prompt('Để xác nhận lần cuối, hãy nhập chính xác RESET:') !== 'RESET') {
+    showToast('Xác nhận không khớp. Không có dữ liệu nào bị xóa.', 'info');
+    return;
+  }
+
+  const button = document.getElementById('btn-reset-game-data');
+  if (button) button.disabled = true;
+
+  try {
+    const res = await fetch('/api/reset-game-data', { method: 'POST' }).then(r => r.json());
+    if (!res.success) {
+      showToast(res.error || 'Không thể reset dữ liệu game.', 'error');
+      return;
+    }
+
+    await Promise.all([loadStats(), loadPlayers(), loadSects()]);
+    showToast(res.message, 'success');
+  } catch (err) {
+    showToast('Lỗi reset dữ liệu game: ' + err.message, 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 async function executeSql() {
   const sql = document.getElementById('sql-input')?.value.trim();
   if (!sql) {

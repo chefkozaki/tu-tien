@@ -1706,6 +1706,44 @@ router.delete('/market/:id', async (req, res) => {
 // ==========================================
 // 12. TOOLS, SQL RUNNER & SYSTEM INFO
 // ==========================================
+router.post('/reset-game-data', async (req, res) => {
+  try {
+    const db = getDb();
+    const resetStatements = [
+      { table: 'tutien_inventory', sql: 'DELETE FROM tutien_inventory' },
+      { table: 'tutien_pets', sql: 'DELETE FROM tutien_pets' },
+      { table: 'tutien_weapons', sql: 'DELETE FROM tutien_weapons' },
+      { table: 'tutien_helpers', sql: 'DELETE FROM tutien_helpers' },
+      { table: 'tutien_skills', sql: 'DELETE FROM tutien_skills' },
+      { table: 'tutien_dongphu', sql: 'DELETE FROM tutien_dongphu' },
+      { table: 'tutien_market', sql: 'DELETE FROM tutien_market' },
+      { table: 'tutien_wish_pity', sql: 'DELETE FROM tutien_wish_pity' },
+      { table: 'tutien_world_boss', sql: 'DELETE FROM tutien_world_boss' },
+      { table: 'tutien_sects', sql: 'DELETE FROM tutien_sects' },
+      { table: 'tutien_players', sql: 'DELETE FROM tutien_players' },
+      {
+        table: 'tutien_mines',
+        sql: `UPDATE tutien_mines
+          SET occupying_sect_id = NULL, occupied_at = 0, last_tax_collected = 0`
+      }
+    ];
+    const results = await db.batch(resetStatements.map(({ sql }) => ({ sql })));
+    const affectedRows = resetStatements.map(({ table }, index) => ({
+      table,
+      count: results[index].rowsAffected
+    }));
+
+    res.json({
+      success: true,
+      message: 'Đã reset dữ liệu người chơi và game. Cấu hình hệ thống được giữ nguyên.',
+      affectedRows
+    });
+  } catch (error) {
+    console.error('API POST /reset-game-data error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/batch/airdrop', async (req, res) => {
   try {
     const { type, amount, item_type, item_key, item_name } = req.body;

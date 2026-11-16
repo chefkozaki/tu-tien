@@ -144,7 +144,9 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
   let responseMessage = null;
   const replyToMessage = async payload => {
     const { ephemeral, ...messagePayload } = payload;
-    return message.reply(messagePayload);
+    return ephemeral
+      ? message.author.send(messagePayload)
+      : message.reply(messagePayload);
   };
 
   return {
@@ -180,8 +182,11 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
       responseMessage = await replyToMessage(payload);
       return responseMessage;
     },
-    async deferReply() {
-      responseMessage = await message.reply('Đang xử lý lệnh...');
+    async deferReply(options = {}) {
+      responseMessage = await replyToMessage({
+        content: 'Đang xử lý lệnh...',
+        ephemeral: options.ephemeral
+      });
       return responseMessage;
     },
     async editReply(payload) {

@@ -1,5 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { getInventory, removeItem, getItemAmount } = require('../services/itemService');
+const {
+  getInventory,
+  getInventoryItemById,
+  removeInventoryItemById
+} = require('../services/itemService');
 const { getPlayer, addXp } = require('../services/playerService');
 const { SPIRIT_ROOTS } = require('../config/constants');
 const { getDb } = require('../config/database');
@@ -16,29 +20,33 @@ module.exports = {
     )
     .addSubcommand(sub =>
       sub.setName('use')
-        .setDescription('Uống một viên đan dược')
+        .setDescription('Uống một viên đan dược bằng ID trong lệnh /inv')
         .addStringOption(opt =>
-          opt.setName('pill')
-            .setDescription('Chọn đan dược muốn dùng')
+          opt.setName('item_id')
+            .setDescription('ID của đan dược trong /inv')
             .setRequired(true)
-            .addChoices(
-              { name: 'Tụ Linh Đan (Tăng 5.000 Linh Lực)', value: 'TuLinhDan' },
-              { name: 'Tẩy Tủy Đan (Tẩy đổi lại Linh Căn)', value: 'TayTuyDan' }
-            )
         )
     ),
 
   async execute(interaction) {
     const userId = interaction.user.id;
+    const sub = interaction.options.getSubcommand();
+    const isUse = sub === 'use';
+    const replyOrEdit = payload => isUse
+      ? interaction.editReply(payload)
+      : interaction.reply(payload);
+
+    if (isUse) {
+      await interaction.deferReply({ ephemeral: true });
+    }
+
     const player = await getPlayer(userId);
     if (!player) {
-      return interaction.reply({
+      return replyOrEdit({
         embeds: [createErrorEmbed('Chưa Tu Tiên', 'Hãy dùng `/start` trước!')],
         ephemeral: true
       });
     }
-
-    const sub = interaction.options.getSubcommand();
 
     if (sub === 'view') {
       const items = await getInventory(userId);
@@ -85,21 +93,41 @@ module.exports = {
     }
 
     if (sub === 'use') {
-      const pillKey = interaction.options.getString('pill');
-      const count = await getItemAmount(userId, 'pill', pillKey);
-
-      if (count < 1) {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Không Đủ Đan Dược', `Đạo hữu không có viên đan dược này trong túi! Hãy luyện chế tại \`/base brew\`.`)],
+      const itemId = interaction.options.getString('item_id');
+      if (!/^\d+$/.test(itemId)) {
+        return replyOrEdit({
+          embeds: [createErrorEmbed('ID Không Hợp Lệ', 'Hãy nhập ID đan dược hiển thị trong lệnh `/inv`.')],
           ephemeral: true
         });
       }
 
-      await removeItem(userId, 'pill', pillKey, 1);
+      const item = await getInventoryItemById(userId, itemId);
+      if (!item || item.item_type !== 'pill') {
+        return replyOrEdit({
+          embeds: [createErrorEmbed('Không Tìm Thấy Đan Dược', 'ID này không phải đan dược còn trong túi của đạo hữu. Hãy xem lại bằng `/inv`.')],
+          ephemeral: true
+        });
+      }
+
+      const pillKey = item.item_key;
+      if (!['TuLinhDan', 'TayTuyDan'].includes(pillKey)) {
+        return replyOrEdit({
+          embeds: [createErrorEmbed('Chưa Thể Sử Dụng', 'Đan dược này hiện chưa hỗ trợ sử dụng trực tiếp.')],
+          ephemeral: true
+        });
+      }
+
+      const removed = await removeInventoryItemById(userId, itemId);
+      if (!removed) {
+        return replyOrEdit({
+          embeds: [createErrorEmbed('Đan Dược Không Còn', 'Vật phẩm này vừa được sử dụng hoặc không còn trong túi.')],
+          ephemeral: true
+        });
+      }
 
       if (pillKey === 'TuLinhDan') {
         const xpRes = await addXp(userId, 5000);
-        return interaction.reply({
+        return replyOrEdit({
           embeds: [createSuccessEmbed(
             'Uống Tụ Linh Đan Thành Công',
             `Đan dược tan chảy nơi đan điền, linh khí cuồn cuộn dâng trào!\n` +
@@ -123,7 +151,7 @@ module.exports = {
           args: [newRootKey, userId]
         });
 
-        return interaction.reply({
+        return replyOrEdit({
           embeds: [createSuccessEmbed(
             'Tẩy Tủy Hoán Cốt Thành Công',
             `Kinh mạch toàn thân được tái tạo! Đạo hữu đã thức tỉnh linh căn mới:\n\n` +

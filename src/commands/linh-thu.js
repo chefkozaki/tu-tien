@@ -9,6 +9,7 @@ const {
 } = require('../services/petService');
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
+const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -61,11 +62,16 @@ module.exports = {
         });
       }
 
-      const listText = pets.map((p, i) => 
-        `**#${p.id} - ${p.name}** [${p.element}] (${p.star}⭐) ${p.is_equipped ? `👉 *(Đang Trang Bị Ô ${p.slot})*` : ''}\n` +
-        `  • HP: +${p.hp} | Công: +${p.atk} | Thủ: +${p.def} | Tốc: +${p.speed}\n` +
-        `  • *Hiệu ứng:* ${p.effect_desc}`
-      ).join('\n\n');
+      const petGroups = groupDuplicateItems(pets, [
+        'name', 'element', 'is_mythic', 'star', 'hp', 'atk', 'def', 'speed', 'crit', 'effect_desc', 'image_url'
+      ]);
+      const listText = petGroups.map(({ item: p, items }) => {
+        const ids = items.map(item => `#${item.id}`).join(', ');
+        const equippedSlots = items.filter(item => item.is_equipped).map(item => item.slot).join(', ');
+        return `**${ids} - ${p.name}** [${p.element}] (${p.star}⭐) ×${items.length} ${equippedSlots ? `👉 *(Đang Trang Bị Ô ${equippedSlots})*` : ''}\n` +
+          `  • HP: +${p.hp} | Công: +${p.atk} | Thủ: +${p.def} | Tốc: +${p.speed}\n` +
+          `  • *Hiệu ứng:* ${p.effect_desc}`;
+      }).join('\n\n');
 
       const embed = createTuTienEmbed(player.realm_id)
         .setTitle(`🐾 Trân Thú Uyển • Linh Thú Của ${player.dao_hieu || player.username}`)

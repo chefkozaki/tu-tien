@@ -28,18 +28,17 @@ module.exports = {
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('user') || interaction.user;
-    const player = await getPlayer(targetUser.id);
+    await interaction.deferReply({ ephemeral: true });
 
+    const player = await getPlayer(targetUser.id);
     if (!player) {
       if (targetUser.id === interaction.user.id) {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Chưa Bước Vào Tu Tiên', 'Đạo hữu chưa thức tỉnh! Hãy dùng `/start` để bắt đầu.')],
-          ephemeral: true
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Chưa Bước Vào Tu Tiên', 'Đạo hữu chưa thức tỉnh! Hãy dùng `/start` để bắt đầu.')]
         });
       } else {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Không Tìm Thấy Đạo Hữu', `**${targetUser.username}** chưa bước chân vào con đường tu tiên.`)],
-          ephemeral: true
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Không Tìm Thấy Đạo Hữu', `**${targetUser.username}** chưa bước chân vào con đường tu tiên.`)]
         });
       }
     }
@@ -134,9 +133,9 @@ module.exports = {
           .setStyle(ButtonStyle.Secondary)
       );
 
-      return interaction.reply({ embeds: [embed], components: [row] });
+      return interaction.editReply({ embeds: [embed], components: [row] });
     }
 
-    return interaction.reply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed] });
   }
 };
