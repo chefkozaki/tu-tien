@@ -1,0 +1,266 @@
+/* ========================================================
+   TU TIÊN VẤN ĐẠO - ADMIN PANEL CYBER XIANXIA STYLES
+   ======================================================== */
+
+:root {
+  --bg-main: #070a12;
+  --bg-sidebar: #0b1120;
+  --bg-card: rgba(17, 24, 39, 0.85);
+  --bg-card-hover: rgba(30, 41, 59, 0.95);
+  --border-glow: rgba(59, 130, 246, 0.25);
+  --border-highlight: rgba(147, 51, 234, 0.4);
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --accent-gold: #fbbf24;
+  --accent-cyan: #06b6d4;
+  --accent-purple: #a855f7;
+  --accent-emerald: #10b981;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glassmorphism Card */
+.xianxia-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease-in-out;
+}
+.xianxia-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.xianxia-card-glow {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glow);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+}
+
+/* Xianxia Navigation Button */
+.nav-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.nav-tab-btn:hover {
+  color: #f8fafc;
+  background-color: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+.nav-tab-btn.active {
+  color: #38bdf8;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.02) 100%);
+  border-left: 3px solid #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+  font-weight: 600;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.1);
+}
+
+/* Badge Real-time Colors */
+.realm-badge-0 { background: rgba(149, 165, 166, 0.2); color: #bdc3c7; border: 1px solid #95a5a6; } /* Linh Sĩ */
+.realm-badge-1 { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; } /* Linh Úy */
+.realm-badge-2 { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; } /* Linh Tá */
+.realm-badge-3 { background: rgba(155, 89, 182, 0.2); color: #9b59b6; border: 1px solid #9b59b6; } /* Linh Tướng */
+.realm-badge-4 { background: rgba(243, 156, 18, 0.2); color: #f39c12; border: 1px solid #f39c12; } /* Linh Vương */
+.realm-badge-5 { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; } /* Linh Đế */
+.realm-badge-6 { background: rgba(142, 68, 173, 0.2); color: #af7ac5; border: 1px solid #8e44ad; } /* Chúa Tể */
+.realm-badge-7 { background: rgba(224, 86, 253, 0.2); color: #e056fd; border: 1px solid #e056fd; } /* Thần */
+.realm-badge-8 { background: rgba(255, 215, 0, 0.25); color: #ffd700; border: 1px solid #ffd700; box-shadow: 0 0 8px rgba(255, 215, 0, 0.4); } /* Tối Thượng */
+
+/* Table styling */
+.xianxia-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.xianxia-table th {
+  background: rgba(15, 23, 42, 0.8);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #334155;
+  text-align: left;
+}
+.xianxia-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+.xianxia-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+.xianxia-table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* Modals */
+.modal-backdrop {
+  background-color: rgba(3, 7, 18, 0.75);
+  backdrop-filter: blur(6px);
+}
+.modal-content-box {
+  background: #0f172a;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+/* Glow Buttons */
+.btn-gold {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff;
+  border: 1px solid #f59e0b;
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}
+
+.btn-cyan {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  border: 1px solid #38bdf8;
+}
+.btn-cyan:hover {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+}
+
+.btn-purple {
+  background: linear-gradient(135deg, #7e22ce 0%, #6b21a8 100%);
+  color: #fff;
+  border: 1px solid #a855f7;
+}
+.btn-purple:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+}
+
+.btn-emerald {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff;
+  border: 1px solid #10b981;
+}
+.btn-emerald:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Toast container */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+.toast-msg {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.5rem;
+  background: #1e293b;
+  color: #f8fafc;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  animation: slideIn 0.25s ease-out;
+  border-left: 4px solid;
+}
+.toast-success { border-left-color: #10b981; }
+.toast-error { border-left-color: #ef4444; }
+.toast-info { border-left-color: #38bdf8; }
+.toast-warning { border-left-color: #f59e0b; }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Pulsing aura */
+@keyframes auraPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(168, 85, 247, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.45); }
+}
+.aura-pulse {
+  animation: auraPulse 3s infinite ease-in-out;
+}
+
+/* ========================================================
+   GENSHIN IMPACT WISH & GACHA STYLES
+   ======================================================== */
+.rarity-star-5 {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+}
+.rarity-star-4 {
+  color: #c084fc;
+  text-shadow: 0 0 8px rgba(192, 132, 252, 0.5);
+}
+.rarity-star-3 {
+  color: #60a5fa;
+  text-shadow: 0 0 6px rgba(96, 165, 250, 0.4);
+}
+
+.gacha-card-5 {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.3);
+}
+.gacha-card-4 {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.18) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.6) !important;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.25);
+}
+.gacha-card-3 {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+@keyframes wishPulseGold {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.4), inset 0 0 10px rgba(245, 158, 11, 0.2); }
+  50% { box-shadow: 0 0 32px rgba(245, 158, 11, 0.8), inset 0 0 20px rgba(245, 158, 11, 0.4); }
+}
+.wish-glow-5 {
+  animation: wishPulseGold 1.8s infinite ease-in-out;
+}
+
