@@ -19,6 +19,7 @@
 
 - **Cửa hàng hệ thống:** thêm `/shop view` và `/shop buy` để mua Đan Dược, Linh Kim. Giá được điều chỉnh theo lượng bạc bình quân toàn máy chủ và lượng hàng lưu thông/khan hiếm; giao dịch trừ bạc và cấp vật phẩm trong transaction.
 - **Quản lý lệnh theo kênh:** thêm lệnh bật/tắt lệnh trong kênh hiện tại, giới hạn cho người có quyền Quản lý Máy chủ. Tắt lệnh gốc cũng chặn lệnh con; dùng lại để bật. Trạng thái lưu riêng theo máy chủ và kênh.
+- **Đấu Pháp:** thêm cooldown riêng 60 giây cho từng người dùng, dùng chung giữa lệnh slash và prefix.
 
 ### Cập nhật trải nghiệm và tài liệu
 

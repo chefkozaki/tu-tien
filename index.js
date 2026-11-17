@@ -12,7 +12,7 @@ const { formatNumber, getRealmDisplay } = require('./src/utils/formatters');
 const { getPrefix, setPrefix } = require('./src/services/prefixService');
 const { executePrefixCommand, tokenize } = require('./src/utils/prefixCommand');
 const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementService');
-const { acquireCommandCooldown } = require('./src/utils/commandCooldown');
+const { acquireCommandCooldown, acquireDuelCooldown } = require('./src/utils/commandCooldown');
 const { isCommandDisabled } = require('./src/services/disabledCommandService');
 
 const client = new Client({
@@ -75,11 +75,15 @@ client.on('interactionCreate', async interaction => {
       });
     }
 
-    const cooldownRemaining = acquireCommandCooldown(interaction.user.id);
-    if (cooldownRemaining > 0) {
+    const cooldown = interaction.commandName === 'duel'
+      ? acquireDuelCooldown(interaction.user.id)
+      : { type: 'command', remaining: acquireCommandCooldown(interaction.user.id) };
+    if (cooldown.remaining > 0) {
       try {
         return await interaction.reply({
-          content: `Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`,
+          content: cooldown.type === 'duel'
+            ? `Bạn cần chờ ${Math.ceil(cooldown.remaining / 1000)} giây trước khi đấu pháp lần tiếp theo.`
+            : `Bạn cần đợi ${Math.ceil(cooldown.remaining / 1000)} giây trước khi dùng lệnh tiếp theo.`,
           ephemeral: true
         });
       } catch (error) {
@@ -275,9 +279,14 @@ client.on('messageCreate', async message => {
       return message.reply(`Lệnh \`${commandName}\` đã bị tắt trong kênh này.`);
     }
 
-    const cooldownRemaining = acquireCommandCooldown(message.author.id);
-    if (cooldownRemaining > 0) {
-      return message.reply(`Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`);
+    const cooldown = commandName === 'duel'
+      ? acquireDuelCooldown(message.author.id)
+      : { type: 'command', remaining: acquireCommandCooldown(message.author.id) };
+    if (cooldown.remaining > 0) {
+      const notice = cooldown.type === 'duel'
+        ? `Bạn cần chờ ${Math.ceil(cooldown.remaining / 1000)} giây trước khi đấu pháp lần tiếp theo.`
+        : `Bạn cần đợi ${Math.ceil(cooldown.remaining / 1000)} giây trước khi dùng lệnh tiếp theo.`;
+      return message.reply(notice);
     }
 
     await executePrefixCommand(message, command, args, prefix);

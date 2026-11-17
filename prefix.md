@@ -92,7 +92,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `helpers deploy` | Chọn Trợ Thủ xuất chiến qua menu. |
 | `helpers rest` | Thu hồi Trợ Thủ đang xuất chiến. |
 | `skills` | `askills` xem/quản lý Công Pháp và Thần Thông qua menu. |
-| `duel target:@Tên` | Khiêu chiến người chơi khác. Có thể thay mention bằng Discord user ID; không thể tự đấu hoặc đấu với bot. |
+| `duel target:@Tên` | Khiêu chiến người chơi khác. Có cooldown riêng 60 giây cho mỗi người dùng, dùng chung giữa slash và prefix. Có thể thay mention bằng Discord user ID; không thể tự đấu hoặc đấu với bot. |
 | `tower` | `atower` khiêu chiến Thí Luyện Tháp. |
 | `boss info` | Xem Boss Thế Giới, lượng máu và bảng sát thương. |
 | `boss atk` | Tấn công Boss Thế Giới. |

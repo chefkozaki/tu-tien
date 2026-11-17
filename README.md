@@ -134,7 +134,7 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/boss-the-gioi tan-cong` | Xuất chiêu công kích Boss Thế Giới chia thưởng |
 | `/boss channel channel:<#kênh>` | Đặt kênh thông báo boss mới cho máy chủ (quyền Quản lý Máy chủ); dùng `off` để tắt |
 | `/thi-luyen` | Khiêu chiến Thí Luyện Tháp PvE (Tầng 1 -> 100+) |
-| `/dau-phap` | Thách đấu 1v1 Đấu Pháp Đài với tu sĩ khác |
+| `/duel target:<người chơi>` | Thách đấu 1v1 trên Đấu Pháp Đài; cooldown riêng 60 giây cho từng người dùng, dùng chung giữa slash và prefix |
 | `/sect info` | Xem thông tin Tông Môn và điểm cống hiến |
 | `/sect members` | Xem danh sách thành viên và lực tu vi |
 | `/sect create name:<tên>` | Thành lập Tông Môn mới (cần đạt Linh Tướng và có 50.000 Ngân Lượng) |

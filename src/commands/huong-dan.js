@@ -55,7 +55,7 @@ module.exports = {
         `• \`/pets\`, \`/weapons\`, \`/helpers\`, \`/skills\` - Quản lý trang bị và trợ thủ\n` +
         `• \`/wish\` - Cầu nguyện Linh Khí, Linh Thú và Trợ Thủ\n` +
         `• \`/event\` - Thám hiểm Bí Cảnh Ngẫu Nhiên\n` +
-        `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi\n` +
+        `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi; \`/duel\` có cooldown riêng 60 giây mỗi người\n` +
         `• \`/boss channel channel:<#kênh>\` - Đặt kênh thông báo boss mới; dùng \`off\` để tắt (cần quyền Quản lý Máy chủ)\n` +
         `• \`/inv\`, \`/bag\` - Xem tài nguyên, Linh Kim và túi trữ vật\n` +
         `• \`/sect\`, \`/market\`, \`/rank\` - Tông môn, chợ và bảng xếp hạng\n` +
