@@ -1064,9 +1064,25 @@ function applyGiftCodePreset(index) {
   const preset = state.itemPresets[Number(index)];
   if (!preset) return;
   document.getElementById('gift-code-item-type').value = preset.item_type;
+  handleGiftCodeTypeChange();
   document.getElementById('gift-code-item-key').value = preset.item_key;
   document.getElementById('gift-code-item-name').value = preset.item_name;
   document.getElementById('gift-code-amount').value = preset.defaultAmount;
+}
+
+function handleGiftCodeTypeChange() {
+  const isSilver = document.getElementById('gift-code-item-type').value === 'silver';
+  const itemKey = document.getElementById('gift-code-item-key');
+  const itemName = document.getElementById('gift-code-item-name');
+  if (isSilver) {
+    itemKey.value = 'silver';
+    itemName.value = 'Ngân Lượng (Bạc)';
+  } else {
+    if (itemKey.value === 'silver') itemKey.value = '';
+    if (itemName.value === 'Ngân Lượng (Bạc)') itemName.value = '';
+  }
+  itemKey.disabled = isSilver;
+  itemName.disabled = isSilver;
 }
 
 async function loadGiftCodes() {
@@ -1128,6 +1144,7 @@ async function handleGiftCodeSubmit(event) {
     showToast(response.message, 'success');
     document.getElementById('form-gift-code').reset();
     document.getElementById('gift-code-item-type').value = 'pill';
+    handleGiftCodeTypeChange();
     await loadGiftCodes();
   } catch (error) {
     showToast('Lỗi máy chủ khi tạo mã quà tặng: ' + error.message, 'error');

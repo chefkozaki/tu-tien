@@ -4,8 +4,8 @@
 
 ### Sửa lỗi và cân bằng gameplay
 
-- **Giới hạn Discord:** chia trang cho cẩm nang, túi/tài nguyên, kỹ năng, linh thú, trợ thủ, chợ, cửa hàng và các danh sách Tông Môn để nội dung dài không vượt giới hạn embed.
-- **Kết quả Cầu Nguyện:** giới hạn độ dài tên và mô tả vật phẩm trong kết quả quay; giới hạn an toàn tiêu đề/nội dung của embed báo lỗi và thành công.
+- **Giới hạn Discord:** chia trang bằng nút Trước/Tiếp cho `/help`, `/inv`, `/bag view`, `/skills`, `/pets list`, `/helpers list`, `/market view`, `/shop view` và các danh sách đơn/thành viên/mỏ của Tông Môn; các trang tương thích cả lệnh prefix và chỉ người gọi lệnh được thao tác.
+- **Giới hạn nội dung embed:** giới hạn độ dài tên/mô tả vật phẩm trong kết quả Cầu Nguyện; đặt giới hạn an toàn cho tiêu đề và nội dung embed thành công/lỗi.
 - **Đột phá:** kiểm tra đủ XP cấp 10 và xử lý kiểm tra/tiêu thụ vật phẩm đột phá nguyên tử để tránh vượt cấp sai hoặc tiêu vật phẩm trùng khi có nhiều yêu cầu đồng thời.
 - **Túi đồ:** cộng gộp các dòng vật phẩm trùng và ngăn tiêu quá số lượng đang sở hữu.
 - **Bảng xếp hạng:** so sánh XP lớn chính xác, không làm sai thứ hạng do giới hạn độ chính xác của số JavaScript; định dạng số lớn cũng được sửa.
@@ -26,7 +26,7 @@
 ### Tính năng mới
 
 - **Cửa hàng hệ thống:** thêm `/shop view` và `/shop buy` để mua Đan Dược, Linh Kim. Giá được điều chỉnh theo lượng bạc bình quân toàn máy chủ và lượng hàng lưu thông/khan hiếm; giao dịch trừ bạc và cấp vật phẩm trong transaction.
-- **Mã quà tặng:** thêm `/code` và `acode` để đổi mã lấy vật phẩm; admin tạo mã, chọn quà/số lượng và thời điểm hết hạn. Mỗi tài khoản chỉ đổi mỗi mã một lần.
+- **Mã quà tặng:** thêm `/code` và `acode` để đổi mã lấy vật phẩm hoặc Ngân Lượng; admin chọn loại quà, số lượng và thời điểm hết hạn. Mỗi tài khoản chỉ đổi mỗi mã một lần.
 - **Whitelist máy chủ:** thêm `/verify` và `averify`, giới hạn cho Discord user ID cấu hình bằng `BOT_OWNER_ID`; chỉ máy chủ đã được xác minh mới sử dụng được bot.
 - **Item ID:** hiển thị ID cho vật phẩm trong túi và ID hàng tại shop; dùng ID túi khi bán hoặc sử dụng vật phẩm, dùng ID shop khi mua hàng.
 - **Quản lý lệnh theo kênh:** thêm lệnh bật/tắt lệnh trong kênh hiện tại, giới hạn cho người có quyền Quản lý Máy chủ. Tắt lệnh gốc cũng chặn lệnh con; dùng lại để bật. Trạng thái lưu riêng theo máy chủ và kênh.

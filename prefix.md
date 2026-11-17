@@ -21,6 +21,8 @@ Sau khi đổi prefix, thay `a` trong các ví dụ bằng prefix mới.
 - Lệnh prefix hoạt động trong máy chủ, không phải tin nhắn riêng với bot. Mỗi lệnh có cooldown 10 giây dùng chung với slash command.
 - Mọi phản hồi từ lệnh prefix đều được gửi trực tiếp vào kênh đã nhập lệnh; bot không gửi kết quả prefix qua tin nhắn riêng.
 - Nếu một lệnh trả về nút hoặc menu, hãy bấm/chọn trực tiếp trên tin nhắn bot.
+- Danh sách dài được chia thành nhiều trang; dùng nút **Trước/Tiếp** bên dưới tin nhắn để xem. Các nút chỉ nhận thao tác từ người đã gọi lệnh và hết hiệu lực sau khoảng 2 phút.
+- Phân trang hiện áp dụng cho `help`, `inv`, `bag view`, `skills`, `pets list`, `helpers list`, `market view`, `shop view`, `sect applications`, `sect members` và `sect mine action:view`.
 - Chỉ máy chủ đã được chủ bot xác minh mới dùng được lệnh; chủ bot có thể chạy `/verify`, `averify` hoặc `a verify` trong máy chủ cần cấp quyền.
 
 ## Quản lý Prefix
@@ -60,7 +62,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `verify` | `/verify`, `averify` hoặc `a verify` xác minh máy chủ hiện tại; chỉ ID chủ bot trong `BOT_OWNER_ID` dùng được lệnh này. |
 | `inv` | `ainv` xem Ngân Lượng, Linh Lực, Linh Kim và số lượng tài nguyên. Hiển thị ID vật phẩm để dùng ở lệnh `bag use`. |
 | `bag` | `abag view` xem túi; `abag use item_id:123` dùng đan dược theo ID lấy từ `ainv`. |
-| `code` | `acode <mã>` đổi mã quà tặng còn hạn; mỗi tài khoản chỉ đổi mỗi mã một lần. |
+| `code` | `acode <mã>` đổi mã quà tặng còn hạn, gồm vật phẩm hoặc Ngân Lượng; mỗi tài khoản chỉ đổi mỗi mã một lần. |
 | `train` | `atrain` đả tọa, hấp thụ Linh Lực. |
 | `break` | `abreak` đột phá đại cảnh giới khi đủ điều kiện. |
 | `tam-ma` | `a tam-ma` khiêu chiến Ải Tâm Ma khi đạt Linh Tá Cấp 10; chiến thắng để mở điều kiện đột phá lên Linh Tướng. Nếu thất bại, có thể chuẩn bị thêm rồi thử lại. |

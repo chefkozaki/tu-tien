@@ -448,11 +448,16 @@ router.post('/gift-codes', async (req, res) => {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
     const item_type = typeof body.item_type === 'string' ? body.item_type.trim() : '';
-    const item_key = typeof body.item_key === 'string' ? body.item_key.trim() : '';
-    const item_name = typeof body.item_name === 'string' ? body.item_name.trim() : '';
+    let item_key = typeof body.item_key === 'string' ? body.item_key.trim() : '';
+    let item_name = typeof body.item_name === 'string' ? body.item_name.trim() : '';
     const amount = Number(body.amount);
     const expires_at = Number(body.expires_at);
-    const allowedItemTypes = new Set(['spirit_gold', 'pill', 'herb', 'seed', 'material', 'special']);
+    const allowedItemTypes = new Set(['silver', 'spirit_gold', 'pill', 'herb', 'seed', 'material', 'special']);
+
+    if (item_type === 'silver') {
+      item_key = 'silver';
+      item_name = 'Ngân Lượng (Bạc)';
+    }
 
     if (!/^[A-Z0-9_-]{3,64}$/.test(code)) {
       return res.status(400).json({ success: false, error: 'Mã chỉ gồm 3-64 ký tự chữ, số, gạch ngang hoặc gạch dưới.' });

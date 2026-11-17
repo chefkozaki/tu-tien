@@ -468,7 +468,8 @@
           </label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label class="text-xs text-slate-300">Loại vật phẩm
-              <select id="gift-code-item-type" required class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+              <select id="gift-code-item-type" required onchange="handleGiftCodeTypeChange()" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+                <option value="silver">Ngân Lượng (Bạc)</option>
                 <option value="spirit_gold">Linh Kim</option>
                 <option value="pill" selected>Đan Dược</option>
                 <option value="herb">Linh Thảo</option>

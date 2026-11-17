@@ -46,23 +46,30 @@ async function redeemGiftCode(userId, inputCode) {
         return { success: false, reason: 'claimed', message: 'Đạo hữu đã đổi mã quà tặng này rồi.' };
       }
 
-      const inventory = await tx.execute({
-        sql: `SELECT id FROM tutien_inventory
-          WHERE user_id = ? AND item_type = ? AND item_key = ?
-          ORDER BY id LIMIT 1`,
-        args: [userId, giftCode.item_type, giftCode.item_key]
-      });
-      if (inventory.rows[0]) {
+      if (giftCode.item_type === 'silver') {
         await tx.execute({
-          sql: 'UPDATE tutien_inventory SET amount = amount + ? WHERE id = ?',
-          args: [giftCode.amount, inventory.rows[0].id]
+          sql: 'UPDATE tutien_players SET silver = silver + ? WHERE user_id = ?',
+          args: [giftCode.amount, userId]
         });
       } else {
-        await tx.execute({
-          sql: `INSERT INTO tutien_inventory (user_id, item_type, item_key, item_name, amount)
-            VALUES (?, ?, ?, ?, ?)`,
-          args: [userId, giftCode.item_type, giftCode.item_key, giftCode.item_name, giftCode.amount]
+        const inventory = await tx.execute({
+          sql: `SELECT id FROM tutien_inventory
+            WHERE user_id = ? AND item_type = ? AND item_key = ?
+            ORDER BY id LIMIT 1`,
+          args: [userId, giftCode.item_type, giftCode.item_key]
         });
+        if (inventory.rows[0]) {
+          await tx.execute({
+            sql: 'UPDATE tutien_inventory SET amount = amount + ? WHERE id = ?',
+            args: [giftCode.amount, inventory.rows[0].id]
+          });
+        } else {
+          await tx.execute({
+            sql: `INSERT INTO tutien_inventory (user_id, item_type, item_key, item_name, amount)
+              VALUES (?, ?, ?, ?, ?)`,
+            args: [userId, giftCode.item_type, giftCode.item_key, giftCode.item_name, giftCode.amount]
+          });
+        }
       }
 
       await tx.commit();
