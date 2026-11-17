@@ -40,8 +40,8 @@ const BANNER_CONFIG = {
   }
 };
 
-const WISH_COST_SINGLE = 1600; // 1,600 Bạc / 1 lượt quay
-const WISH_COST_TEN = 16000;   // 16,000 Bạc / 10 lượt quay
+const WISH_COST_SINGLE = 2000; // 2,000 Bạc / 1 lượt quay
+const WISH_COST_TEN = 18000;   // 18,000 Bạc / 10 lượt quay (giảm 10%)
 
 function getTargetTypes(bannerType) {
   if (bannerType === 'weapon' || bannerType === 'pet' || bannerType === 'helper') {
@@ -388,8 +388,8 @@ function rollSingleWish(pity4, pity5, poolByRarity, bannerType, rateUpGuaranteed
   if (pity5 >= 89) {
     rate5 = 1.0; // Hard pity 90
   } else if (pity5 >= 73) {
-    // Soft pity: mỗi lần sau 73 tăng thêm 6% xác suất
-    rate5 = 0.006 + (pity5 - 73) * 0.06;
+    // Soft pity starts on the 74th wish, adding 6 percentage points per wish.
+    rate5 = Math.min(1, 0.006 + (pity5 - 72) * 0.06);
   }
 
   const roll5 = Math.random();
@@ -468,13 +468,11 @@ function rollSingleWish(pity4, pity5, poolByRarity, bannerType, rateUpGuaranteed
   }
 
   // Cập nhật pity
-  let nextPity4 = pity4 + 1;
+  let nextPity4 = determinedRarity >= 4 ? 0 : pity4 + 1;
   let nextPity5 = pity5 + 1;
 
   if (determinedRarity === 5) {
     nextPity5 = 0;
-  } else if (determinedRarity === 4) {
-    nextPity4 = 0;
   }
 
   return {

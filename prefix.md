@@ -74,7 +74,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `base brew` | Luyện đan qua menu tương tác. |
 | `base forge` | Rèn Linh Khí qua menu tương tác. |
 | `wish view` | Xem banner và tiến trình bảo hiểm; `banner` tùy chọn, nhận `weapon`, `pet`, `helper`, `standard`. Ví dụ `awish view banner:pet`. |
-| `wish pull` | Cầu Nguyện; cần `banner` (`weapon`, `pet`, `helper`, `standard`) và `count` (`1` hoặc `10`). Ví dụ `awish pull banner:weapon count:10`. |
+| `wish pull` | Cầu Nguyện; cần `banner` (`weapon`, `pet`, `helper`, `standard`) và `count` (`1` hoặc `10`). Giá: 2.000 Bạc/lượt hoặc 18.000 Bạc/10 lượt. 5★ cơ bản 0,6%, soft pity từ lượt 74, hard pity lượt 90; 4★ cơ bản 5,1%, bảo hiểm 4★+ ở lượt 10. Ví dụ `awish pull banner:weapon count:10`. |
 | `event` | `aevent` thám hiểm Bí Cảnh; chọn hành động trên nút trong tin nhắn kết quả. |
 
 ### Trang bị và chiến đấu

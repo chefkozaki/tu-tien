@@ -41,6 +41,7 @@ awish pull banner:weapon count:10
 <li>Số phải nhập đúng kiểu và các lựa chọn giới hạn chỉ nhận giá trị được liệt kê bên dưới.</li>
 <li>Với tham số người dùng, có thể dùng mention (<code>@Tên</code>) hoặc Discord user ID.</li>
 <li>Lệnh prefix hoạt động trong máy chủ, không phải tin nhắn riêng với bot. Mỗi lệnh có cooldown 10 giây dùng chung với slash command.</li>
+<li>Mọi phản hồi từ lệnh prefix đều được gửi trực tiếp vào kênh đã nhập lệnh; bot không gửi kết quả prefix qua tin nhắn riêng.</li>
 <li>Nếu một lệnh trả về nút hoặc menu, hãy bấm/chọn trực tiếp trên tin nhắn bot.</li>
 </ul>
 <h2 id="quản-lý-prefix">Quản lý Prefix </h2>
@@ -51,6 +52,12 @@ aprefix &lt;prefix&gt;                Cú pháp alias cố định để đổi 
 &lt;prefix&gt;prefix                  Xem prefix hiện tại
 &lt;prefix&gt;prefix value:&lt;prefix&gt;   Đổi prefix
 </code></pre><p>Prefix mới dài từ 1 đến 5 ký tự, không chứa khoảng trắng và không được là <code>aprefix</code>. Alias <code>aprefix</code> luôn dùng được để xem/đổi prefix, kể cả sau khi đã đổi prefix máy chủ.</p>
+<h2 id="bậttắt-lệnh-theo-kênh">Bật/tắt lệnh theo kênh </h2>
+<p>Thành viên có quyền <strong>Quản lý Máy chủ</strong> có thể tắt một lệnh trong chính kênh đang nhập. Tắt lệnh gốc sẽ chặn cả lệnh con; dùng lại lệnh đó trong cùng kênh để bật lại. Thiết lập áp dụng cho cả slash command và prefix command.</p>
+<pre data-role="codeBlock" data-info="text" class="language-text text"><code>adisable wish
+adisable sect
+/disable command:sect
+</code></pre><p>Alias <code>adisable</code> luôn dùng được để quản lý lệnh, kể cả khi lệnh <code>disable</code> bị tắt ở kênh đó. Khi máy chủ đã đổi prefix, vẫn dùng alias cố định <code>adisable &lt;lệnh&gt;</code>, hoặc <code>&lt;prefix&gt;disable command:&lt;lệnh&gt;</code>.</p>
 <h2 id="danh-sách-lệnh">Danh sách lệnh </h2>
 <h3 id="tu-luyện-và-hồ-sơ">Tu luyện và hồ sơ </h3>
 <table>
@@ -235,12 +242,32 @@ aprefix &lt;prefix&gt;                Cú pháp alias cố định để đổi 
 <td>Xem thông tin Tông Môn của mình.</td>
 </tr>
 <tr>
+<td><code>sect members</code></td>
+<td>Xem danh sách thành viên trong Tông Môn.</td>
+</tr>
+<tr>
 <td><code>sect create name:"Thanh Vân Tông"</code></td>
-<td>Thành lập Tông Môn; tên là bắt buộc và cần 50.000 Ngân Lượng.</td>
+<td>Thành lập Tông Môn; cần đạt cảnh giới <strong>Linh Tướng</strong>, có 50.000 Ngân Lượng và tên chưa bị trùng. Điều kiện chỉ áp dụng khi tạo Tông Môn mới, không ảnh hưởng Tông Môn đã có.</td>
 </tr>
 <tr>
 <td><code>sect join id:12</code></td>
-<td>Gia nhập Tông Môn theo ID.</td>
+<td>Gửi đơn xin gia nhập Tông Môn theo ID; cần Chưởng Môn duyệt.</td>
+</tr>
+<tr>
+<td><code>sect applications</code></td>
+<td>Chưởng Môn xem các đơn xin gia nhập đang chờ duyệt.</td>
+</tr>
+<tr>
+<td><code>sect approve application-id:12</code></td>
+<td>Chưởng Môn chấp nhận đơn xin gia nhập.</td>
+</tr>
+<tr>
+<td><code>sect reject application-id:12</code></td>
+<td>Chưởng Môn từ chối đơn xin gia nhập.</td>
+</tr>
+<tr>
+<td><code>sect recruit member:@Tên</code></td>
+<td>Chưởng Môn tuyển trực tiếp một thành viên. Có thể dùng Discord user ID thay mention.</td>
 </tr>
 <tr>
 <td><code>sect donate silver:10000</code></td>
@@ -277,6 +304,14 @@ aprefix &lt;prefix&gt;                Cú pháp alias cố định để đổi 
 <tr>
 <td><code>market cancel id:12</code></td>
 <td>Hủy bài đăng của chính mình theo ID để thu hồi vật phẩm.</td>
+</tr>
+<tr>
+<td><code>shop view</code></td>
+<td>Xem Đan Dược, Linh Kim và giá động theo lượng bạc/nguồn cung toàn server.</td>
+</tr>
+<tr>
+<td><code>shop buy item:TrucCoDan amount:1</code></td>
+<td>Mua vật phẩm trong cửa hàng hệ thống; số lượng từ 1 đến 100. <code>item</code> nhận <code>TrucCoDan</code>, <code>TuLinhDan</code>, <code>TayTuyDan</code>, <code>BachHoaKimDan</code>, <code>Phàm</code>, <code>Tinh</code>, <code>Linh</code>, <code>Địa</code>, <code>Thiên</code>, <code>Thánh</code>, <code>Thần</code>, hoặc <code>"Hỗn Độn"</code> (đặt tên có khoảng trắng trong dấu nháy).</td>
 </tr>
 </tbody>
 </table>

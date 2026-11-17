@@ -151,6 +151,7 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/cho-den huy` | Hủy bài đăng bán để thu hồi vật phẩm |
 | `/shop view` | Xem giá động Đan Dược và Linh Kim từ cửa hàng hệ thống |
 | `/shop buy item:<vật phẩm> amount:<số lượng>` | Mua Đan Dược hoặc Linh Kim bằng Ngân Lượng |
+| `/wish pull` | Cầu Nguyện: 2.000 Ngân Lượng/lượt hoặc 18.000/10 lượt; pity 5★ kiểu Genshin (0,6% cơ bản, soft pity từ lượt 74, hard pity lượt 90) |
 | `/tui-do xem` | Xem túi trữ vật (Linh Kim 8 phẩm, Đan Dược, Hạt Giống) |
 | `/tui-do dung-dan` | Uống đan dược (Tụ Linh Đan, Tẩy Tủy Đan) |
 | `/inv` hoặc `ainv` | Xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên |

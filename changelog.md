@@ -13,6 +13,7 @@
 - **Danh sách Linh Khí:** gom các món trùng và thêm phân trang để xem kho dài.
 - **Gacha:** sửa Rate-Up 5★ thành 50/50 đúng nghĩa; nếu trượt, lần 5★ tiếp theo cùng banner được bảo đảm Rate-Up. Bảo đảm được lưu riêng theo banner và giữ độc lập với pity phẩm chất.
 - **Banner Gacha:** banner Linh Khí, Linh Thú và Trợ Thủ chỉ trả đúng loại vật phẩm đó ở 4★/5★. Bổ sung pool Linh Thú 5★ mặc định và kiểm tra để không rơi về vật phẩm sai loại khi thiếu pool.
+- **Gacha pity và giá quay:** chỉnh 5★ về tỷ lệ cơ bản 0,6%, soft pity kiểu Genshin từ lượt 74 (tăng 6 điểm phần trăm mỗi lượt) và hard pity lượt 90; pity 4★ reset khi nhận 4★ hoặc 5★, pity 5★ chỉ reset khi nhận 5★. Giá mới là 2.000 Bạc/lượt, 18.000 Bạc/10 lượt, cân theo số dư trung vị toàn server.
 
 ### Tính năng mới
 

@@ -49,8 +49,8 @@ function buildBannerEmbed(bannerKey, pityData, player) {
       `*${banner.desc}*\n\n` +
       `👤 **Đạo Hữu:** \`${player.dao_hieu || player.username}\` | 💰 **Ngân Lượng:** \`${formatNumber(player.silver)}\` Bạc\n\n` +
       `📜 **Quy Tắc Bảo Hiểm Cầu Nguyện:**\n` +
-      `• **5★ Hoàng Kim:** Tỷ lệ cơ bản **0.6%**. Bảo hiểm sau tối đa **90 lượt** (tỷ lệ tăng từ lượt 74)!\n` +
-      `• **4★ Tử Sắc:** Tỷ lệ cơ bản **5.1%**. Bảo hiểm **10 lần** (Mỗi 10 lần quay chắc chắn ra ít nhất 1 món 4★ hoặc 5★)!\n` +
+      `• **5★ Hoàng Kim:** Tỷ lệ cơ bản **0.6%**. Soft pity từ lượt 74, tăng 6 điểm phần trăm mỗi lượt; bảo hiểm cứng ở lượt 90.\n` +
+      `• **4★ Tử Sắc:** Tỷ lệ cơ bản **5.1%**. Bảo hiểm 4★+ ở lượt 10; pity 4★ reset khi ra 4★/5★, pity 5★ chỉ reset khi ra 5★.\n` +
       (bannerKey !== 'standard'
         ? `• **Rate-Up 5★:** Nếu banner có vật phẩm 5★ Rate-Up, tỷ lệ là 50/50; nếu trượt, lần 5★ tiếp theo cùng banner được bảo đảm Rate-Up. ${rateUpGuaranteed ? '**Bảo đảm Rate-Up đang kích hoạt!**\n' : '\n'}`
         : '') +
@@ -149,12 +149,12 @@ function buildActionRows(currentBanner) {
   const rowButtons = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`wish_pull_1_${currentBanner}`)
-      .setLabel(`Cầu Nguyện x1 (1.6K Bạc)`)
+      .setLabel(`Cầu Nguyện x1 (2K Bạc)`)
       .setEmoji('🌠')
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`wish_pull_10_${currentBanner}`)
-      .setLabel(`Cầu Nguyện x10 (16K Bạc)`)
+      .setLabel(`Cầu Nguyện x10 (18K Bạc)`)
       .setEmoji('🌟')
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
@@ -241,8 +241,8 @@ module.exports = {
             .setDescription('Số lần quay (1 lần hoặc 10 lần)')
             .setRequired(true)
             .addChoices(
-              { name: '1 Lần (1,600 Bạc)', value: 1 },
-              { name: '10 Lần (16,000 Bạc - Chắc chắn có 4★+)', value: 10 }
+              { name: '1 Lần (2,000 Bạc)', value: 1 },
+              { name: '10 Lần (18,000 Bạc - Chắc chắn có 4★+)', value: 10 }
             )
         )
     ),

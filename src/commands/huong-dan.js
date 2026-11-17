@@ -44,7 +44,7 @@ module.exports = {
         `• Dùng \`/base upgrade\` rồi chọn số cấp muốn nâng, hoặc \`abase upgrade levels:10\` qua prefix, để nâng nhiều cấp một lần (tối đa cấp 50); thu hoạch bằng \`/base harvest\` mà không tắt AFK.\n` +
         `• Trồng linh thảo tại Dược Viên (\`/base garden\`) và Luyện Đan Dược (\`/base brew\`).\n\n` +
         `🌠 **7. CẦU NGUYỆN (WISH / GACHA):**\n` +
-        `• Bảo hiểm 4★ sau tối đa 10 lượt và 5★ sau tối đa 90 lượt; tỷ lệ 5★ tăng từ lượt 74.\n` +
+        `• Mỗi lượt Cầu Nguyện tốn 2.000 Bạc; 10 lượt tốn 18.000 Bạc. Tỷ lệ 5★ cơ bản 0,6%, soft pity từ lượt 74, bảo hiểm cứng lượt 90; 4★ cơ bản 5,1%, bảo hiểm 4★+ lượt 10.\n` +
         `• Dùng lệnh \`/wish pull\` để triệu hoán Linh Khí Bậc 5-7, Linh Thú và Hộ Đạo Giả Cực Phẩm!\n\n` +
         `📜 **DANH SÁCH LỆNH SLASH CHÍNH:**\n` +
         `• \`/start dao_hieu:<đạo hiệu>\` - Tạo đạo hiệu (chỉ một lần), nhận chủng tộc ngẫu nhiên và thức tỉnh linh căn\n` +
