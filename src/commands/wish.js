@@ -106,17 +106,17 @@ function buildWishResultEmbed(wishResult, player) {
 
     if (item.item_type === 'weapon') {
       typeTag = '⚔️ [Linh Khí]';
-      return `**${idx + 1}.** ${starStr} ${typeTag} **${item.name}** [Bậc ${item.tier}] (Công +${item.atk}, Thủ +${item.def})${badge}\n` +
-             `   └ *${item.effect_name ? `${item.effect_name}: ` : ''}${item.effect_desc}*`;
+      return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [Bậc ${item.tier}] (Công +${item.atk}, Thủ +${item.def})${badge}\n` +
+             `   └ *${item.effect_name ? `${String(item.effect_name).slice(0, 30)}: ` : ''}${String(item.effect_desc || '').slice(0, 80)}*`;
     } else if (item.item_type === 'pet') {
       typeTag = '🐾 [Linh Thú]';
-      return `**${idx + 1}.** ${starStr} ${typeTag} **${item.name}** [Hệ ${item.element}] (Máu +${item.hp}, Công +${item.atk}, Thủ +${item.def})${badge}\n` +
-             `   └ *${item.effect_desc}*`;
+      return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [Hệ ${String(item.element).slice(0, 20)}] (Máu +${item.hp}, Công +${item.atk}, Thủ +${item.def})${badge}\n` +
+             `   └ *${String(item.effect_desc || '').slice(0, 80)}*`;
     } else {
       typeTag = '🤝 [Trợ Thủ]';
       const role = item.type_detail === 'combat' ? 'Chiến Đấu' : 'Sinh Hoạt';
-      return `**${idx + 1}.** ${starStr} ${typeTag} **${item.name}** [${role} - Bậc ${item.tier}]${badge}\n` +
-             `   └ *${item.effect_desc}*`;
+      return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [${role} - Bậc ${item.tier}]${badge}\n` +
+             `   └ *${String(item.effect_desc || '').slice(0, 80)}*`;
     }
   }).join('\n\n');
 

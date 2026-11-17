@@ -4,9 +4,11 @@ const { getEquippedWeapon } = require('../services/weaponService');
 const { getEquippedPets, checkResonance } = require('../services/petService');
 const { getEquippedHelper } = require('../services/helperService');
 const { getDongPhu } = require('../services/dongPhuService');
+const { getPetResonance } = require('../services/petConfigService');
 const { RACES, SPIRIT_ROOTS, REALMS } = require('../config/constants');
 const { getRealmDisplay, getXpRequired, createProgressBar, formatNumber } = require('../utils/formatters');
 const { createTuTienEmbed, createErrorEmbed } = require('../utils/embedBuilder');
+const { calculateCombatStats } = require('../utils/combat');
 
 function isHttpUrl(value) {
   try {
@@ -51,13 +53,15 @@ module.exports = {
     const xpBar = createProgressBar(xpCurrent, xpMax);
 
     // Lấy thông tin trang bị
-    const [weapon, pets, resonance, helper, dongPhu] = await Promise.all([
+    const [weapon, pets, resonance, helper, dongPhu, petResonance] = await Promise.all([
       getEquippedWeapon(player.user_id),
       getEquippedPets(player.user_id),
       checkResonance(player.user_id),
       getEquippedHelper(player.user_id),
-      getDongPhu(player.user_id)
+      getDongPhu(player.user_id),
+      getPetResonance()
     ]);
+    const combatStats = calculateCombatStats(player, weapon, pets, helper, [], petResonance);
 
     const embed = createTuTienEmbed(player.realm_id)
       .setTitle(`📜 Hồ Sơ Tu Tiên • ${player.dao_hieu || player.username}`)
@@ -87,24 +91,33 @@ module.exports = {
           inline: true
         },
         {
+          name: '📊 Chỉ Số Chiến Đấu',
+          value: `• **HP:** ${formatNumber(combatStats.maxHp)}\n` +
+                 `• **Công:** ${formatNumber(combatStats.atk)} | **Thủ:** ${formatNumber(combatStats.def)}\n` +
+                 `• **Tốc độ:** ${formatNumber(combatStats.speed)}\n` +
+                 `• **Bạo kích:** ${(combatStats.crit * 100).toFixed(1)}% | **ST bạo kích:** x${combatStats.critDmg.toFixed(2)}\n` +
+                 `• **Kháng ST vật lý:** ${(combatStats.physResist * 100).toFixed(1)}% | **Kháng khống chế:** ${(combatStats.ccResist * 100).toFixed(1)}%`,
+          inline: false
+        },
+        {
           name: '⚔️ Linh Khí (Tối đa 1)',
           value: weapon 
-            ? `**${weapon.name}** [Bậc ${weapon.tier}] ${weapon.is_natal ? '🌟 *(Bản Mệnh)*' : ''}\n  • Công +${weapon.atk} | Thủ +${weapon.def}\n  • *${weapon.effect_desc}*`
+            ? `**${String(weapon.name).slice(0, 100)}** [Bậc ${weapon.tier}] ${weapon.is_natal ? '🌟 *(Bản Mệnh)*' : ''}\n  • Công +${weapon.atk} | Thủ +${weapon.def}\n  • *${String(weapon.effect_desc || '').slice(0, 300)}*`
             : '*Chưa trang bị Linh Khí*',
           inline: false
         },
         {
           name: `🐾 Linh Thú Xuất Trận (${pets.length}/3)`,
           value: pets.length > 0
-            ? pets.map((p, idx) => `**Ô ${idx + 1}:** ${p.name} [${p.element}] (${p.star}⭐) - Công +${p.atk}, HP +${p.hp}`).join('\n') +
-              `\n• **Trận Pháp:** ${resonance.active ? `🔥 **${resonance.name}**\n  *(${resonance.desc})*` : `*${resonance.message}*`}`
+            ? pets.map((p, idx) => `**Ô ${idx + 1}:** ${String(p.name).slice(0, 100)} [${String(p.element).slice(0, 30)}] (${p.star}⭐) - Công +${p.atk}, HP +${p.hp}`).join('\n') +
+              `\n• **Trận Pháp:** ${resonance.active ? `🔥 **${String(resonance.name).slice(0, 100)}**\n  *(${String(resonance.desc).slice(0, 300)})*` : `*${String(resonance.message).slice(0, 300)}*`}`
             : '*Chưa trang bị Linh Thú nào*',
           inline: false
         },
         {
           name: '🤝 Trợ Thủ (Tối đa 1)',
           value: helper
-            ? `**${helper.name}** [${helper.type === 'combat' ? '⚔️ Hộ Đạo Giả (Chiến Đấu)' : '🌾 Đạo Đồng (Sinh Hoạt)'}]\n  • *${helper.effect_desc}*`
+            ? `**${String(helper.name).slice(0, 100)}** [${helper.type === 'combat' ? '⚔️ Hộ Đạo Giả (Chiến Đấu)' : '🌾 Đạo Đồng (Sinh Hoạt)'}]\n  • *${String(helper.effect_desc || '').slice(0, 300)}*`
             : '*Chưa trang bị Trợ Thủ*',
           inline: false
         }

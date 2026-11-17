@@ -70,7 +70,10 @@ GUILD_ID= # Để trống để đăng ký Global, hoặc điền ID Server th�
 
 TURSO_DATABASE_URL=libsql://your-database.turso.io
 TURSO_AUTH_TOKEN=your_turso_token_here
+BOT_OWNER_ID=your_discord_user_id
 ```
+
+Chỉ Discord user ID trong `BOT_OWNER_ID` mới được phép xác minh máy chủ bằng `/verify` hoặc `averify`. Chạy lệnh trong từng máy chủ được phép; chỉ các máy chủ đã xác minh mới dùng được bot. Danh sách whitelist được lưu trong Turso.
 
 ### 3. Deploy Slash Commands:
 Lệnh deploy sẽ **xóa sạch toàn bộ lệnh cũ** và đăng ký mới các lệnh slash chuẩn:
@@ -133,8 +136,9 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/boss-the-gioi thong-tin` | Xem lượng máu và bảng sát thương Boss Hung Thú Thế Giới |
 | `/boss-the-gioi tan-cong` | Xuất chiêu công kích Boss Thế Giới chia thưởng |
 | `/boss channel channel:<#kênh>` | Đặt kênh thông báo boss mới cho máy chủ (quyền Quản lý Máy chủ); dùng `off` để tắt |
-| `/thi-luyen` | Khiêu chiến Thí Luyện Tháp PvE (Tầng 1 -> 100+) |
+| `/thi-luyen` | Khiêu chiến Thí Luyện Tháp PvE (Tầng 1 -> 100+); mỗi chặng 10 tầng thưởng tổng Linh Kim bằng lượng cần cho lần đột phá tương ứng |
 | `/duel target:<người chơi>` | Thách đấu 1v1 trên Đấu Pháp Đài; cooldown riêng 60 giây cho từng người dùng, dùng chung giữa slash và prefix |
+| `/verify` hoặc `averify` | Chủ bot (ID trong `BOT_OWNER_ID`) xác minh máy chủ hiện tại để đưa vào whitelist |
 | `/sect info` | Xem thông tin Tông Môn và điểm cống hiến |
 | `/sect members` | Xem danh sách thành viên và lực tu vi |
 | `/sect create name:<tên>` | Thành lập Tông Môn mới (cần đạt Linh Tướng và có 50.000 Ngân Lượng) |
@@ -151,6 +155,7 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/cho-den huy` | Hủy bài đăng bán để thu hồi vật phẩm |
 | `/shop view` | Xem giá động Đan Dược và Linh Kim từ cửa hàng hệ thống |
 | `/shop buy item:<vật phẩm> amount:<số lượng>` | Mua Đan Dược hoặc Linh Kim bằng Ngân Lượng |
+| `/code code:<mã>` hoặc `acode <mã>` | Đổi mã quà tặng còn hạn; mỗi tài khoản chỉ đổi mỗi mã một lần |
 | `/wish pull` | Cầu Nguyện: 2.000 Ngân Lượng/lượt hoặc 18.000/10 lượt; pity 5★ kiểu Genshin (0,6% cơ bản, soft pity từ lượt 74, hard pity lượt 90) |
 | `/tui-do xem` | Xem túi trữ vật (Linh Kim 8 phẩm, Đan Dược, Hạt Giống) |
 | `/tui-do dung-dan` | Uống đan dược (Tụ Linh Đan, Tẩy Tủy Đan) |

@@ -92,6 +92,11 @@
           <span>Kho Đồ & Vật Phẩm</span>
         </button>
 
+        <button class="nav-tab-btn w-full" data-tab="tab-gift-codes">
+          <i class="fa-solid fa-ticket text-emerald-400 w-5"></i>
+          <span>Mã Quà Tặng</span>
+        </button>
+
         <button class="nav-tab-btn w-full" data-tab="tab-pets">
           <i class="fa-solid fa-dragon text-emerald-400 w-5"></i>
           <span>Linh Thú</span>
@@ -435,6 +440,72 @@
               </thead>
               <tbody id="inventory-table-body">
                 <tr><td colspan="7" class="text-center py-8 text-slate-400">Đang tải túi đồ...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= GIFT CODES ================= -->
+      <section id="tab-gift-codes" class="tab-view hidden space-y-4">
+        <form id="form-gift-code" onsubmit="handleGiftCodeSubmit(event)" class="xianxia-card rounded-xl p-4 space-y-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-100">Tạo Mã Quà Tặng</h2>
+            <p class="text-xs text-slate-400 mt-1">Mỗi tài khoản có thể đổi một lần; mã hết hạn vào thời điểm đã chọn.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label class="text-xs text-slate-300">Mã quà tặng
+              <input id="gift-code-value" type="text" required minlength="3" maxlength="64" pattern="[A-Za-z0-9_-]+" autocomplete="off" placeholder="VD: TU_TIEN_2026" oninput="this.value = this.value.toUpperCase()" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-slate-100">
+            </label>
+            <label class="text-xs text-slate-300">Hết hạn lúc (giờ địa phương)
+              <input id="gift-code-expiry" type="datetime-local" required class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+            </label>
+          </div>
+          <label class="block text-xs text-slate-300">Chọn nhanh quà tặng
+            <select id="gift-code-preset" onchange="applyGiftCodePreset(this.value)" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-amber-300">
+              <option value="">-- Chọn mẫu hoặc tự điền bên dưới --</option>
+            </select>
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="text-xs text-slate-300">Loại vật phẩm
+              <select id="gift-code-item-type" required class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+                <option value="spirit_gold">Linh Kim</option>
+                <option value="pill" selected>Đan Dược</option>
+                <option value="herb">Linh Thảo</option>
+                <option value="seed">Hạt Giống</option>
+                <option value="material">Khoáng Thạch / Nguyên Liệu</option>
+                <option value="special">Đặc Biệt</option>
+              </select>
+            </label>
+            <label class="text-xs text-slate-300">Mã vật phẩm (Key)
+              <input id="gift-code-item-key" type="text" required maxlength="100" placeholder="VD: TrucCoDan" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+            </label>
+            <label class="text-xs text-slate-300">Tên quà tặng
+              <input id="gift-code-item-name" type="text" required maxlength="100" placeholder="VD: Trúc Cơ Đan" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+            </label>
+            <label class="text-xs text-slate-300">Số lượng
+              <input id="gift-code-amount" type="number" required min="1" max="2147483647" value="1" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+            </label>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-lg btn-emerald">
+              <i class="fa-solid fa-plus mr-1"></i>Tạo mã
+            </button>
+          </div>
+        </form>
+
+        <div class="xianxia-card rounded-xl overflow-hidden border border-slate-800">
+          <div class="flex items-center justify-between p-4">
+            <h2 class="text-sm font-bold text-slate-100">Danh Sách Mã Quà Tặng</h2>
+            <button type="button" onclick="loadGiftCodes()" class="text-xs text-sky-400 hover:text-sky-300"><i class="fa-solid fa-rotate mr-1"></i>Làm mới</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="xianxia-table">
+              <thead>
+                <tr><th>Mã</th><th>Quà</th><th>Hết hạn</th><th>Đã đổi</th><th>Trạng thái</th></tr>
+              </thead>
+              <tbody id="gift-codes-table-body">
+                <tr><td colspan="5" class="text-center py-8 text-slate-400">Đang tải mã quà tặng...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1037,7 +1108,7 @@
               </h2>
               <p class="text-xs text-slate-400 mt-2">
                 Xóa toàn bộ nhân vật, túi đồ, trang bị, tông môn, chợ, lịch sử cầu nguyện và boss hiện tại.
-                Giữ nguyên danh mục Gacha, cấu hình linh thú, mỏ linh mạch và tài khoản admin.
+                Giữ nguyên danh mục Gacha, mã quà tặng, cấu hình linh thú, mỏ linh mạch và tài khoản admin. Lịch sử đổi mã sẽ được xóa.
               </p>
             </div>
             <button id="btn-reset-game-data" onclick="handleResetGameData()" class="shrink-0 px-4 py-2 text-xs font-bold rounded-lg bg-red-700 hover:bg-red-600 text-white border border-red-500/50 transition">

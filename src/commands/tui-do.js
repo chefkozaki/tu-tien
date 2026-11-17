@@ -9,6 +9,7 @@ const { SPIRIT_ROOTS } = require('../config/constants');
 const { getDb } = require('../config/database');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -58,38 +59,30 @@ module.exports = {
         });
       }
 
-      const goldItems = items.filter(i => i.item_type === 'spirit_gold');
-      const pillItems = items.filter(i => i.item_type === 'pill');
-      const herbItems = items.filter(i => i.item_type === 'herb');
-      const seedItems = items.filter(i => i.item_type === 'seed');
-
-      const embed = createTuTienEmbed(player.realm_id)
-        .setTitle(`🎒 Túi Trữ Vật • ${player.dao_hieu || player.username}`)
-        .addFields(
-          {
-            name: '✨ Linh Kim Đột Phá',
-            value: goldItems.length > 0 
-              ? goldItems.map(i => `• **${i.item_name}:** \`${i.amount}\` Viên`).join('\n')
-              : '*Không có*',
-            inline: false
-          },
-          {
-            name: '💊 Đan Dược Quý',
-            value: pillItems.length > 0
-              ? pillItems.map(i => `• **${i.item_name}:** \`${i.amount}\` Viên`).join('\n')
-              : '*Không có*',
-            inline: true
-          },
-          {
-            name: '🌿 Linh Thảo & Hạt Giống',
-            value: (herbItems.length > 0 || seedItems.length > 0)
-              ? [...herbItems, ...seedItems].map(i => `• **${i.item_name}:** \`${i.amount}\` Cây/Túi`).join('\n')
-              : '*Không có*',
-            inline: true
-          }
+      const typeNames = {
+        spirit_gold: '✨ Linh Kim Đột Phá',
+        pill: '💊 Đan Dược Quý',
+        herb: '🌿 Linh Thảo',
+        seed: '🌱 Hạt Giống'
+      };
+      const description = Object.entries(typeNames).map(([type, name]) => {
+        const typeItems = items.filter(item => item.item_type === type);
+        const typeLines = typeItems.map(item =>
+          `• **${String(item.item_name).slice(0, 100)}** — \`${formatNumber(item.amount)}\` (ID: \`${item.id}\`)`
         );
+        return `**${name}**\n${typeLines.length ? typeLines.join('\n') : '*Không có*'}`;
+      }).join('\n\n');
+      const otherItems = items.filter(item => !typeNames[item.item_type]);
+      const fullDescription = otherItems.length
+        ? `${description}\n\n**📦 Tài Nguyên Khác**\n${otherItems.map(item =>
+            `• **${String(item.item_name).slice(0, 100)}** — \`${formatNumber(item.amount)}\` (ID: \`${item.id}\`)`
+          ).join('\n')}`
+        : description;
 
-      return interaction.reply({ embeds: [embed] });
+      return replyWithEmbedPages(interaction, createTextEmbedPages(fullDescription, {
+        title: `🎒 Túi Trữ Vật • ${player.dao_hieu || player.username}`,
+        realmId: player.realm_id
+      }), { ephemeral: true, customIdPrefix: 'bag_page' });
     }
 
     if (sub === 'use') {

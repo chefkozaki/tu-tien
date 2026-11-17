@@ -1,7 +1,6 @@
 const { getDb } = require('../config/database');
-const { getPlayer, addSilver } = require('./playerService');
-const { removeItem, addItem } = require('./itemService');
 const { getEquippedHelper } = require('./helperService');
+const { withTransaction } = require('../utils/databaseTransaction');
 
 async function getMarketListings(category = null) {
   const db = getDb();
@@ -17,113 +16,219 @@ async function getMarketListings(category = null) {
   return res.rows;
 }
 
-/**
- * Đăng bán Linh Kim hoặc Đan Dược
- */
+async function removeInventoryItems(tx, userId, itemCategory, itemKey, amount) {
+  const inventory = await tx.execute({
+    sql: `SELECT id, amount FROM tutien_inventory
+      WHERE user_id = ? AND item_type = ? AND item_key = ? ORDER BY id`,
+    args: [userId, itemCategory, itemKey]
+  });
+  let remaining = BigInt(amount);
+  const available = inventory.rows.reduce((total, row) => total + BigInt(row.amount), 0n);
+  if (available < remaining) return false;
+
+  for (const row of inventory.rows) {
+    if (remaining === 0n) break;
+    const rowAmount = BigInt(row.amount);
+    const consumed = rowAmount < remaining ? rowAmount : remaining;
+    const result = await tx.execute({
+      sql: 'UPDATE tutien_inventory SET amount = amount - ? WHERE id = ? AND amount >= ?',
+      args: [Number(consumed), row.id, Number(consumed)]
+    });
+    if (result.rowsAffected !== 1) {
+      throw new Error('Inventory changed while listing a market item.');
+    }
+    remaining -= consumed;
+  }
+  return true;
+}
+
+async function addInventoryItems(tx, userId, itemCategory, itemKey, itemName, amount) {
+  const existing = await tx.execute({
+    sql: `SELECT id FROM tutien_inventory
+      WHERE user_id = ? AND item_type = ? AND item_key = ? ORDER BY id LIMIT 1`,
+    args: [userId, itemCategory, itemKey]
+  });
+  if (existing.rows[0]) {
+    await tx.execute({
+      sql: 'UPDATE tutien_inventory SET amount = amount + ? WHERE id = ?',
+      args: [amount, existing.rows[0].id]
+    });
+  } else {
+    await tx.execute({
+      sql: `INSERT INTO tutien_inventory (user_id, item_type, item_key, item_name, amount)
+        VALUES (?, ?, ?, ?, ?)`,
+      args: [userId, itemCategory, itemKey, itemName, amount]
+    });
+  }
+}
+
 async function listItem(sellerId, sellerName, itemCategory, itemKey, itemName, amount, priceSilver) {
   const db = getDb();
-  if (priceSilver <= 0) return { success: false, message: 'Giá bán phải lớn hơn 0!' };
-
-  // Trừ vật phẩm từ túi đồ người bán
-  const removed = await removeItem(sellerId, itemCategory, itemKey, amount);
-  if (!removed) {
-    return { success: false, message: `Đạo hữu không đủ ${amount}x ${itemName} để đăng bán!` };
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    return { success: false, message: 'Số lượng đăng bán phải là số nguyên lớn hơn 0!' };
+  }
+  if (!Number.isSafeInteger(priceSilver) || priceSilver <= 0) {
+    return { success: false, message: 'Giá bán phải là số nguyên lớn hơn 0!' };
   }
 
   const now = Date.now();
   const itemData = JSON.stringify({ itemKey, itemName, amount });
 
-  await db.execute({
-    sql: `INSERT INTO tutien_market (seller_id, seller_name, item_category, item_title, item_data, price_silver, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`,
-    args: [sellerId, sellerName, itemCategory, `${amount}x ${itemName}`, itemData, priceSilver, now]
-  });
+  return withTransaction(db, async tx => {
+    try {
+      const removed = await removeInventoryItems(tx, sellerId, itemCategory, itemKey, amount);
+      if (!removed) {
+        await tx.rollback();
+        return { success: false, message: `Đạo hữu không đủ ${amount}x ${itemName} để đăng bán!` };
+      }
 
-  return {
-    success: true,
-    message: `Đã đăng bán **${amount}x ${itemName}** lên Chợ Đen với giá **${priceSilver.toLocaleString()}** Ngân lượng!`
-  };
+      await tx.execute({
+        sql: `INSERT INTO tutien_market (seller_id, seller_name, item_category, item_title, item_data, price_silver, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, 'active', ?)`,
+        args: [sellerId, sellerName, itemCategory, `${amount}x ${itemName}`, itemData, priceSilver, now]
+      });
+      await tx.commit();
+      return {
+        success: true,
+        message: `Đã đăng bán **${amount}x ${itemName}** lên Chợ Đen với giá **${priceSilver.toLocaleString()}** Ngân lượng!`
+      };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
+  });
 }
 
-/**
- * Mua vật phẩm từ Chợ Đen
- */
 async function buyMarketItem(buyerId, listingId) {
   const db = getDb();
-  const buyer = await getPlayer(buyerId);
-  if (!buyer) return { success: false, message: 'Đạo hữu chưa bước vào con đường tu tiên!' };
-
-  const listingRes = await db.execute({
-    sql: "SELECT * FROM tutien_market WHERE id = ? AND status = 'active'",
-    args: [listingId]
-  });
-  const listing = listingRes.rows[0];
-  if (!listing) return { success: false, message: 'Vật phẩm này không còn tồn tại hoặc đã được bán!' };
-
-  if (listing.seller_id === buyerId) {
-    return { success: false, message: 'Không thể tự mua vật phẩm của chính mình!' };
-  }
-
-  let finalPrice = Number(listing.price_silver);
-
-  // Trợ Thủ Sinh Hoạt: Giảm giá mua đồ 15%
   const helper = await getEquippedHelper(buyerId);
-  if (helper && helper.type === 'life') {
-    finalPrice = Math.floor(finalPrice * 0.85);
-  }
 
-  if (buyer.silver < finalPrice) {
-    return { success: false, message: `Đạo hữu không đủ Ngân lượng! Cần **${finalPrice.toLocaleString()}**, hiện có **${buyer.silver.toLocaleString()}**.` };
-  }
+  return withTransaction(db, async tx => {
+    try {
+      const listingRes = await tx.execute({
+        sql: "SELECT * FROM tutien_market WHERE id = ? AND status = 'active'",
+        args: [listingId]
+      });
+      const listing = listingRes.rows[0];
+      if (!listing) {
+        await tx.rollback();
+        return { success: false, message: 'Vật phẩm này không còn tồn tại hoặc đã được bán!' };
+      }
+      if (String(listing.seller_id) === String(buyerId)) {
+        await tx.rollback();
+        return { success: false, message: 'Không thể tự mua vật phẩm của chính mình!' };
+      }
 
-  // Chuyển tiền từ người mua sang người bán
-  await addSilver(buyerId, -finalPrice);
-  await addSilver(listing.seller_id, Number(listing.price_silver));
+      const playerRes = await tx.execute({
+        sql: 'SELECT silver FROM tutien_players WHERE user_id = ?',
+        args: [buyerId]
+      });
+      const buyer = playerRes.rows[0];
+      if (!buyer) {
+        await tx.rollback();
+        return { success: false, message: 'Đạo hữu chưa bước vào con đường tu tiên!' };
+      }
 
-  // Trao vật phẩm cho người mua
-  const itemData = JSON.parse(listing.item_data);
-  await addItem(buyerId, listing.item_category, itemData.itemKey, itemData.itemName, itemData.amount);
+      const originalPrice = Number(listing.price_silver);
+      const finalPrice = helper?.type === 'life' ? Math.floor(originalPrice * 0.85) : originalPrice;
+      if (Number(buyer.silver) < finalPrice) {
+        await tx.rollback();
+        return {
+          success: false,
+          message: `Đạo hữu không đủ Ngân lượng! Cần **${finalPrice.toLocaleString()}**, hiện có **${Number(buyer.silver).toLocaleString()}**.`
+        };
+      }
 
-  // Cập nhật trạng thái niêm yết
-  await db.execute({
-    sql: "UPDATE tutien_market SET status = 'sold' WHERE id = ?",
-    args: [listingId]
+      const claimResult = await tx.execute({
+        sql: "UPDATE tutien_market SET status = 'sold' WHERE id = ? AND status = 'active'",
+        args: [listingId]
+      });
+      if (claimResult.rowsAffected !== 1) {
+        await tx.rollback();
+        return { success: false, message: 'Vật phẩm này vừa được mua bởi một đạo hữu khác!' };
+      }
+
+      const debitResult = await tx.execute({
+        sql: 'UPDATE tutien_players SET silver = silver - ? WHERE user_id = ? AND silver >= ?',
+        args: [finalPrice, buyerId, finalPrice]
+      });
+      if (debitResult.rowsAffected !== 1) {
+        await tx.rollback();
+        return { success: false, message: 'Ngân lượng vừa thay đổi; hãy kiểm tra số dư rồi thử lại!' };
+      }
+
+      await tx.execute({
+        sql: 'UPDATE tutien_players SET silver = silver + ? WHERE user_id = ?',
+        args: [originalPrice, listing.seller_id]
+      });
+      const itemData = JSON.parse(listing.item_data);
+      await addInventoryItems(
+        tx,
+        buyerId,
+        listing.item_category,
+        itemData.itemKey,
+        itemData.itemName,
+        itemData.amount
+      );
+      await tx.commit();
+
+      return {
+        success: true,
+        itemTitle: listing.item_title,
+        paidPrice: finalPrice,
+        originalPrice,
+        discounted: finalPrice < originalPrice,
+        message: `🎉 Giao dịch thành công! Đạo hữu đã mua **${listing.item_title}** với giá **${finalPrice.toLocaleString()}** Ngân lượng!`
+      };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
   });
-
-  return {
-    success: true,
-    itemTitle: listing.item_title,
-    paidPrice: finalPrice,
-    originalPrice: listing.price_silver,
-    discounted: finalPrice < Number(listing.price_silver),
-    message: `🎉 Giao dịch thành công! Đạo hữu đã mua **${listing.item_title}** với giá **${finalPrice.toLocaleString()}** Ngân lượng!`
-  };
 }
 
-/**
- * Hủy bài đăng bán trên Chợ Đen
- */
 async function cancelListing(sellerId, listingId) {
   const db = getDb();
-  const listingRes = await db.execute({
-    sql: "SELECT * FROM tutien_market WHERE id = ? AND seller_id = ? AND status = 'active'",
-    args: [listingId, sellerId]
+  return withTransaction(db, async tx => {
+    try {
+      const listingRes = await tx.execute({
+        sql: "SELECT * FROM tutien_market WHERE id = ? AND seller_id = ? AND status = 'active'",
+        args: [listingId, sellerId]
+      });
+      const listing = listingRes.rows[0];
+      if (!listing) {
+        await tx.rollback();
+        return { success: false, message: 'Không tìm thấy vật phẩm hoặc bạn không có quyền hủy!' };
+      }
+
+      const cancelResult = await tx.execute({
+        sql: "UPDATE tutien_market SET status = 'cancelled' WHERE id = ? AND seller_id = ? AND status = 'active'",
+        args: [listingId, sellerId]
+      });
+      if (cancelResult.rowsAffected !== 1) {
+        await tx.rollback();
+        return { success: false, message: 'Tin đăng vừa được xử lý; hãy làm mới danh sách chợ!' };
+      }
+
+      const itemData = JSON.parse(listing.item_data);
+      await addInventoryItems(
+        tx,
+        sellerId,
+        listing.item_category,
+        itemData.itemKey,
+        itemData.itemName,
+        itemData.amount
+      );
+      await tx.commit();
+      return {
+        success: true,
+        message: `Đã hủy bán **${listing.item_title}**! Vật phẩm đã được hoàn về túi trữ vật.`
+      };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
   });
-  const listing = listingRes.rows[0];
-  if (!listing) return { success: false, message: 'Không tìm thấy vật phẩm hoặc bạn không có quyền hủy!' };
-
-  const itemData = JSON.parse(listing.item_data);
-  await addItem(sellerId, listing.item_category, itemData.itemKey, itemData.itemName, itemData.amount);
-
-  await db.execute({
-    sql: "UPDATE tutien_market SET status = 'cancelled' WHERE id = ?",
-    args: [listingId]
-  });
-
-  return {
-    success: true,
-    message: `Đã hủy bán **${listing.item_title}**! Vật phẩm đã được hoàn về túi trữ vật.`
-  };
 }
 
 module.exports = {

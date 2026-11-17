@@ -14,6 +14,7 @@ const { executePrefixCommand, tokenize } = require('./src/utils/prefixCommand');
 const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementService');
 const { acquireCommandCooldown, acquireDuelCooldown } = require('./src/utils/commandCooldown');
 const { isCommandDisabled } = require('./src/services/disabledCommandService');
+const { isGuildWhitelisted } = require('./src/services/guildWhitelistService');
 
 const client = new Client({
   intents: [
@@ -59,6 +60,36 @@ client.once('ready', async (c) => {
 
 // Interaction Create Handler
 client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand() || interaction.commandName !== 'verify') {
+    let isWhitelisted = false;
+    try {
+      isWhitelisted = await isGuildWhitelisted(interaction.guildId);
+    } catch (error) {
+      console.error(`Không thể kiểm tra whitelist máy chủ ${interaction.guildId || 'DM'}:`, error);
+      if (interaction.isRepliable()) {
+        await interaction.reply({
+          content: 'Không thể xác minh quyền sử dụng bot lúc này. Vui lòng thử lại sau.',
+          ephemeral: true
+        }).catch(replyError => {
+          console.error('Không thể gửi thông báo lỗi whitelist:', replyError);
+        });
+      }
+      return;
+    }
+
+    if (!isWhitelisted) {
+      if (interaction.isRepliable()) {
+        await interaction.reply({
+          content: interaction.guildId
+            ? 'Máy chủ này chưa được xác minh để sử dụng bot. Chủ bot cần chạy `/verify` hoặc `averify` trong máy chủ.'
+            : 'Bot chỉ hoạt động trong máy chủ Discord đã được xác minh.',
+          ephemeral: true
+        });
+      }
+      return;
+    }
+  }
+
   // 1. Xử lý Slash Command
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
@@ -204,7 +235,30 @@ client.on('messageCreate', async message => {
 
   try {
     const prefix = await getPrefix(message.guildId);
+    const fixedVerifyAlias = /^averify(?:\s|$)/i.exec(message.content);
+    const spacedVerifyAlias = /^a\s+verify(?:\s|$)/i.exec(message.content);
+    const verifyAlias = fixedVerifyAlias || spacedVerifyAlias;
+    if (verifyAlias) {
+      const cooldownRemaining = acquireCommandCooldown(message.author.id);
+      if (cooldownRemaining > 0) {
+        return message.reply(`Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`);
+      }
+
+      const args = tokenize(message.content.slice(verifyAlias[0].length).trim());
+      const verifyCommand = client.commands.get('verify');
+      return executePrefixCommand(message, verifyCommand, args, 'a');
+    }
+
     const fixedDisableAlias = /^adisable(?:\s|$)/i.exec(message.content);
+    const fixedPrefixAlias = /^aprefix(?:\s|$)/i.exec(message.content);
+    if (!message.content.startsWith(prefix) && !fixedDisableAlias && !fixedPrefixAlias) return;
+
+    if (!await isGuildWhitelisted(message.guildId)) {
+      return message.reply(
+        'Máy chủ này chưa được xác minh để sử dụng bot. Chủ bot cần chạy `/verify` hoặc `averify` trong máy chủ.'
+      );
+    }
+
     if (fixedDisableAlias) {
       const cooldownRemaining = acquireCommandCooldown(message.author.id);
       if (cooldownRemaining > 0) {
@@ -225,7 +279,6 @@ client.on('messageCreate', async message => {
       }, commandInput);
     }
 
-    const fixedPrefixAlias = /^aprefix(?:\s|$)/i.exec(message.content);
     if (fixedPrefixAlias) {
       const cooldownRemaining = acquireCommandCooldown(message.author.id);
       if (cooldownRemaining > 0) {

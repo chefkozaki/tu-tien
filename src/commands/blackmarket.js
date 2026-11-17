@@ -3,6 +3,7 @@ const { getMarketListings, listItem, buyMarketItem, cancelListing } = require('.
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -95,22 +96,19 @@ module.exports = {
         });
       }
 
-      const listText = listings.map(l => 
+      const listText = listings.map(l =>
         `**#ID: ${l.id}** • **${l.item_title}**\n` +
         `  • Giá: \`${formatNumber(l.price_silver)}\` Ngân Lượng\n` +
         `  • Người bán: **${l.seller_name}** (<@${l.seller_id}>)`
-      ).join('\n\n');
-
-      const embed = createTuTienEmbed(player.realm_id)
-        .setTitle('🏪 Chợ Đen Vạn Giới • Giao Dịch Tự Do')
-        .setDescription(
-          `*Nơi giao thương tự do giữa các tu sĩ, mua bán vật phẩm bằng Ngân Lượng!*\n` +
-          `*(Trang bị Trợ Thủ Sinh Hoạt sẽ được giảm giá 15% khi mua hàng)*\n\n` +
-          listText +
-          `\n\n👉 Dùng lệnh \`/market buy id:<id>\` để mua!`
-        );
-
-      return interaction.reply({ embeds: [embed] });
+      );
+      const description =
+        `*Nơi giao thương tự do giữa các tu sĩ, mua bán vật phẩm bằng Ngân Lượng!*\n` +
+        `*(Trang bị Trợ Thủ Sinh Hoạt sẽ được giảm giá 15% khi mua hàng)*\n\n` +
+        `${listText.join('\n\n')}\n\n👉 Dùng lệnh \`/market buy id:<id>\` để mua!`;
+      return replyWithEmbedPages(interaction, createTextEmbedPages(description, {
+        title: '🏪 Chợ Đen Vạn Giới • Giao Dịch Tự Do',
+        realmId: player.realm_id
+      }), { customIdPrefix: 'market_page' });
     }
 
     // 2. Đăng Bán

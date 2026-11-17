@@ -142,6 +142,8 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
   };
 
   let responseMessage = null;
+  let wasDeferred = false;
+  let wasReplied = false;
   const replyToMessage = async payload => {
     const { ephemeral, ...messagePayload } = payload;
     return message.reply(messagePayload);
@@ -178,6 +180,7 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
     },
     async reply(payload) {
       responseMessage = await replyToMessage(payload);
+      wasReplied = true;
       return responseMessage;
     },
     async deferReply(options = {}) {
@@ -185,6 +188,7 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
         content: 'Đang xử lý lệnh...',
         ephemeral: options.ephemeral
       });
+      wasDeferred = true;
       return responseMessage;
     },
     async editReply(payload) {
@@ -194,6 +198,15 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
     },
     async followUp(payload) {
       return replyToMessage(payload);
+    },
+    async fetchReply() {
+      return responseMessage;
+    },
+    get deferred() {
+      return wasDeferred;
+    },
+    get replied() {
+      return wasReplied;
     },
     prefix
   };

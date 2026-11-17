@@ -3,10 +3,52 @@ const { getPlayer, addSilver, addXp } = require('./playerService');
 const { getEquippedWeapon } = require('./weaponService');
 const { getEquippedPets } = require('./petService');
 const { getEquippedHelper } = require('./helperService');
+const { getEquippedSkills } = require('./skillService');
 const { getPetResonance } = require('./petConfigService');
 const { calculateCombatStats, simulateCombat } = require('../utils/combat');
 const { addItem } = require('./itemService');
-const { SPIRIT_GOLD_QUALITIES } = require('../config/constants');
+const { REALMS, SPIRIT_GOLD_QUALITIES } = require('../config/constants');
+
+const GOLD_PER_FLOOR_BY_QUALITY = new Map(
+  REALMS.flatMap(realm => {
+    const requirement = realm.breakthrough;
+    return requirement?.spiritGoldQuality
+      ? [[requirement.spiritGoldQuality, requirement.spiritGoldAmount / 10]]
+      : [];
+  })
+);
+
+function createTowerGuardianStats(playerStats, currentFloor) {
+  const floorStage = Math.floor((currentFloor - 1) / 10);
+  const floorMultiplier = 1 + floorStage * 0.05;
+  const maxHp = Math.floor(
+    (playerStats.atk * 4.5 + playerStats.maxHp * 0.15) * floorMultiplier
+  );
+
+  return {
+    name: `Thủ Vệ Tháp Tầng ${currentFloor}`,
+    race: 'nhan_toc',
+    spiritRoot: 'kim',
+    maxHp,
+    hp: maxHp,
+    atk: Math.floor(
+      (playerStats.atk * 0.75 + playerStats.def * 0.5 + playerStats.maxHp * 0.02) * floorMultiplier
+    ),
+    def: Math.floor(
+      (playerStats.atk * 0.3 + playerStats.maxHp * 0.015) * floorMultiplier
+    ),
+    speed: Math.floor(playerStats.speed * (0.9 + floorStage * 0.015)),
+    crit: Math.min(0.15, 0.08 + floorStage * 0.005),
+    critDmg: 1.5,
+    lifesteal: 0,
+    physResist: 0.05,
+    ccResist: 0.1,
+    trueDamage: false,
+    activeResonance: null,
+    helper: null,
+    skills: [{ name: 'Trấn Tháp Quyền', damage_mult: 1.2 }]
+  };
+}
 
 async function challengeTower(userId) {
   const db = getDb();
@@ -17,32 +59,12 @@ async function challengeTower(userId) {
   const weapon = await getEquippedWeapon(userId);
   const pets = await getEquippedPets(userId);
   const helper = await getEquippedHelper(userId);
+  const skills = await getEquippedSkills(userId);
 
   const petResonance = await getPetResonance();
-  const playerStats = calculateCombatStats(player, weapon, pets, helper, [], petResonance);
+  const playerStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance);
 
-  // Guardian stats based on tower floor
-  const floorMultiplier = 1 + (currentFloor - 1) * 0.25;
-  const guardianStats = {
-    name: `Thủ Vệ Tháp Tầng ${currentFloor}`,
-    race: 'nhan_toc',
-    spiritRoot: 'kim',
-    maxHp: Math.floor(800 * floorMultiplier),
-    hp: Math.floor(800 * floorMultiplier),
-    atk: Math.floor(100 * floorMultiplier),
-    def: Math.floor(60 * floorMultiplier),
-    speed: Math.floor(90 * (1 + currentFloor * 0.02)),
-    crit: 0.05,
-    critDmg: 1.5,
-    lifesteal: 0,
-    physResist: 0.05,
-    ccResist: 0.1,
-    trueDamage: false,
-    activeResonance: null,
-    helper: null,
-    skills: [{ name: 'Trấn Tháp Quyền', damage_mult: 1.2 }]
-  };
-
+  const guardianStats = createTowerGuardianStats(playerStats, currentFloor);
   const battleResult = simulateCombat(playerStats, guardianStats);
 
   if (battleResult.isAttackerWin) {
@@ -58,10 +80,17 @@ async function challengeTower(userId) {
     await addSilver(userId, silverReward);
     await addXp(userId, xpReward);
 
-    // Thưởng Linh Kim dựa theo tầng
-    const goldIndex = Math.min(SPIRIT_GOLD_QUALITIES.length - 1, Math.floor(currentFloor / 10));
+    // Mỗi chặng 10 tầng thưởng đúng lượng Linh Kim cần cho lần đột phá tương ứng.
+    const goldIndex = Math.min(
+      SPIRIT_GOLD_QUALITIES.length - 1,
+      Math.floor((currentFloor - 1) / 10)
+    );
     const goldQuality = SPIRIT_GOLD_QUALITIES[goldIndex].id;
-    await addItem(userId, 'spirit_gold', goldQuality, `Linh Kim (Phẩm ${goldQuality})`, 2 + Math.floor(currentFloor / 5));
+    const goldAmount = GOLD_PER_FLOOR_BY_QUALITY.get(goldQuality);
+    if (!Number.isInteger(goldAmount)) {
+      throw new Error(`Missing tower reward configuration for spirit gold quality "${goldQuality}".`);
+    }
+    await addItem(userId, 'spirit_gold', goldQuality, `Linh Kim (Phẩm ${goldQuality})`, goldAmount);
 
     return {
       success: true,
@@ -70,7 +99,7 @@ async function challengeTower(userId) {
       silverReward,
       xpReward,
       goldQuality,
-      goldAmount: 2 + Math.floor(currentFloor / 5),
+      goldAmount,
       logs: battleResult.logs
     };
   } else {
@@ -83,5 +112,6 @@ async function challengeTower(userId) {
 }
 
 module.exports = {
-  challengeTower
+  challengeTower,
+  createTowerGuardianStats
 };

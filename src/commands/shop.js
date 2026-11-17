@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { getShopCatalog, buyShopItem } = require('../services/shopService');
 const { getPlayer } = require('../services/playerService');
-const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
+const { createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 const SHOP_ITEM_CHOICES = [
   { name: 'Trúc Cơ Đan', value: 'TrucCoDan' },
@@ -57,17 +58,19 @@ module.exports = {
     if (interaction.options.getSubcommand() === 'view') {
       const catalog = await getShopCatalog();
       const items = catalog.map(item =>
-        `**${item.name}** — **${formatNumber(item.unitPrice)}** Bạc/món\n` +
+        `**${String(item.name).slice(0, 100)}** — **${formatNumber(item.unitPrice)}** Bạc/món\n` +
         `  • Khan hiếm: ${item.scarcityMultiplier >= 1.5 ? 'Cao' : item.scarcityMultiplier >= 0.9 ? 'Vừa' : 'Thấp'}` +
         ` • Đang lưu thông: ${formatNumber(item.stock)} / mục tiêu ${formatNumber(item.targetStock)}`
-      ).join('\n\n');
-      const embed = createTuTienEmbed(player.realm_id)
-        .setTitle('🏪 Tiên Gia Bách Hóa • Đan Dược & Linh Kim')
-        .setDescription(
-          `*Giá tự điều chỉnh theo bạc bình quân mỗi tu sĩ và lượng vật phẩm đang lưu thông toàn server.*\n\n${items}`
-        )
-        .setFooter({ text: 'Giá được tính lại khi xem và mua; tối đa 100 món mỗi giao dịch.' });
-      return interaction.reply({ embeds: [embed] });
+      );
+      const description =
+        `*Giá tự điều chỉnh theo bạc bình quân mỗi tu sĩ và lượng vật phẩm đang lưu thông toàn server.*\n\n` +
+        `${items.join('\n\n')}`;
+      const embeds = createTextEmbedPages(description, {
+        title: '🏪 Tiên Gia Bách Hóa • Đan Dược & Linh Kim',
+        realmId: player.realm_id,
+        footer: 'Giá được tính lại khi xem và mua; tối đa 100 món mỗi giao dịch.'
+      });
+      return replyWithEmbedPages(interaction, embeds, { customIdPrefix: 'shop_page' });
     }
 
     const itemKey = interaction.options.getString('item');

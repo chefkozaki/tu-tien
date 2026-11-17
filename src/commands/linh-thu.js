@@ -11,6 +11,7 @@ const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
 const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -66,22 +67,21 @@ module.exports = {
       const petGroups = groupDuplicateItems(pets, [
         'name', 'element', 'is_mythic', 'star', 'hp', 'atk', 'def', 'speed', 'crit', 'effect_desc', 'image_url'
       ]);
-      const listText = petGroups.map(({ item: p, items }) => {
+      const listEntries = petGroups.map(({ item: p, items }) => {
         const ids = items.map(item => `#${item.id}`).join(', ');
         const equippedSlots = items.filter(item => item.is_equipped).map(item => item.slot).join(', ');
-        return `**${ids} - ${p.name}** [${p.element}] (${p.star}⭐) ×${items.length} ${equippedSlots ? `👉 *(Đang Trang Bị Ô ${equippedSlots})*` : ''}\n` +
+        return `**${ids} - ${String(p.name).slice(0, 100)}** [${String(p.element).slice(0, 30)}] (${p.star}⭐) ×${items.length} ${equippedSlots ? `👉 *(Đang Trang Bị Ô ${equippedSlots})*` : ''}\n` +
           `  • HP: +${p.hp} | Công: +${p.atk} | Thủ: +${p.def} | Tốc: +${p.speed}\n` +
-          `  • *Hiệu ứng:* ${p.effect_desc}`;
-      }).join('\n\n');
+          `  • *Hiệu ứng:* ${String(p.effect_desc).slice(0, 300)}`;
+      });
 
-      const embed = createTuTienEmbed(player.realm_id)
-        .setTitle(`🐾 Trân Thú Uyển • Linh Thú Của ${player.dao_hieu || player.username}`)
-        .setDescription(
-          `• **Trạng Thái Trận Pháp:** ${resonance.active ? `🔥 **${resonance.name}**\n  *(${resonance.desc})*` : `*${resonance.message}*`}\n\n` +
-          `📜 **Danh Sách Linh Thú:**\n\n${listText}`
-        );
-
-      return interaction.reply({ embeds: [embed] });
+      const description =
+        `• **Trạng Thái Trận Pháp:** ${resonance.active ? `🔥 **${resonance.name}**\n  *(${String(resonance.desc).slice(0, 300)})*` : `*${String(resonance.message).slice(0, 300)}*`}\n\n` +
+        `📜 **Danh Sách Linh Thú:**\n\n${listEntries.join('\n\n')}`;
+      return replyWithEmbedPages(interaction, createTextEmbedPages(description, {
+        title: `🐾 Trân Thú Uyển • Linh Thú Của ${player.dao_hieu || player.username}`,
+        realmId: player.realm_id
+      }), { customIdPrefix: 'pets_page' });
     }
 
     // 2. Trang Bị

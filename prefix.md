@@ -21,6 +21,7 @@ Sau khi đổi prefix, thay `a` trong các ví dụ bằng prefix mới.
 - Lệnh prefix hoạt động trong máy chủ, không phải tin nhắn riêng với bot. Mỗi lệnh có cooldown 10 giây dùng chung với slash command.
 - Mọi phản hồi từ lệnh prefix đều được gửi trực tiếp vào kênh đã nhập lệnh; bot không gửi kết quả prefix qua tin nhắn riêng.
 - Nếu một lệnh trả về nút hoặc menu, hãy bấm/chọn trực tiếp trên tin nhắn bot.
+- Chỉ máy chủ đã được chủ bot xác minh mới dùng được lệnh; chủ bot có thể chạy `/verify`, `averify` hoặc `a verify` trong máy chủ cần cấp quyền.
 
 ## Quản lý Prefix
 
@@ -56,10 +57,13 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 |---|---|
 | `start` | `astart dao_hieu:"Thanh Vân"` — tạo nhân vật mới; `dao_hieu` là bắt buộc. |
 | `profile` | `aprofile` xem hồ sơ của mình; `aprofile user:@Tên` xem hồ sơ người khác. |
+| `verify` | `/verify`, `averify` hoặc `a verify` xác minh máy chủ hiện tại; chỉ ID chủ bot trong `BOT_OWNER_ID` dùng được lệnh này. |
 | `inv` | `ainv` xem Ngân Lượng, Linh Lực, Linh Kim và số lượng tài nguyên. Hiển thị ID vật phẩm để dùng ở lệnh `bag use`. |
 | `bag` | `abag view` xem túi; `abag use item_id:123` dùng đan dược theo ID lấy từ `ainv`. |
+| `code` | `acode <mã>` đổi mã quà tặng còn hạn; mỗi tài khoản chỉ đổi mỗi mã một lần. |
 | `train` | `atrain` đả tọa, hấp thụ Linh Lực. |
 | `break` | `abreak` đột phá đại cảnh giới khi đủ điều kiện. |
+| `tam-ma` | `a tam-ma` khiêu chiến Ải Tâm Ma khi đạt Linh Tá Cấp 10; chiến thắng để mở điều kiện đột phá lên Linh Tướng. Nếu thất bại, có thể chuẩn bị thêm rồi thử lại. |
 | `afk` | `aafk` bật/tắt trạng thái AFK của Động Phủ. |
 | `rank` | `arank type:tu_vi` xem bảng xếp hạng. `type` nhận một trong: `tu_vi`, `than_dien`, `phu_ho`, `pvp`, `tower`. |
 | `help` | `ahelp` xem cẩm nang trong bot. |
@@ -75,7 +79,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `base forge` | Rèn Linh Khí qua menu tương tác. |
 | `wish view` | Xem banner và tiến trình bảo hiểm; `banner` tùy chọn, nhận `weapon`, `pet`, `helper`, `standard`. Ví dụ `awish view banner:pet`. |
 | `wish pull` | Cầu Nguyện; cần `banner` (`weapon`, `pet`, `helper`, `standard`) và `count` (`1` hoặc `10`). Giá: 2.000 Bạc/lượt hoặc 18.000 Bạc/10 lượt. 5★ cơ bản 0,6%, soft pity từ lượt 74, hard pity lượt 90; 4★ cơ bản 5,1%, bảo hiểm 4★+ ở lượt 10. Ví dụ `awish pull banner:weapon count:10`. |
-| `event` | `aevent` thám hiểm Bí Cảnh; chọn hành động trên nút trong tin nhắn kết quả. |
+| `event` | `aevent` thám hiểm Bí Cảnh, tối đa một lần mỗi 24 giờ; chọn hành động trên nút trong tin nhắn kết quả. |
 
 ### Trang bị và chiến đấu
 
@@ -93,7 +97,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `helpers rest` | Thu hồi Trợ Thủ đang xuất chiến. |
 | `skills` | `askills` xem/quản lý Công Pháp và Thần Thông qua menu. |
 | `duel target:@Tên` | Khiêu chiến người chơi khác. Có cooldown riêng 60 giây cho mỗi người dùng, dùng chung giữa slash và prefix. Có thể thay mention bằng Discord user ID; không thể tự đấu hoặc đấu với bot. |
-| `tower` | `atower` khiêu chiến Thí Luyện Tháp. |
+| `tower` | `atower` khiêu chiến Thí Luyện Tháp. Mỗi chặng 10 tầng thưởng tổng Linh Kim bằng đúng lượng cần cho lần đột phá phẩm chất đó; lượng thưởng mỗi tầng được chia đều. |
 | `boss info` | Xem Boss Thế Giới, lượng máu và bảng sát thương. |
 | `boss atk` | Tấn công Boss Thế Giới. |
 | `boss channel` | Xem kênh thông báo Boss hiện tại. |

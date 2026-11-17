@@ -4,6 +4,7 @@ const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
 const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -49,20 +50,20 @@ module.exports = {
         const typeBadge = h.type === 'combat' ? '⚔️ [Chiến Đấu - Hộ Đạo Giả]' : '🌾 [Sinh Hoạt - Đạo Đồng]';
         const ids = items.map(item => `#${item.id}`).join(', ');
         const equippedIds = items.filter(item => item.is_equipped).map(item => `#${item.id}`).join(', ');
-        return `**${ids} - ${h.name}** ${typeBadge} [Bậc ${h.tier}] ×${items.length} ${equippedIds ? `👉 *(Đang Xuất Chiến: ${equippedIds})*` : ''}\n` +
-               `  • *Hiệu quả:* ${h.effect_desc}`;
-      }).join('\n\n');
+        return `**${ids} - ${String(h.name).slice(0, 100)}** ${typeBadge} [Bậc ${h.tier}] ×${items.length} ${equippedIds ? `👉 *(Đang Xuất Chiến: ${equippedIds})*` : ''}\n` +
+               `  • *Hiệu quả:* ${String(h.effect_desc).slice(0, 300)}`;
+      });
 
-      const embed = createTuTienEmbed(player.realm_id)
-        .setTitle(`🤝 Đạo Hữu Các • Trợ Thủ Của ${player.dao_hieu || player.username}`)
-        .setDescription(
+      const description =
           `*Người chơi chỉ được trang bị tối đa **1 Trợ Thủ** cùng lúc.*\n` +
           `• **Chiến Đấu:** Trực tiếp tham chiến gây sát thương, đỡ đòn hoặc hồi máu.\n` +
           `• **Sinh Hoạt:** Tăng +30% tài nguyên AFK khi trạng thái AFK đang bật, tăng tỷ lệ luyện đan và giảm giá Chợ Đen.\n\n` +
-          listText
-        );
+          listText.join('\n\n');
 
-      return interaction.reply({ embeds: [embed] });
+      return replyWithEmbedPages(interaction, createTextEmbedPages(description, {
+        title: `🤝 Đạo Hữu Các • Trợ Thủ Của ${player.dao_hieu || player.username}`,
+        realmId: player.realm_id
+      }), { customIdPrefix: 'helpers_page' });
     }
 
     // 2. Xuất Chiến

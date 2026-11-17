@@ -80,6 +80,17 @@ async function initDatabase() {
       last_cultivate_at INTEGER DEFAULT 0
     );`,
 
+    `CREATE TABLE IF NOT EXISTS tutien_guild_whitelist (
+      guild_id TEXT PRIMARY KEY,
+      verified_by TEXT NOT NULL,
+      verified_at INTEGER NOT NULL
+    );`,
+
+    `CREATE TABLE IF NOT EXISTS tutien_event_cooldowns (
+      user_id TEXT PRIMARY KEY,
+      last_event_at INTEGER NOT NULL
+    );`,
+
     `CREATE TABLE IF NOT EXISTS tutien_inventory (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -87,6 +98,25 @@ async function initDatabase() {
       item_key TEXT NOT NULL,
       item_name TEXT NOT NULL,
       amount INTEGER NOT NULL DEFAULT 0
+    );`,
+
+    `CREATE TABLE IF NOT EXISTS tutien_gift_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      item_type TEXT NOT NULL,
+      item_key TEXT NOT NULL,
+      item_name TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );`,
+
+    `CREATE TABLE IF NOT EXISTS tutien_gift_code_claims (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      gift_code_id INTEGER NOT NULL,
+      user_id TEXT NOT NULL,
+      redeemed_at INTEGER NOT NULL,
+      UNIQUE (gift_code_id, user_id)
     );`,
 
     `CREATE TABLE IF NOT EXISTS tutien_pets (

@@ -356,7 +356,7 @@ async function getSectCombatPower(tx, sectId) {
   const members = memberResult.rows;
   if (members.length === 0) return 0;
 
-  const [weaponResult, petResult, helperResult, resonanceResult] = await Promise.all([
+  const [weaponResult, petResult, helperResult, skillResult, resonanceResult] = await Promise.all([
     tx.execute({
       sql: `SELECT w.* FROM tutien_weapons w
         JOIN tutien_players p ON p.user_id = w.user_id
@@ -376,6 +376,13 @@ async function getSectCombatPower(tx, sectId) {
         WHERE p.sect_id = ? AND h.is_equipped = 1`,
       args: [sectId]
     }),
+    tx.execute({
+      sql: `SELECT s.* FROM tutien_skills s
+        JOIN tutien_players p ON p.user_id = s.user_id
+        WHERE p.sect_id = ? AND s.is_equipped = 1
+        ORDER BY s.slot ASC, s.id ASC`,
+      args: [sectId]
+    }),
     tx.execute('SELECT * FROM tutien_pet_resonance WHERE id = 1')
   ]);
   const byUser = rows => rows.reduce((grouped, row) => {
@@ -386,6 +393,7 @@ async function getSectCombatPower(tx, sectId) {
   const weapons = byUser(weaponResult.rows);
   const pets = byUser(petResult.rows);
   const helpers = byUser(helperResult.rows);
+  const skills = byUser(skillResult.rows);
   const resonance = resonanceResult.rows[0];
   const petResonance = resonance ? {
     name: resonance.name,
@@ -407,10 +415,14 @@ async function getSectCombatPower(tx, sectId) {
       (weapons.get(member.user_id) || [])[0] || null,
       pets.get(member.user_id) || [],
       (helpers.get(member.user_id) || [])[0] || null,
-      [],
+      skills.get(member.user_id) || [],
       petResonance
     );
-    return total + stats.maxHp + stats.atk + stats.def + stats.speed;
+    const equippedSkills = skills.get(member.user_id) || [];
+    const averageSkillBonus = equippedSkills.length
+      ? equippedSkills.reduce((sum, skill) => sum + Number(skill.damage_mult || 1), 0) / equippedSkills.length - 1
+      : 0;
+    return total + stats.maxHp + stats.atk * (1 + averageSkillBonus * 0.4) + stats.def + stats.speed;
   }, 0);
 }
 
@@ -510,43 +522,64 @@ async function captureMine(userId, mineId) {
 
 async function claimMineTax(userId, mineId) {
   const db = getDb();
-  const player = await getPlayer(userId);
-  if (!player.sect_id) return { success: false, message: 'Đạo hữu không ở trong Tông Môn nào!' };
+  return withTransaction(db, async tx => {
+    try {
+      const playerResult = await tx.execute({
+        sql: 'SELECT sect_id FROM tutien_players WHERE user_id = ?',
+        args: [userId]
+      });
+      const player = playerResult.rows[0];
+      if (!player?.sect_id) {
+        await tx.rollback();
+        return { success: false, message: 'Đạo hữu không ở trong Tông Môn nào!' };
+      }
 
-  const mineRes = await db.execute({
-    sql: 'SELECT * FROM tutien_mines WHERE id = ?',
-    args: [mineId]
+      const mineResult = await tx.execute({
+        sql: 'SELECT * FROM tutien_mines WHERE id = ?',
+        args: [mineId]
+      });
+      const mine = mineResult.rows[0];
+      if (!mine || String(mine.occupying_sect_id) !== String(player.sect_id)) {
+        await tx.rollback();
+        return { success: false, message: 'Tông Môn của đạo hữu không chiếm giữ mỏ này!' };
+      }
+
+      const now = Date.now();
+      const previousCollectedAt = Number(mine.last_tax_collected || 0);
+      const hoursPassed = Math.floor((now - previousCollectedAt) / (3600 * 1000));
+      if (hoursPassed < 1) {
+        await tx.rollback();
+        return { success: false, message: 'Mỏ khoáng sản chưa tích đủ tài nguyên mới! Hãy đợi thêm.' };
+      }
+
+      const taxSilver = Math.floor((mine.daily_silver / 24) * hoursPassed);
+      const taxGold = Math.max(1, Math.floor((mine.daily_spirit_gold / 24) * hoursPassed));
+      const claimResult = await tx.execute({
+        sql: `UPDATE tutien_mines SET last_tax_collected = ?
+          WHERE id = ? AND occupying_sect_id = ? AND last_tax_collected = ?`,
+        args: [now, mineId, player.sect_id, previousCollectedAt]
+      });
+      if (claimResult.rowsAffected !== 1) {
+        await tx.rollback();
+        return { success: false, message: 'Thuế mỏ vừa được một thành viên khác thu; hãy làm mới trạng thái mỏ!' };
+      }
+
+      await tx.execute({
+        sql: 'UPDATE tutien_sects SET fund_silver = fund_silver + ?, fund_spirit_gold = fund_spirit_gold + ? WHERE id = ?',
+        args: [taxSilver, taxGold, player.sect_id]
+      });
+      await tx.commit();
+      return {
+        success: true,
+        taxSilver,
+        taxGold,
+        message: `Đã thu thuế mỏ: Nhập quỹ Tông Môn **+${taxSilver.toLocaleString()} Ngân lượng** và **+${taxGold} Linh Kim (${mine.tier_name})**!`
+      };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
   });
-  const mine = mineRes.rows[0];
-  if (!mine || mine.occupying_sect_id !== player.sect_id) {
-    return { success: false, message: 'Tông Môn của đạo hữu không chiếm giữ mỏ này!' };
-  }
-
-  const now = Date.now();
-  const hoursPassed = Math.floor((now - Number(mine.last_tax_collected || 0)) / (3600 * 1000));
-  if (hoursPassed < 1) {
-    return { success: false, message: 'Mỏ khoáng sản chưa tích đủ tài nguyên mới! Hãy đợi thêm.' };
-  }
-
-  const taxSilver = Math.floor((mine.daily_silver / 24) * hoursPassed);
-  const taxGold = Math.max(1, Math.floor((mine.daily_spirit_gold / 24) * hoursPassed));
-
-  await db.execute({
-    sql: 'UPDATE tutien_sects SET fund_silver = fund_silver + ?, fund_spirit_gold = fund_spirit_gold + ? WHERE id = ?',
-    args: [taxSilver, taxGold, player.sect_id]
-  });
-
-  await db.execute({
-    sql: 'UPDATE tutien_mines SET last_tax_collected = ? WHERE id = ?',
-    args: [now, mineId]
-  });
-
-  return {
-    success: true,
-    taxSilver,
-    taxGold,
-    message: `Đã thu thuế mỏ: Nhập quỹ Tông Môn **+${taxSilver.toLocaleString()} Ngân lượng** và **+${taxGold} Linh Kim (${mine.tier_name})**!`
-  };
 }
 
 module.exports = {

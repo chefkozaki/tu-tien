@@ -3,6 +3,7 @@ const { getPlayer, addSilver } = require('./playerService');
 const { getEquippedWeapon } = require('./weaponService');
 const { getEquippedPets } = require('./petService');
 const { getEquippedHelper } = require('./helperService');
+const { getEquippedSkills } = require('./skillService');
 const { getPetResonance } = require('./petConfigService');
 const { calculateCombatStats, simulateCombat } = require('../utils/combat');
 
@@ -20,10 +21,11 @@ async function duelPlayers(challengerId, targetId) {
   const [w1, w2] = await Promise.all([getEquippedWeapon(challengerId), getEquippedWeapon(targetId)]);
   const [pets1, pets2] = await Promise.all([getEquippedPets(challengerId), getEquippedPets(targetId)]);
   const [h1, h2] = await Promise.all([getEquippedHelper(challengerId), getEquippedHelper(targetId)]);
+  const [skills1, skills2] = await Promise.all([getEquippedSkills(challengerId), getEquippedSkills(targetId)]);
 
   const petResonance = await getPetResonance();
-  const p1Stats = calculateCombatStats(p1, w1, pets1, h1, [], petResonance);
-  const p2Stats = calculateCombatStats(p2, w2, pets2, h2, [], petResonance);
+  const p1Stats = calculateCombatStats(p1, w1, pets1, h1, skills1, petResonance);
+  const p2Stats = calculateCombatStats(p2, w2, pets2, h2, skills2, petResonance);
 
   const result = simulateCombat(p1Stats, p2Stats);
   const db = getDb();

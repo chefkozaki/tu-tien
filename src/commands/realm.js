@@ -1,13 +1,13 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPlayer } = require('../services/playerService');
-const { getRandomEvent } = require('../services/bicanhService');
+const { getRandomEvent, acquireEventCooldown } = require('../services/bicanhService');
 const { createTuTienEmbed, createErrorEmbed } = require('../utils/embedBuilder');
 const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('event')
-    .setDescription('Thám hiểm Bí Cảnh Thượng Cổ'),
+    .setDescription('Thám hiểm Bí Cảnh Thượng Cổ (mỗi 24 giờ)'),
 
   async execute(interaction) {
     const userId = interaction.user.id;
@@ -15,6 +15,15 @@ module.exports = {
     if (!player) {
       return interaction.reply({
         embeds: [createErrorEmbed('Chưa Tu Tiên', 'Hãy dùng `/start` trước!')],
+        ephemeral: true
+      });
+    }
+
+    const cooldown = await acquireEventCooldown(userId);
+    if (!cooldown.success) {
+      const remainingHours = Math.ceil(cooldown.remaining / (60 * 60 * 1000));
+      return interaction.reply({
+        embeds: [createErrorEmbed('Bí Cảnh Đang Hồi Phục', `Đạo hữu đã thám hiểm hôm nay. Hãy quay lại sau khoảng **${remainingHours} giờ**.`)],
         ephemeral: true
       });
     }

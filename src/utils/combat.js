@@ -20,7 +20,7 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
   let lifesteal = 0;
   let physResist = 0;
   let ccResist = 0;
-  let trueDamage = false;
+  const trueDamage = Boolean(race.talent?.trueDamage);
 
   // Race Passive Modifiers
   if (player.race === 'long_toc') {
@@ -35,8 +35,6 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
   } else if (player.race === 'ro_toc') {
     atk = Math.floor(atk * (1 + race.passive.atkBonus));
     ccResist += race.passive.ccResist;
-  } else if (player.race === 'ke_do_bo') {
-    trueDamage = true;
   }
 
   // Weapon Stats
@@ -182,7 +180,7 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20) {
   }
 
   const winner = a.hp > 0 && d.hp <= 0 ? a : (d.hp > 0 && a.hp <= 0 ? d : (a.hp >= d.hp ? a : d));
-  const isAttackerWin = winner.name === a.name;
+  const isAttackerWin = winner === a;
 
   logs.push(`\n🏆 **Kết Quả:** **${winner.name}** giành chiến thắng oanh liệt! (Sau ${Math.min(turn, maxTurns)} hiệp)`);
 

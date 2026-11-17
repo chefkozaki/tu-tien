@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { createTuTienEmbed } = require('../utils/embedBuilder');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -7,9 +7,7 @@ module.exports = {
     .setDescription('Cẩm nang toàn tập con đường Tu Tiên và danh sách lệnh slash'),
 
   async execute(interaction) {
-    const embed = createTuTienEmbed(0)
-      .setTitle('📖 Cẩm Nang Toàn Tập • Tu Tiên Vấn Đạo')
-      .setDescription(
+    const description =
         `Chào mừng đạo hữu đến với thế giới Tu Tiên RPG!\n` +
         `Dưới đây là cẩm nang chi tiết và các lệnh của hệ thống:\n\n` +
         `⚡ **LỆNH NHANH:**\n` +
@@ -18,6 +16,8 @@ module.exports = {
         `• Kết quả của lệnh prefix luôn gửi trong kênh đã nhập lệnh; lệnh slash vẫn giữ chế độ phản hồi riêng tư nếu được thiết lập.\n` +
         `• Dùng \`/inv\` hoặc \`ainv\` để xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên.\n` +
         `• Dùng đan dược bằng \`/bag use item_id:<ID>\` hoặc \`abag use <ID>\`; lấy ID trong \`/inv\`.\n` +
+        `• Đổi mã quà tặng bằng \`/code code:<mã>\` hoặc \`acode <mã>\`; mỗi mã chỉ đổi một lần và cần còn hạn.\n` +
+        `• Chỉ máy chủ nằm trong whitelist mới dùng được bot; chủ bot xác minh máy chủ bằng \`/verify\` hoặc \`averify\`.\n` +
         `• Đổi prefix bằng \`/prefix value:<prefix>\` hoặc \`aprefix <prefix>\`; cần quyền Quản lý Máy chủ.\n\n` +
         `• Quản lý lệnh theo kênh bằng \`adisable <lệnh>\` hoặc \`/adisable command:<lệnh>\`; dùng lại lệnh để bật lại, cần quyền Quản lý Máy chủ.\n\n` +
         `🥋 **1. CẢNH GIỚI & CẤP ĐỘ:**\n` +
@@ -54,15 +54,24 @@ module.exports = {
         `• \`/base\` - Tụ Linh Trận, Dược Viên, Lò Luyện Đan và Lò Rèn\n` +
         `• \`/pets\`, \`/weapons\`, \`/helpers\`, \`/skills\` - Quản lý trang bị và trợ thủ\n` +
         `• \`/wish\` - Cầu nguyện Linh Khí, Linh Thú và Trợ Thủ\n` +
-        `• \`/event\` - Thám hiểm Bí Cảnh Ngẫu Nhiên\n` +
-        `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi; \`/duel\` có cooldown riêng 60 giây mỗi người\n` +
+        `• \`/event\` - Thám hiểm Bí Cảnh Ngẫu Nhiên, mỗi 24 giờ một lần\n` +
+        `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi; mỗi chặng 10 tầng ở Tháp thưởng đủ Linh Kim cho lần đột phá phẩm chất tương ứng; \`/duel\` có cooldown riêng 60 giây mỗi người\n` +
         `• \`/boss channel channel:<#kênh>\` - Đặt kênh thông báo boss mới; dùng \`off\` để tắt (cần quyền Quản lý Máy chủ)\n` +
         `• \`/inv\`, \`/bag\` - Xem tài nguyên, Linh Kim và túi trữ vật\n` +
         `• \`/sect\`, \`/market\`, \`/rank\` - Tông môn, chợ và bảng xếp hạng\n` +
         `• \`/shop view\`, \`/shop buy\` - Mua Đan Dược và Linh Kim với giá động, áp dụng khan hiếm\n` +
-        `• \`/help\`, \`/prefix\`, \`/adisable\` - Hướng dẫn và quản lý prefix/lệnh theo kênh`
-      );
+        `• \`/code code:<mã>\` - Đổi mã quà tặng còn hạn (prefix: \`acode <mã>\`)\n` +
+        `• \`/verify\` - Chủ bot xác minh máy chủ vào whitelist\n` +
+        `• \`/help\`, \`/prefix\`, \`/adisable\` - Hướng dẫn và quản lý prefix/lệnh theo kênh`;
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    const embeds = createTextEmbedPages(description, {
+      title: '📖 Cẩm Nang Toàn Tập • Tu Tiên Vấn Đạo',
+      realmId: 0,
+      footer: 'Dùng nút Trước/Tiếp để xem toàn bộ cẩm nang'
+    });
+    return replyWithEmbedPages(interaction, embeds, {
+      ephemeral: true,
+      customIdPrefix: 'help_page'
+    });
   }
 };

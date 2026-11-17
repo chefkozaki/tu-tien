@@ -1,6 +1,38 @@
 const { getPlayer, addSilver, addXp } = require('./playerService');
 const { addItem } = require('./itemService');
 const { getDb } = require('../config/database');
+const { withTransaction } = require('../utils/databaseTransaction');
+
+const EVENT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+async function acquireEventCooldown(userId, now = Date.now()) {
+  const db = getDb();
+  return withTransaction(db, async tx => {
+    try {
+      const result = await tx.execute({
+        sql: 'SELECT last_event_at FROM tutien_event_cooldowns WHERE user_id = ?',
+        args: [userId]
+      });
+      const lastEventAt = Number(result.rows[0]?.last_event_at || 0);
+      const remaining = EVENT_COOLDOWN_MS - (now - lastEventAt);
+      if (remaining > 0) {
+        await tx.rollback();
+        return { success: false, remaining };
+      }
+
+      await tx.execute({
+        sql: `INSERT INTO tutien_event_cooldowns (user_id, last_event_at) VALUES (?, ?)
+          ON CONFLICT(user_id) DO UPDATE SET last_event_at = excluded.last_event_at`,
+        args: [userId, now]
+      });
+      await tx.commit();
+      return { success: true, remaining: 0 };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
+  });
+}
 
 const EVENTS = [
   {
@@ -127,5 +159,6 @@ function getRandomEvent() {
 
 module.exports = {
   EVENTS,
-  getRandomEvent
+  getRandomEvent,
+  acquireEventCooldown
 };

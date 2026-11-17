@@ -19,8 +19,8 @@ function createTuTienEmbed(realmId = 0) {
 function createErrorEmbed(title, description) {
   return new EmbedBuilder()
     .setColor('#e74c3c')
-    .setTitle(`❌ ${title}`)
-    .setDescription(description)
+    .setTitle(`❌ ${String(title || 'Lỗi').slice(0, 252)}`)
+    .setDescription(String(description ?? '').slice(0, 4000))
     .setTimestamp();
 }
 
@@ -31,8 +31,8 @@ function createSuccessEmbed(title, description, realmId = 0) {
   const realm = REALMS[realmId] || REALMS[0];
   return new EmbedBuilder()
     .setColor(realm.color || '#2ecc71')
-    .setTitle(`✨ ${title}`)
-    .setDescription(description)
+    .setTitle(`✨ ${String(title || 'Thành công').slice(0, 252)}`)
+    .setDescription(String(description ?? '').slice(0, 4000))
     .setTimestamp();
 }
 

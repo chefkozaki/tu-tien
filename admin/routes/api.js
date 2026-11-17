@@ -423,6 +423,72 @@ router.delete('/players/:id', async (req, res) => {
 });
 
 // ==========================================
+// GIFT CODE MANAGEMENT
+// ==========================================
+router.get('/gift-codes', async (req, res) => {
+  try {
+    const db = getDb();
+    const result = await db.execute(`
+      SELECT g.*, COUNT(c.id) AS claim_count
+      FROM tutien_gift_codes g
+      LEFT JOIN tutien_gift_code_claims c ON c.gift_code_id = g.id
+      GROUP BY g.id
+      ORDER BY g.created_at DESC
+      LIMIT 200
+    `);
+    res.json({ success: true, data: sanitizeRows(result.rows) });
+  } catch (error) {
+    console.error('API GET /gift-codes error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/gift-codes', async (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const code = typeof body.code === 'string' ? body.code.trim().toUpperCase() : '';
+    const item_type = typeof body.item_type === 'string' ? body.item_type.trim() : '';
+    const item_key = typeof body.item_key === 'string' ? body.item_key.trim() : '';
+    const item_name = typeof body.item_name === 'string' ? body.item_name.trim() : '';
+    const amount = Number(body.amount);
+    const expires_at = Number(body.expires_at);
+    const allowedItemTypes = new Set(['spirit_gold', 'pill', 'herb', 'seed', 'material', 'special']);
+
+    if (!/^[A-Z0-9_-]{3,64}$/.test(code)) {
+      return res.status(400).json({ success: false, error: 'Mã chỉ gồm 3-64 ký tự chữ, số, gạch ngang hoặc gạch dưới.' });
+    }
+    if (!allowedItemTypes.has(item_type)
+      || !item_key || item_key.length > 100
+      || !item_name || item_name.length > 100) {
+      return res.status(400).json({ success: false, error: 'Thông tin quà tặng không hợp lệ; hãy chọn loại vật phẩm hỗ trợ, mã và tên tối đa 100 ký tự.' });
+    }
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 2147483647) {
+      return res.status(400).json({ success: false, error: 'Số lượng phải là số nguyên từ 1 đến 2.147.483.647.' });
+    }
+    if (!Number.isSafeInteger(expires_at) || expires_at <= Date.now()) {
+      return res.status(400).json({ success: false, error: 'Thời điểm hết hạn phải ở tương lai.' });
+    }
+
+    const db = getDb();
+    const result = await db.execute({
+      sql: `INSERT INTO tutien_gift_codes
+        (code, item_type, item_key, item_name, amount, expires_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (code) DO NOTHING`,
+      args: [code, item_type, item_key, item_name, amount, expires_at, Date.now()]
+    });
+    if (result.rowsAffected !== 1) {
+      return res.status(409).json({ success: false, error: 'Mã quà tặng này đã tồn tại.' });
+    }
+
+    res.status(201).json({ success: true, message: `Đã tạo mã quà tặng ${code}.` });
+  } catch (error) {
+    console.error('API POST /gift-codes error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==========================================
 // 3. INVENTORY & ITEMS MANAGEMENT
 // ==========================================
 router.get('/inventory', async (req, res) => {
@@ -1710,6 +1776,7 @@ router.post('/reset-game-data', async (req, res) => {
   try {
     const db = getDb();
     const resetStatements = [
+      { table: 'tutien_gift_code_claims', sql: 'DELETE FROM tutien_gift_code_claims' },
       { table: 'tutien_inventory', sql: 'DELETE FROM tutien_inventory' },
       { table: 'tutien_pets', sql: 'DELETE FROM tutien_pets' },
       { table: 'tutien_weapons', sql: 'DELETE FROM tutien_weapons' },

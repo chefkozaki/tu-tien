@@ -139,6 +139,8 @@ async function loadTabData(tabId) {
       return loadPlayers();
     case 'tab-inventory':
       return loadInventory();
+    case 'tab-gift-codes':
+      return loadGiftCodes();
     case 'tab-pets':
       return loadPets();
     case 'tab-weapons':
@@ -253,6 +255,13 @@ function populatePresetDropdowns() {
   // 1. Item Presets
   const itemSelect = document.getElementById('give-item-preset');
   const airdropSelect = document.getElementById('airdrop-preset-select');
+  const giftCodeSelect = document.getElementById('gift-code-preset');
+  if (giftCodeSelect) {
+    giftCodeSelect.innerHTML = '<option value="">-- Chọn mẫu hoặc tự điền bên dưới --</option>' +
+      state.itemPresets.map((p, idx) =>
+        `<option value="${idx}">[${escapeHtml(p.category)}] ${escapeHtml(p.item_name)}</option>`
+      ).join('');
+  }
   if (itemSelect) {
     itemSelect.innerHTML = '<option value="">-- Tự điền thông số hoặc chọn mẫu --</option>' +
       state.itemPresets.map((p, idx) => `<option value="${idx}">[${p.category}] ${p.item_name} (${p.desc})</option>`).join('');
@@ -1048,6 +1057,81 @@ async function loadInventory() {
 function openGiveItemModal() {
   document.getElementById('form-give-item').reset();
   openModal('modal-give-item');
+}
+
+function applyGiftCodePreset(index) {
+  if (index === '') return;
+  const preset = state.itemPresets[Number(index)];
+  if (!preset) return;
+  document.getElementById('gift-code-item-type').value = preset.item_type;
+  document.getElementById('gift-code-item-key').value = preset.item_key;
+  document.getElementById('gift-code-item-name').value = preset.item_name;
+  document.getElementById('gift-code-amount').value = preset.defaultAmount;
+}
+
+async function loadGiftCodes() {
+  const tbody = document.getElementById('gift-codes-table-body');
+  if (!tbody) return;
+  try {
+    const response = await fetch('/api/gift-codes').then(r => r.json());
+    if (!response.success) throw new Error(response.error || 'Không thể tải mã quà tặng.');
+    if (!response.data.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">Chưa có mã quà tặng nào.</td></tr>';
+      return;
+    }
+
+    const now = Date.now();
+    tbody.innerHTML = response.data.map(giftCode => {
+      const expired = Number(giftCode.expires_at) <= now;
+      return `
+        <tr>
+          <td class="font-mono font-semibold text-amber-300">${escapeHtml(giftCode.code)}</td>
+          <td>${escapeHtml(giftCode.item_name)} <span class="text-slate-400">×${Number(giftCode.amount).toLocaleString()}</span></td>
+          <td class="text-xs text-slate-300">${new Date(Number(giftCode.expires_at)).toLocaleString('vi-VN')}</td>
+          <td class="text-center">${Number(giftCode.claim_count).toLocaleString()}</td>
+          <td><span class="${expired ? 'text-red-400' : 'text-emerald-400'}">${expired ? 'Hết hạn' : 'Còn hiệu lực'}</span></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Lỗi tải mã quà tặng:', error);
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-400">Không thể tải danh sách mã quà tặng.</td></tr>';
+  }
+}
+
+async function handleGiftCodeSubmit(event) {
+  event.preventDefault();
+  const expiresAt = Date.parse(document.getElementById('gift-code-expiry').value);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    showToast('Thời điểm hết hạn phải ở tương lai.', 'error');
+    return;
+  }
+
+  const payload = {
+    code: document.getElementById('gift-code-value').value.trim(),
+    item_type: document.getElementById('gift-code-item-type').value.trim(),
+    item_key: document.getElementById('gift-code-item-key').value.trim(),
+    item_name: document.getElementById('gift-code-item-name').value.trim(),
+    amount: Number(document.getElementById('gift-code-amount').value),
+    expires_at: expiresAt
+  };
+  try {
+    const response = await fetch('/api/gift-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+    if (!response.success) {
+      showToast(response.error || 'Không thể tạo mã quà tặng.', 'error');
+      return;
+    }
+    showToast(response.message, 'success');
+    document.getElementById('form-gift-code').reset();
+    document.getElementById('gift-code-item-type').value = 'pill';
+    await loadGiftCodes();
+  } catch (error) {
+    showToast('Lỗi máy chủ khi tạo mã quà tặng: ' + error.message, 'error');
+  }
 }
 
 async function handleGiveItemSubmit(e) {

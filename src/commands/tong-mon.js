@@ -15,6 +15,7 @@ const {
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber, getRealmDisplay } = require('../utils/formatters');
+const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -206,23 +207,16 @@ module.exports = {
         });
       }
 
-      const displayedApplications = applications.slice(0, 25);
-      const applicationList = displayedApplications.map(application =>
-        `**Đơn #${application.id}** — <@${application.applicant_id}> (${application.dao_hieu || application.username})\n` +
+      const applicationList = applications.map(application =>
+        `**Đơn #${application.id}** — <@${application.applicant_id}> (${String(application.dao_hieu || application.username).slice(0, 100)})\n` +
         `Gửi lúc: <t:${Math.floor(Number(application.created_at) / 1000)}:R>`
-      ).join('\n\n');
-      const moreText = applications.length > displayedApplications.length
-        ? `\n\n*Còn ${applications.length - displayedApplications.length} đơn chưa hiển thị.*`
-        : '';
-      return interaction.reply({
-        embeds: [createTuTienEmbed(player.realm_id)
-          .setTitle(`📨 Đơn Xin Gia Nhập • ${applications[0].sect_name}`)
-          .setDescription(
-            `${applicationList}${moreText}\n\n` +
-            'Duyệt bằng `/sect approve application-id:<mã đơn>` hoặc từ chối bằng `/sect reject application-id:<mã đơn>`.'
-          )],
-        ephemeral: true
-      });
+      );
+      const description = `${applicationList.join('\n\n')}\n\n` +
+        'Duyệt bằng `/sect approve application-id:<mã đơn>` hoặc từ chối bằng `/sect reject application-id:<mã đơn>`.';
+      return replyWithEmbedPages(interaction, createTextEmbedPages(description, {
+        title: `📨 Đơn Xin Gia Nhập • ${applications[0].sect_name}`,
+        realmId: player.realm_id
+      }), { ephemeral: true, customIdPrefix: 'sect_applications_page' });
     }
 
     if (sub === 'approve' || sub === 'reject') {
@@ -261,22 +255,17 @@ module.exports = {
       }
 
       const members = await getSectMembers(sect.id);
-      const displayedMembers = members.slice(0, 25);
-      const memberList = displayedMembers.map((member, index) =>
+      const memberList = members.map((member, index) =>
         `**${index + 1}.** <@${member.user_id}> — ${member.sect_role || 'Đệ Tử'}\n` +
         `　${getRealmDisplay(member.realm_id, member.level)} • Cống hiến: ${formatNumber(member.sect_contribution || 0)}`
-      ).join('\n');
-      const remainingCount = members.length - displayedMembers.length;
-      const embed = createTuTienEmbed(player.realm_id)
-        .setTitle(`👥 Thành Viên • ${sect.name} (${members.length})`)
-        .setDescription(
-          memberList || '*Tông Môn hiện chưa có thành viên.*' +
-          (remainingCount > 0 ? `\n\n*Còn ${remainingCount} thành viên chưa hiển thị.*` : '')
-        );
-      if (remainingCount > 0) {
-        embed.setFooter({ text: `Đang hiển thị ${displayedMembers.length}/${members.length} thành viên` });
-      }
-      return interaction.reply({ embeds: [embed] });
+      );
+      return replyWithEmbedPages(interaction, createTextEmbedPages(
+        memberList.length ? memberList.join('\n') : '*Tông Môn hiện chưa có thành viên.*',
+        {
+          title: `👥 Thành Viên • ${sect.name} (${members.length})`,
+          realmId: player.realm_id
+        }
+      ), { customIdPrefix: 'sect_members_page' });
     }
 
     if (sub === 'recruit') {
@@ -330,20 +319,18 @@ module.exports = {
 
       if (action === 'view') {
         const mines = await getMines();
-        const mineList = mines.map(m => 
-          `**#${m.id} - ${m.name}** [Phẩm ${m.tier_name}]\n` +
-          `  • Chiếm giữ: **${m.sect_name ? `🏯 ${m.sect_name}` : '⚪ Vô Chủ (Chưa chiếm)'}**\n` +
+        const mineList = mines.map(m =>
+          `**#${m.id} - ${String(m.name).slice(0, 100)}** [Phẩm ${String(m.tier_name).slice(0, 30)}]\n` +
+          `  • Chiếm giữ: **${m.sect_name ? `🏯 ${String(m.sect_name).slice(0, 100)}` : '⚪ Vô Chủ (Chưa chiếm)'}**\n` +
           `  • Sản lượng mỗi ngày: +${formatNumber(m.daily_silver)} Bạc & +${m.daily_spirit_gold} Linh Kim (${m.tier_name})`
-        ).join('\n\n');
-
-        const embed = createTuTienEmbed(player.realm_id)
-          .setTitle('🗺️ Chiến Trường Linh Mạch Thế Giới')
-          .setDescription(
-            `Các Tông Môn đánh chiếm mỏ khoáng sản để nhận thuế tài nguyên mỗi ngày!\n\n${mineList}\n\n` +
-            `👉 Dùng \`/sect mine action:<action> mine-id:<id>\` để phát động công chiếm!`
-          );
-
-        return interaction.reply({ embeds: [embed] });
+        );
+        const description =
+          `Các Tông Môn đánh chiếm mỏ khoáng sản để nhận thuế tài nguyên mỗi ngày!\n\n${mineList.join('\n\n')}\n\n` +
+          `👉 Dùng \`/sect mine action:<action> mine-id:<id>\` để phát động công chiếm!`;
+        return replyWithEmbedPages(interaction, createTextEmbedPages(description, {
+          title: '🗺️ Chiến Trường Linh Mạch Thế Giới',
+          realmId: player.realm_id
+        }), { customIdPrefix: 'sect_mines_page' });
       }
 
       if (action === 'capture') {
