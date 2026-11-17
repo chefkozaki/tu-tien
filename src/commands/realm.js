@@ -2,6 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = re
 const { getPlayer } = require('../services/playerService');
 const { getRandomEvent } = require('../services/bicanhService');
 const { createTuTienEmbed, createErrorEmbed } = require('../utils/embedBuilder');
+const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -43,18 +44,29 @@ module.exports = {
       time: 60000
     });
 
-    collector.on('collect', async i => {
+    onComponentCollect(collector, async i => {
       const optIndex = parseInt(i.customId.replace('event_opt_', ''), 10);
       const chosenOption = event.options[optIndex];
 
       if (chosenOption && chosenOption.action) {
-        const result = await chosenOption.action(userId, player);
-        const resultEmbed = createTuTienEmbed(player.realm_id)
-          .setTitle(`🔮 Kết Cục Kỳ Ngộ: ${event.title}`)
-          .setDescription(result.message);
+        collector.stop();
+        await runComponentAction(
+          i,
+          async () => {
+            const result = await chosenOption.action(userId, player);
+            const resultEmbed = createTuTienEmbed(player.realm_id)
+              .setTitle(`🔮 Kết Cục Kỳ Ngộ: ${event.title}`)
+              .setDescription(result.message);
 
-        return i.update({ embeds: [resultEmbed], components: [] });
+            return { embeds: [resultEmbed], components: [] };
+          },
+          () => ({
+            embeds: [createErrorEmbed('Kỳ Ngộ Gián Đoạn', 'Không thể xử lý lựa chọn bí cảnh lúc này. Vui lòng kiểm tra trạng thái nhân vật.')],
+            components: []
+          }),
+          'chọn hành động bí cảnh'
+        );
       }
-    });
+    }, 'bí cảnh');
   }
 };

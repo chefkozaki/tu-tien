@@ -19,6 +19,7 @@ Sau khi đổi prefix, thay `a` trong các ví dụ bằng prefix mới.
 - Số phải nhập đúng kiểu và các lựa chọn giới hạn chỉ nhận giá trị được liệt kê bên dưới.
 - Với tham số người dùng, có thể dùng mention (`@Tên`) hoặc Discord user ID.
 - Lệnh prefix hoạt động trong máy chủ, không phải tin nhắn riêng với bot. Mỗi lệnh có cooldown 10 giây dùng chung với slash command.
+- Mọi phản hồi từ lệnh prefix đều được gửi trực tiếp vào kênh đã nhập lệnh; bot không gửi kết quả prefix qua tin nhắn riêng.
 - Nếu một lệnh trả về nút hoặc menu, hãy bấm/chọn trực tiếp trên tin nhắn bot.
 
 ## Quản lý Prefix
@@ -34,6 +35,18 @@ aprefix <prefix>                Cú pháp alias cố định để đổi prefix
 ```
 
 Prefix mới dài từ 1 đến 5 ký tự, không chứa khoảng trắng và không được là `aprefix`. Alias `aprefix` luôn dùng được để xem/đổi prefix, kể cả sau khi đã đổi prefix máy chủ.
+
+## Bật/tắt lệnh theo kênh
+
+Thành viên có quyền **Quản lý Máy chủ** có thể tắt một lệnh trong chính kênh đang nhập. Tắt lệnh gốc sẽ chặn cả lệnh con; dùng lại lệnh đó trong cùng kênh để bật lại. Thiết lập áp dụng cho cả slash command và prefix command.
+
+```text
+adisable wish
+adisable sect
+/disable command:sect
+```
+
+Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi lệnh `disable` bị tắt ở kênh đó. Khi máy chủ đã đổi prefix, vẫn dùng alias cố định `adisable <lệnh>`, hoặc `<prefix>disable command:<lệnh>`.
 
 ## Danh sách lệnh
 
@@ -91,8 +104,13 @@ Prefix mới dài từ 1 đến 5 ký tự, không chứa khoảng trắng và k
 | Lệnh | Cách dùng / chức năng |
 |---|---|
 | `sect info` | Xem thông tin Tông Môn của mình. |
-| `sect create name:"Thanh Vân Tông"` | Thành lập Tông Môn; tên là bắt buộc và cần 50.000 Ngân Lượng. |
-| `sect join id:12` | Gia nhập Tông Môn theo ID. |
+| `sect members` | Xem danh sách thành viên trong Tông Môn. |
+| `sect create name:"Thanh Vân Tông"` | Thành lập Tông Môn; cần đạt cảnh giới **Linh Tướng**, có 50.000 Ngân Lượng và tên chưa bị trùng. Điều kiện chỉ áp dụng khi tạo Tông Môn mới, không ảnh hưởng Tông Môn đã có. |
+| `sect join id:12` | Gửi đơn xin gia nhập Tông Môn theo ID; cần Chưởng Môn duyệt. |
+| `sect applications` | Chưởng Môn xem các đơn xin gia nhập đang chờ duyệt. |
+| `sect approve application-id:12` | Chưởng Môn chấp nhận đơn xin gia nhập. |
+| `sect reject application-id:12` | Chưởng Môn từ chối đơn xin gia nhập. |
+| `sect recruit member:@Tên` | Chưởng Môn tuyển trực tiếp một thành viên. Có thể dùng Discord user ID thay mention. |
 | `sect donate silver:10000` | Cống hiến Ngân Lượng. |
 | `sect donate gold:2 quality:Phàm` | Cống hiến Linh Kim; `quality` nhận `Phàm`, `Tinh`, `Linh`, `Địa`, `Thiên`. Có thể dùng `silver` hoặc `gold` theo hướng dẫn của bot. |
 | `sect mine action:view` | Xem danh sách mỏ. |
@@ -102,6 +120,8 @@ Prefix mới dài từ 1 đến 5 ký tự, không chứa khoảng trắng và k
 | `market sell item:"pill:TrucCoDan:Trúc Cơ Đan" amount:1 price:1000` | Đăng bán vật phẩm. `item` phải chọn giá trị hợp lệ trong danh mục bên dưới; `amount` là số lượng và `price` là tổng giá bán. |
 | `market buy id:12` | Mua bài đăng theo ID. |
 | `market cancel id:12` | Hủy bài đăng của chính mình theo ID để thu hồi vật phẩm. |
+| `shop view` | Xem Đan Dược, Linh Kim và giá động theo lượng bạc/nguồn cung toàn server. |
+| `shop buy item:TrucCoDan amount:1` | Mua vật phẩm trong cửa hàng hệ thống; số lượng từ 1 đến 100. `item` nhận `TrucCoDan`, `TuLinhDan`, `TayTuyDan`, `BachHoaKimDan`, `Phàm`, `Tinh`, `Linh`, `Địa`, `Thiên`, `Thánh`, `Thần`, hoặc `"Hỗn Độn"` (đặt tên có khoảng trắng trong dấu nháy). |
 
 Các giá trị `item` được hỗ trợ ở `market sell`:
 

@@ -13,6 +13,7 @@ const { getPrefix, setPrefix } = require('./src/services/prefixService');
 const { executePrefixCommand, tokenize } = require('./src/utils/prefixCommand');
 const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementService');
 const { acquireCommandCooldown } = require('./src/utils/commandCooldown');
+const { isCommandDisabled } = require('./src/services/disabledCommandService');
 
 const client = new Client({
   intents: [
@@ -66,12 +67,25 @@ client.on('interactionCreate', async interaction => {
       return;
     }
 
-    const cooldownRemaining = acquireCommandCooldown(interaction.user.id);
-    if (cooldownRemaining > 0) {
+    if (interaction.commandName !== 'disable' &&
+      await isCommandDisabled(interaction.guildId, interaction.channelId, interaction.commandName)) {
       return interaction.reply({
-        content: `Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`,
+        content: `Lệnh \`/${interaction.commandName}\` đã bị tắt trong kênh này.`,
         ephemeral: true
       });
+    }
+
+    const cooldownRemaining = acquireCommandCooldown(interaction.user.id);
+    if (cooldownRemaining > 0) {
+      try {
+        return await interaction.reply({
+          content: `Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`,
+          ephemeral: true
+        });
+      } catch (error) {
+        console.error('Không thể phản hồi cooldown lệnh slash:', error);
+        return;
+      }
     }
 
     try {
@@ -83,29 +97,46 @@ client.on('interactionCreate', async interaction => {
         'Đã xảy ra thiên kiếp hỗn loạn trong lúc thi triển pháp quyết! Vui lòng thử lại sau.'
       );
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ embeds: [errorEmbed], ephemeral: true }).catch(() => {});
+        try {
+          await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+        } catch (replyError) {
+          console.error('Không thể gửi thông báo lỗi lệnh slash:', replyError);
+        }
       } else {
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true }).catch(() => {});
+        try {
+          await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        } catch (replyError) {
+          console.error('Không thể gửi thông báo lỗi lệnh slash:', replyError);
+        }
       }
     }
     return;
   }
 
   // 2. Xử lý Quick Buttons từ Embed Hồ Sơ Tu Vi
-  if (interaction.isButton()) {
+  if (interaction.isButton() && [
+    'btn_cultivate',
+    'btn_breakthrough',
+    'btn_claim_dongphu'
+  ].includes(interaction.customId)) {
     const userId = interaction.user.id;
-    const player = await getPlayer(userId);
+    try {
+      await interaction.deferReply({ ephemeral: true });
 
-    if (!player) {
-      return interaction.reply({
-        embeds: [createErrorEmbed('Chưa Tu Tiên', 'Đạo hữu hãy dùng `/start` trước!')],
-        ephemeral: true
-      });
-    }
+      if (interaction.customId === 'btn_breakthrough') {
+        const dotPhaCmd = client.commands.get('break');
+        if (!dotPhaCmd) throw new Error('Không tìm thấy lệnh đột phá.');
+        return await dotPhaCmd.execute(interaction);
+      }
 
-    // Nút Đả Tọa Tu Luyện
-    if (interaction.customId === 'btn_cultivate') {
-      const { REALMS } = require('./src/config/constants');
+      const player = await getPlayer(userId);
+      if (!player) {
+        return await interaction.editReply({
+          embeds: [createErrorEmbed('Chưa Tu Tiên', 'Đạo hữu hãy dùng `/start` trước!')]
+        });
+      }
+
+      if (interaction.customId === 'btn_cultivate') {
       const realm = REALMS[player.realm_id] || REALMS[0];
       const baseXp = Math.floor(realm.minXp * 0.35) + Math.floor(Math.random() * (realm.minXp * 0.25));
       const res = await addXp(userId, baseXp);
@@ -125,34 +156,41 @@ client.on('interactionCreate', async interaction => {
         embed.addFields({ name: '⚡ ĐẠT ĐỈNH PHONG!', value: 'Dùng lệnh `/break` để độ kiếp tiến lên cảnh giới kế tiếp!' });
       }
 
-      return interaction.reply({ embeds: [embed], ephemeral: true });
-    }
-
-    // Nút Đột Phá
-    if (interaction.customId === 'btn_breakthrough') {
-      const dotPhaCmd = client.commands.get('break');
-      if (dotPhaCmd) {
-        return dotPhaCmd.execute(interaction);
-      }
-    }
-
-    // Nút Thu Hoạch Động Phủ (chỉ hoạt động khi AFK được bật)
-    if (interaction.customId === 'btn_claim_dongphu') {
-      const res = await claimTuLinhTran(userId);
-      if (!res.success) {
-        return interaction.reply({ embeds: [createErrorEmbed('Chưa Thể Thu Hoạch', res.message)], ephemeral: true });
+        return await interaction.editReply({ embeds: [embed] });
       }
 
-      const embed = createSuccessEmbed(
-        '🌾 Thu Hoạch Tụ Linh Trận',
-        `Động Phủ đã tích lũy trong **${res.elapsedMinutes} phút** qua:\n\n` +
-        `• **Linh Lực:** \`+${formatNumber(res.xpGained)}\` XP\n` +
-        `• **Ngân Lượng:** \`+${formatNumber(res.silverGained)}\` Bạc\n` +
-        (res.helperName ? `• *Trợ Thủ Sinh Hoạt [${res.helperName}] tăng thêm +30% sản lượng!*\n` : ''),
-        player.realm_id
+      if (interaction.customId === 'btn_claim_dongphu') {
+        const res = await claimTuLinhTran(userId);
+        if (!res.success) {
+          return await interaction.editReply({ embeds: [createErrorEmbed('Chưa Thể Thu Hoạch', res.message)] });
+        }
+
+        const embed = createSuccessEmbed(
+          '🌾 Thu Hoạch Tụ Linh Trận',
+          `Động Phủ đã tích lũy trong **${res.elapsedMinutes} phút** qua:\n\n` +
+          `• **Linh Lực:** \`+${formatNumber(res.xpGained)}\` XP\n` +
+          `• **Ngân Lượng:** \`+${formatNumber(res.silverGained)}\` Bạc\n` +
+          (res.helperName ? `• *Trợ Thủ Sinh Hoạt [${res.helperName}] tăng thêm +30% sản lượng!*\n` : ''),
+          player.realm_id
+        );
+
+        return await interaction.editReply({ embeds: [embed] });
+      }
+    } catch (error) {
+      console.error(`Lỗi xử lý nút hồ sơ ${interaction.customId}:`, error);
+      const errorEmbed = createErrorEmbed(
+        'Đạo Tâm Gặp Trở Ngại!',
+        'Không thể xử lý thao tác này lúc này. Vui lòng kiểm tra trạng thái nhân vật rồi thử lại.'
       );
-
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      try {
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
+        } else {
+          await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        }
+      } catch (replyError) {
+        console.error('Không thể gửi thông báo lỗi nút hồ sơ:', replyError);
+      }
     }
   }
 });
@@ -162,6 +200,27 @@ client.on('messageCreate', async message => {
 
   try {
     const prefix = await getPrefix(message.guildId);
+    const fixedDisableAlias = /^adisable(?:\s|$)/i.exec(message.content);
+    if (fixedDisableAlias) {
+      const cooldownRemaining = acquireCommandCooldown(message.author.id);
+      if (cooldownRemaining > 0) {
+        return message.reply(`Bạn cần đợi ${Math.ceil(cooldownRemaining / 1000)} giây trước khi dùng lệnh tiếp theo.`);
+      }
+
+      const commandInput = message.content.slice(fixedDisableAlias[0].length).trim();
+      const disableCommand = client.commands.get('disable');
+      return disableCommand.executeAdisable({
+        guildId: message.guildId,
+        channelId: message.channelId,
+        memberPermissions: message.member?.permissions,
+        client,
+        reply: payload => {
+          const { ephemeral, ...messagePayload } = payload;
+          return message.reply(messagePayload);
+        }
+      }, commandInput);
+    }
+
     const fixedPrefixAlias = /^aprefix(?:\s|$)/i.exec(message.content);
     if (fixedPrefixAlias) {
       const cooldownRemaining = acquireCommandCooldown(message.author.id);
@@ -209,6 +268,11 @@ client.on('messageCreate', async message => {
     const command = client.commands.get(commandName);
     if (!command) {
       return message.reply(`Không tìm thấy lệnh \`${commandName}\`. Dùng \`${prefix} help\` để xem hướng dẫn.`);
+    }
+
+    if (commandName !== 'disable' &&
+      await isCommandDisabled(message.guildId, message.channelId, commandName)) {
+      return message.reply(`Lệnh \`${commandName}\` đã bị tắt trong kênh này.`);
     }
 
     const cooldownRemaining = acquireCommandCooldown(message.author.id);

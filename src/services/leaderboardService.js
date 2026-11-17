@@ -5,7 +5,7 @@ async function getRealmLeaderboard(limit = 10) {
   const res = await db.execute({
     sql: `SELECT user_id, dao_hieu AS username, race, realm_id, level, xp, silver, tower_floor, pvp_points 
       FROM tutien_players 
-      ORDER BY realm_id DESC, level DESC, CAST(xp AS INTEGER) DESC 
+      ORDER BY realm_id DESC, level DESC, length(CAST(xp AS TEXT)) DESC, CAST(xp AS TEXT) DESC
       LIMIT ?`,
     args: [limit]
   });
@@ -18,7 +18,7 @@ async function getThanDienLeaderboard(limit = 10) {
     sql: `SELECT user_id, dao_hieu AS username, race, realm_id, xp, rule_enlightenment 
       FROM tutien_players 
       WHERE realm_id = 8 
-      ORDER BY CAST(xp AS INTEGER) DESC 
+      ORDER BY length(CAST(xp AS TEXT)) DESC, CAST(xp AS TEXT) DESC
       LIMIT ?`,
     args: [limit]
   });

@@ -17,6 +17,9 @@ const state = {
   realmsChart: null
 };
 
+let currentTabRefreshInProgress = false;
+let statsRequestVersion = 0;
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;',
@@ -54,10 +57,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadConstantsAndPresets();
   await refreshAllData();
 
-  // Periodic refresh dashboard stats every 30s
+  // Keep the open admin tab synchronized with changes made by the game.
   setInterval(() => {
-    if (state.currentTab === 'tab-dashboard') {
-      loadStats();
+    if (document.visibilityState === 'visible' && !currentTabRefreshInProgress) {
+      currentTabRefreshInProgress = true;
+      loadTabData(state.currentTab).finally(() => {
+        currentTabRefreshInProgress = false;
+      });
     }
   }, 30000);
 });
@@ -122,49 +128,37 @@ function switchTab(tabId) {
     }
   });
 
-  // Load tab specific data
+  loadTabData(tabId);
+}
+
+async function loadTabData(tabId) {
   switch (tabId) {
     case 'tab-dashboard':
-      loadStats();
-      break;
+      return loadStats();
     case 'tab-players':
-      loadPlayers();
-      break;
+      return loadPlayers();
     case 'tab-inventory':
-      loadInventory();
-      break;
+      return loadInventory();
     case 'tab-pets':
-      loadPets();
-      break;
+      return loadPets();
     case 'tab-weapons':
-      loadWeapons();
-      break;
+      return loadWeapons();
     case 'tab-helpers':
-      loadHelpers();
-      break;
+      return loadHelpers();
     case 'tab-skills':
-      loadSkills();
-      break;
+      return loadSkills();
     case 'tab-dongphu':
-      loadDongPhu();
-      break;
+      return loadDongPhu();
     case 'tab-sects':
-      loadSects();
-      loadMines();
-      break;
+      return Promise.all([loadSects(), loadMines()]);
     case 'tab-boss':
-      loadBoss();
-      break;
+      return loadBoss();
     case 'tab-market':
-      loadMarket();
-      break;
+      return loadMarket();
     case 'tab-tools':
-      loadSystemInfo();
-      break;
+      return loadSystemInfo();
     case 'tab-gacha':
-      loadGachaStats();
-      loadGachaItems();
-      break;
+      return Promise.all([loadGachaStats(), loadGachaItems()]);
   }
 }
 
@@ -552,8 +546,10 @@ function applyBossPreset(index) {
 // 3. DASHBOARD & CHARTS
 // ==========================================
 async function loadStats() {
+  const requestVersion = ++statsRequestVersion;
   try {
-    const res = await fetch('/api/stats').then(r => r.json());
+    const res = await fetch('/api/stats', { cache: 'no-store' }).then(r => r.json());
+    if (requestVersion !== statsRequestVersion) return;
     if (!res.success) return;
 
     const d = res.data;

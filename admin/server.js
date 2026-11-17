@@ -94,6 +94,10 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Mount API routes
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use('/api', apiRouter);
 
 // SPA fallback for any unmatched GET request

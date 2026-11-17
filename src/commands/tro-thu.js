@@ -3,6 +3,7 @@ const { getUserHelpers, equipHelper, unequipHelper } = require('../services/help
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
+const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -89,11 +90,28 @@ module.exports = {
         time: 60000
       });
 
-      collector.on('collect', async i => {
+      onComponentCollect(collector, async i => {
         if (i.customId === 'select_helper_equip') {
+          collector.stop();
           const hId = Number(i.values[0]);
-          const res = await equipHelper(userId, hId);
-          return i.update({ content: null, embeds: [createSuccessEmbed('Xuất Chiến Thành Công', res.message, player.realm_id)], components: [] });
+          await runComponentAction(
+            i,
+            async () => {
+              const res = await equipHelper(userId, hId);
+              return {
+                content: null,
+                embeds: [res.success
+                  ? createSuccessEmbed('Xuất Chiến Thành Công', res.message, player.realm_id)
+                  : createErrorEmbed('Xuất Chiến Thất Bại', res.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Xuất Chiến Thất Bại', 'Không thể xuất chiến Trợ Thủ lúc này. Vui lòng thử lại.')],
+              components: []
+            }),
+            'xuất chiến Trợ Thủ'
+          );
         }
       });
       return;

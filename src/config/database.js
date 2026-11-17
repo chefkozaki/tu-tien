@@ -2,6 +2,43 @@ const { createClient } = require('@libsql/client');
 const { PET_RESONANCES } = require('./constants');
 require('dotenv').config();
 
+const DEFAULT_5_STAR_PETS = [
+  {
+    item_type: 'pet',
+    name: 'Thanh Long Thượng Cổ',
+    rarity: 5,
+    banner_type: 'pet',
+    rate_up: 1,
+    element: 'Mộc',
+    tier: 6,
+    hp: 8200,
+    atk: 1450,
+    def: 900,
+    speed: 170,
+    crit: 0.2,
+    effect_name: 'Long Uy Thượng Cổ',
+    effect_desc: 'Long uy trấn thế: Tăng 35% sát thương và giảm 20% sát thương nhận vào.',
+    type_detail: 'mythic'
+  },
+  {
+    item_type: 'pet',
+    name: 'Chu Tước Niết Bàn',
+    rarity: 5,
+    banner_type: 'all',
+    rate_up: 0,
+    element: 'Hỏa',
+    tier: 6,
+    hp: 6800,
+    atk: 1750,
+    def: 650,
+    speed: 210,
+    crit: 0.25,
+    effect_name: 'Niết Bàn Chân Hỏa',
+    effect_desc: 'Chân hỏa thiêu đốt: Tăng 40% sát thương bạo kích và thiêu đốt kẻ địch.',
+    type_detail: 'mythic'
+  }
+];
+
 let client = null;
 
 function getDb() {
@@ -150,6 +187,14 @@ async function initDatabase() {
       created_at INTEGER NOT NULL
     );`,
 
+    `CREATE TABLE IF NOT EXISTS tutien_sect_applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sect_id INTEGER NOT NULL,
+      applicant_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at INTEGER NOT NULL
+    );`,
+
     `CREATE TABLE IF NOT EXISTS tutien_mines (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -217,6 +262,9 @@ async function initDatabase() {
       pet_helper_pity_5 INTEGER NOT NULL DEFAULT 0,
       standard_pity_4 INTEGER NOT NULL DEFAULT 0,
       standard_pity_5 INTEGER NOT NULL DEFAULT 0,
+      weapon_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
+      pet_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
+      helper_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
       total_wishes INTEGER NOT NULL DEFAULT 0,
       last_wish_at INTEGER DEFAULT 0
     );`
@@ -225,6 +273,10 @@ async function initDatabase() {
   for (const sql of schema) {
     await db.execute(sql);
   }
+
+  await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_sect_applications_pending_applicant
+    ON tutien_sect_applications (applicant_id)
+    WHERE status = 'pending'`);
 
   const dongPhuColsRes = await db.execute('PRAGMA table_info(tutien_dongphu)');
   const dongPhuCols = dongPhuColsRes.rows.map(row => row.name);
@@ -321,6 +373,15 @@ async function initDatabase() {
     if (!pityCols.includes('helper_pity_5')) {
       await db.execute('ALTER TABLE tutien_wish_pity ADD COLUMN helper_pity_5 INTEGER NOT NULL DEFAULT 0');
     }
+    for (const column of [
+      'weapon_rate_up_guaranteed',
+      'pet_rate_up_guaranteed',
+      'helper_rate_up_guaranteed'
+    ]) {
+      if (!pityCols.includes(column)) {
+        await db.execute(`ALTER TABLE tutien_wish_pity ADD COLUMN ${column} INTEGER NOT NULL DEFAULT 0`);
+      }
+    }
 
     // Tự động chuyển đổi tiến trình pity cũ (pet_helper) sang riêng biệt cho pet & helper
     if (pityCols.includes('pet_helper_pity_4')) {
@@ -386,6 +447,7 @@ async function initDatabase() {
       { item_type: 'weapon', name: 'Thiết Linh Côn', rarity: 3, banner_type: 'all', rate_up: 0, element: 'Kim', tier: 1, hp: 0, atk: 65, def: 30, speed: 0, crit: 0.03, effect_name: 'Trấn Áp', effect_desc: 'Đòn đánh gia tăng sức nặng phá vỡ thế trận đối phương', type_detail: 'weapon' },
 
       // === 5★ LINH THÚ ===
+      ...DEFAULT_5_STAR_PETS,
       // === 4★ LINH THÚ ===
       { item_type: 'pet', name: 'Cửu Vĩ Thiên Hồ', rarity: 4, banner_type: 'pet', rate_up: 1, element: 'Hỏa', tier: 4, hp: 3200, atk: 620, def: 300, speed: 140, crit: 0.18, effect_name: 'Mị Hoặc', effect_desc: 'Mị hoặc thiên hạ: Giảm 25% công kích của đối phương trong 3 lượt đầu.', type_detail: 'normal' },
       { item_type: 'pet', name: 'Côn Bằng Cổ Thú', rarity: 4, banner_type: 'all', rate_up: 0, element: 'Phong', tier: 4, hp: 3800, atk: 700, def: 380, speed: 190, crit: 0.15, effect_name: 'Phù Diêu', effect_desc: 'Phù diêu cửu vạn dặm: Tăng cực đại tốc độ xuất chiêu và cơ hội né đòn.', type_detail: 'normal' },
@@ -439,6 +501,42 @@ async function initDatabase() {
 
     await db.batch(statements);
     console.log(`✅ Đã khởi tạo thành công ${defaultGachaItems.length} vật phẩm mặc định vào Bể Cầu Nguyện Gacha!`);
+  }
+
+  const fiveStarPetRows = await db.execute(
+    "SELECT rate_up FROM tutien_gacha_items WHERE item_type = 'pet' AND rarity = 5 GROUP BY rate_up"
+  );
+  const hasFeaturedPet = fiveStarPetRows.rows.some(row => Number(row.rate_up) === 1);
+  const hasOffBannerPet = fiveStarPetRows.rows.some(row => Number(row.rate_up) !== 1);
+  const missingFiveStarPets = DEFAULT_5_STAR_PETS.filter(item =>
+    item.rate_up === 1 ? !hasFeaturedPet : !hasOffBannerPet
+  );
+  if (missingFiveStarPets.length > 0) {
+    const now = Date.now();
+    await db.batch(missingFiveStarPets.map(item => ({
+      sql: `INSERT INTO tutien_gacha_items
+        (item_type, name, rarity, banner_type, rate_up, element, tier, hp, atk, def, speed, crit, effect_name, effect_desc, type_detail, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+      args: [
+        item.item_type,
+        item.name,
+        item.rarity,
+        item.banner_type,
+        item.rate_up,
+        item.element,
+        item.tier,
+        item.hp,
+        item.atk,
+        item.def,
+        item.speed,
+        item.crit,
+        item.effect_name,
+        item.effect_desc,
+        item.type_detail,
+        now
+      ]
+    })));
+    console.log(`✅ Đã bổ sung ${missingFiveStarPets.length} vật phẩm Linh Thú 5★ mặc định vào Bể Cầu Nguyện Gacha!`);
   }
 
   console.log('✅ Turso Tu Tiên Database initialized successfully!');

@@ -5,7 +5,33 @@ const { REALMS, LEVEL_SUB_TITLES } = require('../config/constants');
  */
 function formatNumber(num) {
   if (num === null || num === undefined) return '0';
-  const n = typeof num === 'bigint' ? Number(num) : Number(num);
+  if (typeof num === 'bigint' || (typeof num === 'string' && /^-?\d+$/.test(num))) {
+    const integer = BigInt(num);
+    const negative = integer < 0n;
+    const absolute = negative ? -integer : integer;
+    const units = [
+      [1000000000000000n, 'Q (Triệu Tỷ)'],
+      [1000000000000n, 'T (Nghìn Tỷ)'],
+      [1000000000n, 'B (Tỷ)'],
+      [1000000n, 'M (Triệu)'],
+      [1000n, 'K']
+    ];
+
+    for (const [scale, suffix] of units) {
+      if (absolute >= scale) {
+        const precision = suffix === 'K' ? 10n : 100n;
+        const decimalPlaces = suffix === 'K' ? 1 : 2;
+        const rounded = (absolute * precision + scale / 2n) / scale;
+        const whole = rounded / precision;
+        const fraction = (rounded % precision).toString().padStart(decimalPlaces, '0').replace(/0+$/, '');
+        return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}${suffix}`;
+      }
+    }
+
+    return integer.toLocaleString('vi-VN');
+  }
+
+  const n = Number(num);
 
   if (isNaN(n)) return '0';
   if (n === Infinity) return 'Vô Hạn';

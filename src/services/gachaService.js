@@ -6,7 +6,7 @@ const BANNER_CONFIG = {
     id: 'weapon',
     name: 'Thần Binh Vạn Khí',
     subtitle: 'Cầu Nguyện Linh Khí Cực Phẩm',
-    desc: 'Tăng cực lớn tỷ lệ xuất hiện các Linh Khí & Thần Khí 4★ - 5★',
+    desc: 'Mọi vật phẩm 4★ và 5★ trong banner này đều là Linh Khí.',
     featuredType: 'weapon',
     icon: '⚔️',
     primaryRate: 0.85
@@ -15,7 +15,7 @@ const BANNER_CONFIG = {
     id: 'pet',
     name: 'Vạn Thú Quy Tông',
     subtitle: 'Cầu Nguyện Linh Thú Thượng Cổ',
-    desc: 'Tăng cực lớn tỷ lệ xuất hiện Linh Thú & Dị Thú 4★ - 5★',
+    desc: 'Mọi vật phẩm 4★ và 5★ trong banner này đều là Linh Thú.',
     featuredType: 'pet',
     icon: '🐾',
     primaryRate: 0.85
@@ -24,7 +24,7 @@ const BANNER_CONFIG = {
     id: 'helper',
     name: 'Hộ Đạo Tiên Duyên',
     subtitle: 'Cầu Nguyện Trợ Thủ & Hộ Đạo Giả',
-    desc: 'Tăng cực lớn tỷ lệ chiêu mộ Hộ Đạo Giả & Tiên Đồng Phụ Tá 4★ - 5★',
+    desc: 'Mọi vật phẩm 4★ và 5★ trong banner này đều là Trợ Thủ.',
     featuredType: 'helper',
     icon: '🤝',
     primaryRate: 0.85
@@ -42,6 +42,16 @@ const BANNER_CONFIG = {
 
 const WISH_COST_SINGLE = 1600; // 1,600 Bạc / 1 lượt quay
 const WISH_COST_TEN = 16000;   // 16,000 Bạc / 10 lượt quay
+
+function getTargetTypes(bannerType) {
+  if (bannerType === 'weapon' || bannerType === 'pet' || bannerType === 'helper') {
+    return [bannerType];
+  }
+  if (bannerType === 'pet_helper') {
+    return ['pet', 'helper'];
+  }
+  return [];
+}
 
 /**
  * Lấy danh sách vật phẩm trong bể Cầu Nguyện
@@ -328,6 +338,9 @@ async function getUserPity(userId) {
       helper_pity_5: Number(row.helper_pity_5 ?? row.pet_helper_pity_5 ?? 0),
       standard_pity_4: Number(row.standard_pity_4 || 0),
       standard_pity_5: Number(row.standard_pity_5 || 0),
+      weapon_rate_up_guaranteed: Number(row.weapon_rate_up_guaranteed || 0) === 1,
+      pet_rate_up_guaranteed: Number(row.pet_rate_up_guaranteed || 0) === 1,
+      helper_rate_up_guaranteed: Number(row.helper_rate_up_guaranteed || 0) === 1,
       total_wishes: Number(row.total_wishes || 0),
       last_wish_at: Number(row.last_wish_at || 0)
     };
@@ -351,6 +364,9 @@ async function getUserPity(userId) {
     helper_pity_5: 0,
     standard_pity_4: 0,
     standard_pity_5: 0,
+    weapon_rate_up_guaranteed: false,
+    pet_rate_up_guaranteed: false,
+    helper_rate_up_guaranteed: false,
     total_wishes: 0,
     last_wish_at: 0
   };
@@ -364,7 +380,7 @@ async function getUserPity(userId) {
  * - Tỷ lệ 4★ cơ bản: 5.1%
  * - Hard pity 10: nếu 9 lần chưa có 4★/5★, lần 10 chắc chắn ra 4★+
  */
-function rollSingleWish(pity4, pity5, poolByRarity, bannerType) {
+function rollSingleWish(pity4, pity5, poolByRarity, bannerType, rateUpGuaranteed = false) {
   let determinedRarity = 3;
 
   // 1. Tính toán xác suất 5★
@@ -407,43 +423,46 @@ function rollSingleWish(pity4, pity5, poolByRarity, bannerType) {
   // - pet: Chuyên Linh Thú
   // - helper: Chuyên Trợ Thủ
   // - standard: Bể tổng hợp chia đều
-  let targetType = null;
-  if (bannerType === 'weapon') targetType = 'weapon';
-  else if (bannerType === 'pet') targetType = 'pet';
-  else if (bannerType === 'helper') targetType = 'helper';
+  const targetTypes = getTargetTypes(bannerType);
 
-  if (targetType) {
-    const matchingItems = candidatePool.filter(i => i.item_type === targetType);
-    const rateUpItems = matchingItems.filter(i => i.rate_up === 1);
-
-    // Ở mốc 5★ trên banner chuyên biệt: 100% ra đúng loại của banner
-    // Ở mốc 4★: 85% ra đúng loại của banner, 15% ra từ candidatePool
-    // Ở mốc 3★: 85% ra đúng loại của banner, 15% ra từ candidatePool
-    const isTargetHit = (determinedRarity === 5) ? true : (Math.random() < 0.85);
+  let nextRateUpGuaranteed = rateUpGuaranteed;
+  if (targetTypes.length > 0) {
+    const matchingItems = candidatePool.filter(item => targetTypes.includes(item.item_type));
+    if (matchingItems.length === 0) {
+      throw new Error(`Banner ${bannerType} chưa có vật phẩm ${determinedRarity}★ phù hợp!`);
+    }
+    const rateUpItems = matchingItems.filter(item => Number(item.rate_up) === 1);
+    const nonRateUpItems = matchingItems.filter(item => Number(item.rate_up) !== 1);
+    const isTargetHit = determinedRarity >= 4 ||
+      Math.random() < (BANNER_CONFIG[bannerType]?.primaryRate || 0.85);
 
     if (matchingItems.length > 0 && isTargetHit) {
-      // 50% ra món Rate-Up tiêu điểm của banner (nếu có)
-      if (rateUpItems.length > 0 && Math.random() < 0.50) {
-        selectedItem = rateUpItems[Math.floor(Math.random() * rateUpItems.length)];
+      if (rateUpItems.length > 0) {
+        let isRateUpHit;
+        if (determinedRarity === 5 && bannerType !== 'pet_helper' && rateUpGuaranteed) {
+          isRateUpHit = true;
+        } else if (nonRateUpItems.length === 0) {
+          isRateUpHit = true;
+        } else {
+          isRateUpHit = Math.random() < 0.5;
+        }
+
+        const selectedPool = isRateUpHit ? rateUpItems : nonRateUpItems;
+        selectedItem = selectedPool[Math.floor(Math.random() * selectedPool.length)];
+        if (determinedRarity === 5 && bannerType !== 'pet_helper') {
+          nextRateUpGuaranteed = !isRateUpHit;
+        }
       } else {
         selectedItem = matchingItems[Math.floor(Math.random() * matchingItems.length)];
       }
-    }
-  } else if (bannerType === 'pet_helper') {
-    // Hỗ trợ ngược cho banner kết hợp cũ
-    const petHelpers = candidatePool.filter(i => i.item_type === 'pet' || i.item_type === 'helper');
-    const rateUpItems = petHelpers.filter(i => i.rate_up === 1);
-
-    if (petHelpers.length > 0 && Math.random() < 0.85) {
-      if (rateUpItems.length > 0 && Math.random() < 0.50) {
-        selectedItem = rateUpItems[Math.floor(Math.random() * rateUpItems.length)];
-      } else {
-        selectedItem = petHelpers[Math.floor(Math.random() * petHelpers.length)];
+    } else {
+      const offBannerItems = candidatePool.filter(item => Number(item.rate_up) !== 1);
+      if (offBannerItems.length > 0) {
+        selectedItem = offBannerItems[Math.floor(Math.random() * offBannerItems.length)];
       }
     }
   }
 
-  // Nếu chưa chọn được, random đều trong candidatePool
   if (!selectedItem) {
     selectedItem = candidatePool[Math.floor(Math.random() * candidatePool.length)];
   }
@@ -462,7 +481,9 @@ function rollSingleWish(pity4, pity5, poolByRarity, bannerType) {
     item: selectedItem,
     rarity: determinedRarity,
     nextPity4,
-    nextPity5
+    nextPity5,
+    isRateUp: Number(selectedItem.rate_up) === 1,
+    nextRateUpGuaranteed
   };
 }
 
@@ -506,6 +527,16 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
   if (!poolByRarity[3].length || !poolByRarity[4].length || !poolByRarity[5].length) {
     return { success: false, message: 'Bể Cầu Nguyện chưa đủ vật phẩm 3★, 4★, 5★ khả dụng!' };
   }
+  const targetTypes = getTargetTypes(bannerType);
+  const missingTargetRarity = [4, 5].find(rarity =>
+    !poolByRarity[rarity].some(item => targetTypes.includes(item.item_type))
+  );
+  if (missingTargetRarity) {
+    return {
+      success: false,
+      message: `Banner ${bannerType} chưa có vật phẩm ${missingTargetRarity}★ phù hợp. Hãy báo quản trị viên cập nhật bể Cầu Nguyện.`
+    };
+  }
 
   // Lấy Pity hiện tại của người chơi
   const userPity = await getUserPity(userId);
@@ -528,6 +559,13 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
     currentPity4 = userPity.standard_pity_4 || 0;
     currentPity5 = userPity.standard_pity_5 || 0;
   }
+  let rateUpGuaranteed = bannerType === 'weapon'
+    ? userPity.weapon_rate_up_guaranteed
+    : bannerType === 'pet'
+      ? userPity.pet_rate_up_guaranteed
+      : bannerType === 'helper'
+        ? userPity.helper_rate_up_guaranteed
+        : false;
 
   // Thực hiện các lần quay
   const results = [];
@@ -536,9 +574,10 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
   const insertStatements = [];
 
   for (let i = 0; i < wishCount; i++) {
-    const roll = rollSingleWish(currentPity4, currentPity5, poolByRarity, bannerType);
+    const roll = rollSingleWish(currentPity4, currentPity5, poolByRarity, bannerType, rateUpGuaranteed);
     currentPity4 = roll.nextPity4;
     currentPity5 = roll.nextPity5;
+    rateUpGuaranteed = roll.nextRateUpGuaranteed;
 
     if (roll.rarity > highestRarity) {
       highestRarity = roll.rarity;
@@ -554,7 +593,8 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
 
     results.push({
       ...item,
-      bonusSilver
+      bonusSilver,
+      isRateUp: roll.isRateUp
     });
 
     // Tạo câu lệnh insert tương ứng vào bảng đồ đạc người chơi
@@ -625,19 +665,19 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
 
   if (bannerType === 'weapon') {
     updatePitySql = `UPDATE tutien_wish_pity 
-      SET weapon_pity_4 = ?, weapon_pity_5 = ?, total_wishes = total_wishes + ?, last_wish_at = ? 
+      SET weapon_pity_4 = ?, weapon_pity_5 = ?, weapon_rate_up_guaranteed = ?, total_wishes = total_wishes + ?, last_wish_at = ?
       WHERE user_id = ?`;
-    pityArgs.push(currentPity4, currentPity5, wishCount, Date.now(), userId);
+    pityArgs.push(currentPity4, currentPity5, rateUpGuaranteed ? 1 : 0, wishCount, Date.now(), userId);
   } else if (bannerType === 'pet') {
     updatePitySql = `UPDATE tutien_wish_pity 
-      SET pet_pity_4 = ?, pet_pity_5 = ?, total_wishes = total_wishes + ?, last_wish_at = ? 
+      SET pet_pity_4 = ?, pet_pity_5 = ?, pet_rate_up_guaranteed = ?, total_wishes = total_wishes + ?, last_wish_at = ?
       WHERE user_id = ?`;
-    pityArgs.push(currentPity4, currentPity5, wishCount, Date.now(), userId);
+    pityArgs.push(currentPity4, currentPity5, rateUpGuaranteed ? 1 : 0, wishCount, Date.now(), userId);
   } else if (bannerType === 'helper') {
     updatePitySql = `UPDATE tutien_wish_pity 
-      SET helper_pity_4 = ?, helper_pity_5 = ?, total_wishes = total_wishes + ?, last_wish_at = ? 
+      SET helper_pity_4 = ?, helper_pity_5 = ?, helper_rate_up_guaranteed = ?, total_wishes = total_wishes + ?, last_wish_at = ?
       WHERE user_id = ?`;
-    pityArgs.push(currentPity4, currentPity5, wishCount, Date.now(), userId);
+    pityArgs.push(currentPity4, currentPity5, rateUpGuaranteed ? 1 : 0, wishCount, Date.now(), userId);
   } else if (bannerType === 'pet_helper') {
     updatePitySql = `UPDATE tutien_wish_pity 
       SET pet_pity_4 = ?, pet_pity_5 = ?, helper_pity_4 = ?, helper_pity_5 = ?, pet_helper_pity_4 = ?, pet_helper_pity_5 = ?, total_wishes = total_wishes + ?, last_wish_at = ? 
@@ -668,6 +708,7 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
     results,
     newPity4: currentPity4,
     newPity5: currentPity5,
+    rateUpGuaranteed,
     remainingSilver: updatedPlayer.silver
   };
 }
@@ -689,13 +730,15 @@ async function simulateWish(bannerType = 'standard', count = 10) {
 
   let pity4 = 0;
   let pity5 = 0;
+  let rateUpGuaranteed = false;
   const results = [];
   let highestRarity = 3;
 
   for (let i = 0; i < count; i++) {
-    const roll = rollSingleWish(pity4, pity5, poolByRarity, bannerType);
+    const roll = rollSingleWish(pity4, pity5, poolByRarity, bannerType, rateUpGuaranteed);
     pity4 = roll.nextPity4;
     pity5 = roll.nextPity5;
+    rateUpGuaranteed = roll.nextRateUpGuaranteed;
     if (roll.rarity > highestRarity) highestRarity = roll.rarity;
     results.push(roll.item);
   }
@@ -706,7 +749,8 @@ async function simulateWish(bannerType = 'standard', count = 10) {
     highestRarity,
     results,
     finalPity4: pity4,
-    finalPity5: pity5
+    finalPity5: pity5,
+    rateUpGuaranteed
   };
 }
 
@@ -722,6 +766,7 @@ module.exports = {
   toggleGachaItemActive,
   getGachaStats,
   getUserPity,
+  rollSingleWish,
   performWish,
   simulateWish
 };

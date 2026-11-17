@@ -17,6 +17,7 @@ const {
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
+const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
 
 function buildBannerEmbed(bannerKey, pityData, player) {
   const banner = BANNER_CONFIG[bannerKey] || BANNER_CONFIG.standard;
@@ -33,6 +34,13 @@ function buildBannerEmbed(bannerKey, pityData, player) {
     pity4 = pityData.helper_pity_4 ?? pityData.pet_helper_pity_4 ?? 0;
     pity5 = pityData.helper_pity_5 ?? pityData.pet_helper_pity_5 ?? 0;
   }
+  const rateUpGuaranteed = bannerKey === 'weapon'
+    ? pityData.weapon_rate_up_guaranteed
+    : bannerKey === 'pet'
+      ? pityData.pet_rate_up_guaranteed
+      : bannerKey === 'helper'
+        ? pityData.helper_rate_up_guaranteed
+        : false;
 
   const embed = new EmbedBuilder()
     .setColor('#4338ca')
@@ -43,6 +51,9 @@ function buildBannerEmbed(bannerKey, pityData, player) {
       `📜 **Quy Tắc Bảo Hiểm Cầu Nguyện:**\n` +
       `• **5★ Hoàng Kim:** Tỷ lệ cơ bản **0.6%**. Bảo hiểm sau tối đa **90 lượt** (tỷ lệ tăng từ lượt 74)!\n` +
       `• **4★ Tử Sắc:** Tỷ lệ cơ bản **5.1%**. Bảo hiểm **10 lần** (Mỗi 10 lần quay chắc chắn ra ít nhất 1 món 4★ hoặc 5★)!\n` +
+      (bannerKey !== 'standard'
+        ? `• **Rate-Up 5★:** Nếu banner có vật phẩm 5★ Rate-Up, tỷ lệ là 50/50; nếu trượt, lần 5★ tiếp theo cùng banner được bảo đảm Rate-Up. ${rateUpGuaranteed ? '**Bảo đảm Rate-Up đang kích hoạt!**\n' : '\n'}`
+        : '') +
       `• **Hồi Đáp Bạc:** Mỗi món 5★ hoàn lại **+30,000 Bạc**, 4★ hoàn lại **+5,000 Bạc**, 3★ hoàn lại **+500 Bạc**!\n\n` +
       `📊 **Tiến Trình Bảo Hiểm Hiện Tại:**\n` +
       `• Bảo hiểm **5★ Hoàng Kim:** \`${pity5}/90\` *(Còn ${90 - pity5} lần nữa)*\n` +
@@ -91,6 +102,7 @@ function buildWishResultEmbed(wishResult, player) {
       starStr = '⭐⭐⭐⭐';
       badge = ' ✨ **[4★ HIẾM]**';
     }
+    if (item.isRateUp) badge += ' 🎯 **[RATE-UP]**';
 
     if (item.item_type === 'weapon') {
       typeTag = '⚔️ [Linh Khí]';
@@ -120,6 +132,9 @@ function buildWishResultEmbed(wishResult, player) {
       itemsList + `\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
       `📊 **Bảo Hiểm Sau Lần Quay:** 5★: \`${newPity5}/90\` | 4★: \`${newPity4}/10\`\n` +
+      (wishResult.bannerType !== 'standard'
+        ? `🎯 **Rate-Up 5★ kế tiếp:** ${wishResult.rateUpGuaranteed ? '**Được bảo đảm!**' : '50/50'}\n`
+        : '') +
       `💰 **Ngân Lượng Còn Lại:** \`${formatNumber(remainingSilver)}\` Bạc\n` +
       `*(Vật phẩm đã được tự động thêm vào Bách Binh Các, Trân Thú Uyển hoặc Đạo Hữu Các!)*`
     )
@@ -280,45 +295,91 @@ function setupCollector(msg, userId, initialBanner) {
     time: 120000 // 2 phút tương tác
   });
 
-  collector.on('collect', async i => {
-    const player = await getPlayer(userId);
-    if (!player) return;
-
+  onComponentCollect(collector, async i => {
     if (i.isStringSelectMenu() && i.customId === 'wish_select_banner') {
-      activeBanner = i.values[0];
-      const pity = await getUserPity(userId);
-      const embed = buildBannerEmbed(activeBanner, pity, player);
-      const rows = buildActionRows(activeBanner);
-      return i.update({ embeds: [embed], components: rows });
+      const selectedBanner = i.values[0];
+      await runComponentAction(
+        i,
+        async () => {
+          const [player, pity] = await Promise.all([getPlayer(userId), getUserPity(userId)]);
+          if (!player) throw new Error('Không tìm thấy nhân vật khi đổi Banner.');
+          activeBanner = selectedBanner;
+          return {
+            embeds: [buildBannerEmbed(activeBanner, pity, player)],
+            components: buildActionRows(activeBanner)
+          };
+        },
+        () => ({
+          embeds: [createErrorEmbed('Không Thể Đổi Banner', 'Không thể tải dữ liệu Banner lúc này. Vui lòng thử lại.')],
+          components: []
+        }),
+        'đổi Banner cầu nguyện'
+      );
+      return;
     }
 
     if (i.isButton()) {
       if (i.customId.startsWith('wish_view_pity_')) {
-        const pity = await getUserPity(userId);
-        const embed = buildBannerEmbed(activeBanner, pity, player);
-        const rows = buildActionRows(activeBanner);
-        return i.update({ embeds: [embed], components: rows });
+        await runComponentAction(
+          i,
+          async () => {
+            const [player, pity] = await Promise.all([getPlayer(userId), getUserPity(userId)]);
+            if (!player) throw new Error('Không tìm thấy nhân vật khi xem bảo hiểm cầu nguyện.');
+            return {
+              embeds: [buildBannerEmbed(activeBanner, pity, player)],
+              components: buildActionRows(activeBanner)
+            };
+          },
+          () => ({
+            embeds: [createErrorEmbed('Không Thể Tải Bảo Hiểm', 'Không thể tải dữ liệu cầu nguyện lúc này. Vui lòng thử lại.')],
+            components: []
+          }),
+          'xem bảo hiểm cầu nguyện'
+        );
+        return;
       }
 
       let count = 1;
       if (i.customId.startsWith('wish_pull_10_')) count = 10;
       else if (i.customId.startsWith('wish_pull_1_')) count = 1;
 
-      const wishRes = await performWish(userId, activeBanner, count);
-      if (!wishRes.success) {
-        return i.reply({
-          embeds: [createErrorEmbed('Ngân Lượng Không Đủ', wishRes.message)],
-          ephemeral: true
-        });
-      }
+      await runComponentAction(
+        i,
+        async () => {
+          const wishRes = await performWish(userId, activeBanner, count);
+          if (!wishRes.success) {
+            await i.followUp({
+              embeds: [createErrorEmbed('Ngân Lượng Không Đủ', wishRes.message)],
+              ephemeral: true
+            });
+            const player = await getPlayer(userId);
+            const pity = await getUserPity(userId);
+            if (!player) throw new Error('Không tìm thấy nhân vật sau lượt cầu nguyện thất bại.');
+            return {
+              embeds: [buildBannerEmbed(activeBanner, pity, player)],
+              components: buildActionRows(activeBanner)
+            };
+          }
 
-      const embed = buildWishResultEmbed(wishRes, player);
-      const rows = buildActionRows(activeBanner);
-      return i.update({ embeds: [embed], components: rows });
+          const player = await getPlayer(userId);
+          if (!player) throw new Error('Không tìm thấy nhân vật sau khi cầu nguyện.');
+          return {
+            embeds: [buildWishResultEmbed(wishRes, player)],
+            components: buildActionRows(activeBanner)
+          };
+        },
+        () => ({
+          embeds: [createErrorEmbed('Cầu Nguyện Thất Bại', 'Không thể hoàn tất lượt cầu nguyện lúc này. Vui lòng kiểm tra túi đồ trước khi thử lại.')],
+          components: []
+        }),
+        'cầu nguyện'
+      );
     }
-  });
+  }, 'cầu nguyện');
 
   collector.on('end', () => {
-    msg.edit({ components: [] }).catch(() => {});
+    msg.edit({ components: [] }).catch(error => {
+      console.error('Không thể gỡ nút cầu nguyện khi collector kết thúc:', error);
+    });
   });
 }

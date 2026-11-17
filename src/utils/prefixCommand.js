@@ -144,9 +144,7 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
   let responseMessage = null;
   const replyToMessage = async payload => {
     const { ephemeral, ...messagePayload } = payload;
-    return ephemeral
-      ? message.author.send(messagePayload)
-      : message.reply(messagePayload);
+    return message.reply(messagePayload);
   };
 
   return {

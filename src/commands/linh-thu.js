@@ -10,6 +10,7 @@ const {
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
+const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -111,14 +112,28 @@ module.exports = {
         time: 60000
       });
 
-      collector.on('collect', async i => {
+      onComponentCollect(collector, async i => {
         if (i.customId === 'select_pet_equip') {
+          collector.stop();
           const petId = Number(i.values[0]);
-          const res = await equipPet(userId, petId, targetSlot);
-          if (!res.success) {
-            return i.update({ content: null, embeds: [createErrorEmbed('Thất Bại', res.message)], components: [] });
-          }
-          return i.update({ content: null, embeds: [createSuccessEmbed('Trang Bị Hoàn Tất', res.message, player.realm_id)], components: [] });
+          await runComponentAction(
+            i,
+            async () => {
+              const res = await equipPet(userId, petId, targetSlot);
+              return {
+                content: null,
+                embeds: [res.success
+                  ? createSuccessEmbed('Trang Bị Hoàn Tất', res.message, player.realm_id)
+                  : createErrorEmbed('Thất Bại', res.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Thất Bại', 'Không thể trang bị Linh Thú lúc này. Vui lòng thử lại.')],
+              components: []
+            }),
+            'trang bị Linh Thú'
+          );
         }
       });
       return;
@@ -155,7 +170,7 @@ module.exports = {
 
       let chosenTargetPetId = null;
 
-      collector.on('collect', async i => {
+      onComponentCollect(collector, async i => {
         if (i.customId === 'select_main_pet') {
           chosenTargetPetId = Number(i.values[0]);
           const sacrificeOptions = pets.filter(p => p.id !== chosenTargetPetId);
@@ -176,12 +191,26 @@ module.exports = {
         }
 
         if (i.customId === 'select_sacrifice_pet') {
+          collector.stop();
           const sacrificePetId = Number(i.values[0]);
-          const res = await evolvePetWithPet(userId, chosenTargetPetId, sacrificePetId);
-          if (!res.success) {
-            return i.update({ content: null, embeds: [createErrorEmbed('Tiến Hóa Thất Bại', res.message)], components: [] });
-          }
-          return i.update({ content: null, embeds: [createSuccessEmbed('Tiến Hóa Rực Rỡ', res.message, player.realm_id)], components: [] });
+          await runComponentAction(
+            i,
+            async () => {
+              const res = await evolvePetWithPet(userId, chosenTargetPetId, sacrificePetId);
+              return {
+                content: null,
+                embeds: [res.success
+                  ? createSuccessEmbed('Tiến Hóa Rực Rỡ', res.message, player.realm_id)
+                  : createErrorEmbed('Tiến Hóa Thất Bại', res.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Tiến Hóa Thất Bại', 'Không thể tiến hóa Linh Thú lúc này. Vui lòng kiểm tra lại túi đồ trước khi thử lại.')],
+              components: []
+            }),
+            'tiến hóa Linh Thú'
+          );
         }
       });
     }

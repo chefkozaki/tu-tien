@@ -135,15 +135,22 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 | `/boss channel channel:<#kênh>` | Đặt kênh thông báo boss mới cho máy chủ (quyền Quản lý Máy chủ); dùng `off` để tắt |
 | `/thi-luyen` | Khiêu chiến Thí Luyện Tháp PvE (Tầng 1 -> 100+) |
 | `/dau-phap` | Thách đấu 1v1 Đấu Pháp Đài với tu sĩ khác |
-| `/tong-mon thong-tin` | Xem thông tin Tông Môn và điểm cống hiến |
-| `/tong-mon lap` | Thành lập Tông Môn mới |
-| `/tong-mon gia-nhap` | Gia nhập Tông Môn |
-| `/tong-mon cong-hien` | Đóng góp Ngân Lượng hoặc Linh Kim cho tông môn |
-| `/tong-mon mo-linh-mach` | Xem, đánh chiếm mỏ hoặc thu thuế mỏ tông môn |
+| `/sect info` | Xem thông tin Tông Môn và điểm cống hiến |
+| `/sect members` | Xem danh sách thành viên và lực tu vi |
+| `/sect create name:<tên>` | Thành lập Tông Môn mới (cần đạt Linh Tướng và có 50.000 Ngân Lượng) |
+| `/sect join id:<id>` | Gửi đơn xin gia nhập Tông Môn, chờ Chưởng Môn chấp nhận |
+| `/sect applications` | Chưởng Môn xem các đơn xin gia nhập đang chờ |
+| `/sect approve application-id:<id>` | Chưởng Môn chấp nhận đơn gia nhập |
+| `/sect reject application-id:<id>` | Chưởng Môn từ chối đơn gia nhập |
+| `/sect recruit member:<người chơi>` | Chưởng Môn tuyển thành viên vào Tông Môn |
+| `/sect donate` | Đóng góp Ngân Lượng hoặc Linh Kim cho tông môn |
+| `/sect mine` | Xem, đánh chiếm mỏ hoặc thu thuế mỏ tông môn |
 | `/cho-den xem` | Duyệt danh sách vật phẩm đang bày bán trên Chợ Đen |
 | `/cho-den ban` | Đăng bán Linh Kim, Đan Dược, Linh Thảo bằng Ngân Lượng |
 | `/cho-den mua` | Mua vật phẩm trên Chợ Đen (Giảm giá 15% nếu có Trợ Thủ Sinh Hoạt) |
 | `/cho-den huy` | Hủy bài đăng bán để thu hồi vật phẩm |
+| `/shop view` | Xem giá động Đan Dược và Linh Kim từ cửa hàng hệ thống |
+| `/shop buy item:<vật phẩm> amount:<số lượng>` | Mua Đan Dược hoặc Linh Kim bằng Ngân Lượng |
 | `/tui-do xem` | Xem túi trữ vật (Linh Kim 8 phẩm, Đan Dược, Hạt Giống) |
 | `/tui-do dung-dan` | Uống đan dược (Tụ Linh Đan, Tẩy Tủy Đan) |
 | `/inv` hoặc `ainv` | Xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên |
@@ -153,4 +160,4 @@ Không dùng mật khẩu mặc định/yếu, không chia sẻ mật khẩu ho�
 
 Mỗi người chơi có cooldown chung 10 giây giữa các lệnh slash và prefix.
 
-Lệnh `/profile` và `/help` chỉ hiển thị với người gọi; khi dùng qua prefix (`aprofile`, `ahelp`), nội dung được gửi qua DM.
+Lệnh `/profile` và `/help` dùng phản hồi riêng tư khi gọi bằng slash. Khi gọi qua prefix (`aprofile`, `ahelp`), kết quả luôn được gửi tại kênh đã nhập lệnh.

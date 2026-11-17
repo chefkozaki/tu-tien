@@ -15,10 +15,11 @@ module.exports = {
         `⚡ **LỆNH NHANH:**\n` +
         `• Prefix mặc định là \`a\`: dùng \`aprofile\`, \`aafk\`, \`abase harvest\` hoặc \`awish pull banner:weapon count:10\`.\n` +
         `• Mỗi đạo hữu cần chờ 10 giây giữa các lệnh; cooldown dùng chung cho slash và prefix.\n` +
-        `• Hồ sơ và cẩm nang chỉ hiển thị riêng: lệnh slash dùng phản hồi riêng tư, prefix gửi kết quả qua DM.\n` +
+        `• Kết quả của lệnh prefix luôn gửi trong kênh đã nhập lệnh; lệnh slash vẫn giữ chế độ phản hồi riêng tư nếu được thiết lập.\n` +
         `• Dùng \`/inv\` hoặc \`ainv\` để xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên.\n` +
         `• Dùng đan dược bằng \`/bag use item_id:<ID>\` hoặc \`abag use <ID>\`; lấy ID trong \`/inv\`.\n` +
         `• Đổi prefix bằng \`/prefix value:<prefix>\` hoặc \`aprefix <prefix>\`; cần quyền Quản lý Máy chủ.\n\n` +
+        `• Quản lý lệnh theo kênh bằng \`adisable <lệnh>\` hoặc \`/adisable command:<lệnh>\`; dùng lại lệnh để bật lại, cần quyền Quản lý Máy chủ.\n\n` +
         `🥋 **1. CẢNH GIỚI & CẤP ĐỘ:**\n` +
         `• 9 Đại Cảnh Giới: Linh Sĩ ➔ Linh Úy ➔ Linh Tá ➔ Linh Tướng ➔ Linh Vương ➔ Linh Đế ➔ Chúa Tể ➔ Thần ➔ Tối Thượng.\n` +
         `• Mỗi cảnh giới gồm 10 Cấp: Cấp 1-3 (Hạ cấp), 4-6 (Trung cấp), 7-9 (Thượng cấp), Cấp 10 (Đỉnh cấp).\n` +
@@ -58,7 +59,8 @@ module.exports = {
         `• \`/boss channel channel:<#kênh>\` - Đặt kênh thông báo boss mới; dùng \`off\` để tắt (cần quyền Quản lý Máy chủ)\n` +
         `• \`/inv\`, \`/bag\` - Xem tài nguyên, Linh Kim và túi trữ vật\n` +
         `• \`/sect\`, \`/market\`, \`/rank\` - Tông môn, chợ và bảng xếp hạng\n` +
-        `• \`/help\`, \`/prefix\` - Hướng dẫn và thiết lập prefix`
+        `• \`/shop view\`, \`/shop buy\` - Mua Đan Dược và Linh Kim với giá động, áp dụng khan hiếm\n` +
+        `• \`/help\`, \`/prefix\`, \`/adisable\` - Hướng dẫn và quản lý prefix/lệnh theo kênh`
       );
 
     return interaction.reply({ embeds: [embed], ephemeral: true });

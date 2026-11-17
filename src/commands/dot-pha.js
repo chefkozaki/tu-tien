@@ -33,6 +33,15 @@ async function replyToDuplicateInteraction(interaction) {
   }
 }
 
+function sendInitialResponse(interaction, payload) {
+  if (interaction.deferred || interaction.replied) {
+    const editPayload = { ...payload };
+    delete editPayload.ephemeral;
+    return interaction.editReply(editPayload);
+  }
+  return interaction.reply(payload);
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('break')
@@ -43,21 +52,21 @@ module.exports = {
     const player = await getPlayer(userId);
 
     if (!player) {
-      return interaction.reply({
+      return sendInitialResponse(interaction, {
         embeds: [createErrorEmbed('Chưa Tu Tiên', 'Hãy dùng `/start` trước!')],
         ephemeral: true
       });
     }
 
     if (player.realm_id >= 8) {
-      return interaction.reply({
+      return sendInitialResponse(interaction, {
         embeds: [createTuTienEmbed(8).setTitle('🌟 Tối Thượng Cảnh Giới').setDescription('Đạo hữu đã đứng trên đỉnh cao vạn giới, không thể đột phá thêm!')],
         ephemeral: true
       });
     }
 
     if (player.level < 10) {
-      return interaction.reply({
+      return sendInitialResponse(interaction, {
         embeds: [createErrorEmbed(
           'Chưa Đạt Đỉnh Cấp',
           `Đạo hữu hiện tại mới ở **${getRealmDisplay(player.realm_id, player.level)}**.\n` +
@@ -92,7 +101,7 @@ module.exports = {
         ]);
 
       const row = new ActionRowBuilder().addComponents(selectMenu);
-      const res = await interaction.reply({ embeds: [embed], components: [row] });
+      const res = await sendInitialResponse(interaction, { embeds: [embed], components: [row] });
 
       const collector = res.createMessageComponentCollector({
         filter: i => i.user.id === interaction.user.id,
@@ -109,8 +118,8 @@ module.exports = {
           collector.stop();
           if (!await acknowledgeComponent(i)) return;
 
-          const chosenRule = i.values[0];
           try {
+            const chosenRule = i.values[0];
             const result = await executeBreakthrough(userId, chosenRule);
             if (!result.success) {
               return editAcknowledgedComponent(i, {
@@ -160,7 +169,7 @@ module.exports = {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    const replyMsg = await interaction.reply({ embeds: [embed], components: [row] });
+    const replyMsg = await sendInitialResponse(interaction, { embeds: [embed], components: [row] });
 
     const collector = replyMsg.createMessageComponentCollector({
       filter: i => i.user.id === interaction.user.id,

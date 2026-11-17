@@ -14,6 +14,7 @@ const { getPlayer } = require('../services/playerService');
 const { getEquippedHelper } = require('../services/helperService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
+const { onComponentCollect, runComponentAction } = require('../utils/componentAction');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -148,16 +149,27 @@ module.exports = {
         time: 60000
       });
 
-      collector.on('collect', async i => {
+      onComponentCollect(collector, async i => {
         if (i.customId === 'btn_harvest_garden') {
-          const harvestRes = await harvestGarden(userId);
-          if (!harvestRes.success) {
-            return i.update({ embeds: [createErrorEmbed('Thu Hoạch Thất Bại', harvestRes.message)], components: [] });
-          }
-          return i.update({
-            embeds: [createSuccessEmbed('Thu Hoạch Hoàn Tất', harvestRes.message, player.realm_id)],
-            components: []
-          });
+          collector.stop();
+          await runComponentAction(
+            i,
+            async () => {
+              const harvestRes = await harvestGarden(userId);
+              return {
+                embeds: [harvestRes.success
+                  ? createSuccessEmbed('Thu Hoạch Hoàn Tất', harvestRes.message, player.realm_id)
+                  : createErrorEmbed('Thu Hoạch Thất Bại', harvestRes.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Thu Hoạch Thất Bại', 'Không thể thu hoạch Dược Viên lúc này. Vui lòng kiểm tra trạng thái vườn trước khi thử lại.')],
+              components: []
+            }),
+            'thu hoạch Dược Viên'
+          );
+          return;
         }
 
         if (i.customId === 'btn_plant_seed') {
@@ -177,18 +189,28 @@ module.exports = {
         }
 
         if (i.customId === 'select_seed_plant') {
+          collector.stop();
           const selectedSeed = i.values[0];
-          const plantRes = await plantSeed(userId, selectedSeed);
-          if (!plantRes.success) {
-            return i.update({ content: null, embeds: [createErrorEmbed('Gieo Trồng Thất Bại', plantRes.message)], components: [] });
-          }
-          return i.update({
-            content: null,
-            embeds: [createSuccessEmbed('Gieo Trồng Thành Công', plantRes.message, player.realm_id)],
-            components: []
-          });
+          await runComponentAction(
+            i,
+            async () => {
+              const plantRes = await plantSeed(userId, selectedSeed);
+              return {
+                content: null,
+                embeds: [plantRes.success
+                  ? createSuccessEmbed('Gieo Trồng Thành Công', plantRes.message, player.realm_id)
+                  : createErrorEmbed('Gieo Trồng Thất Bại', plantRes.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Gieo Trồng Thất Bại', 'Không thể gieo hạt lúc này. Vui lòng kiểm tra lại Động Phủ trước khi thử lại.')],
+              components: []
+            }),
+            'gieo trồng hạt giống'
+          );
         }
-      });
+      }, 'Dược Viên');
       return;
     }
 
@@ -228,16 +250,29 @@ module.exports = {
         time: 60000
       });
 
-      collector.on('collect', async i => {
+      onComponentCollect(collector, async i => {
         if (i.customId === 'select_pill_recipe') {
+          collector.stop();
           const recipeKey = i.values[0];
-          const res = await refinePill(userId, recipeKey);
-          if (!res.success) {
-            return i.update({ embeds: [createErrorEmbed('Luyện Đan Thất Bại', res.message)], components: [] });
-          }
-          return i.update({ embeds: [createSuccessEmbed('Luyện Đan Thành Công', res.message, player.realm_id)], components: [] });
+          await runComponentAction(
+            i,
+            async () => {
+              const res = await refinePill(userId, recipeKey);
+              return {
+                embeds: [res.success
+                  ? createSuccessEmbed('Luyện Đan Thành Công', res.message, player.realm_id)
+                  : createErrorEmbed('Luyện Đan Thất Bại', res.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Luyện Đan Thất Bại', 'Không thể luyện đan lúc này. Vui lòng kiểm tra lại nguyên liệu và Ngân Lượng trước khi thử lại.')],
+              components: []
+            }),
+            'luyện đan'
+          );
         }
-      });
+      }, 'luyện đan');
       return;
     }
 
