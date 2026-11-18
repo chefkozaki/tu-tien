@@ -123,7 +123,16 @@ async function buildPrefixInteraction(message, command, argumentTokens, prefix) 
   const resolvedValues = new Map();
   for (const option of optionDefinitions) {
     if (!values.has(option.name)) continue;
-    const value = coerceValue(option, values.get(option.name));
+    let rawValue = values.get(option.name);
+    if (
+      option.name === 'all' &&
+      option.type === ApplicationCommandOptionType.String &&
+      option.choices?.some(choice => choice.value === 'all') &&
+      /^true$/i.test(rawValue)
+    ) {
+      rawValue = 'all';
+    }
+    const value = coerceValue(option, rawValue);
     if (option.type === ApplicationCommandOptionType.User) {
       const userId = value.match(/^<@!?(\d+)>$/)?.[1] || value;
       if (!/^\d+$/.test(userId)) {
