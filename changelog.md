@@ -16,8 +16,8 @@
   - `market sell amount:all` đăng bán toàn bộ vật phẩm của đúng loại đang sở hữu.
   - `base upgrade levels:all` nâng Tụ Linh Trận tối đa bằng bạc hiện có, không vượt cấp 50.
   - `wish pull count:all` Cầu Nguyện tối đa 100 lượt theo số bạc hợp lệ hiện có.
-  - `aweapons devour all` thôn phệ tối đa 100 Linh Khí dư thừa không phải Bản Mệnh và không trang bị mỗi lần.
-- **Sửa thôn phệ Linh Khí hàng loạt:** Xử lý tối đa 100 nguyên liệu trong một transaction, chỉ xóa Linh Khí không phải Bản Mệnh và không trang bị; kết quả báo rõ số lượng và chỉ số nhận được.
+  - `aweapons devour all` thôn phệ tối đa 50 Linh Khí dư thừa không phải Bản Mệnh và không trang bị mỗi lần.
+- **Sửa thôn phệ Linh Khí hàng loạt:** Xử lý tối đa 50 nguyên liệu trong một transaction, chỉ xóa Linh Khí không phải Bản Mệnh và không trang bị; kết quả báo rõ số lượng và chỉ số nhận được.
 - **Tương thích lệnh thôn phệ:** Giữ option boolean cho slash để tương thích lệnh đã đăng ký; prefix chấp nhận cả `aweapons devour all` và `aweapons devour all:true`.
 - **Cân bằng Thủ Vệ Tháp:** Thủ Vệ dùng đường cong riêng theo tầng/chặng 10 tầng cho HP, Công, Thủ, Tốc độ và bạo kích. Chỉ số không còn nhân theo level, cảnh giới, Linh Lực hoặc trang bị của người chơi.
 - **Giảm thưởng Thí Luyện Tháp:** Linh Kim mỗi tầng giảm còn 1% lượng cần cho lần đột phá tương ứng (làm tròn xuống, tối thiểu 1 viên); Bạc và Linh Lực giảm còn một nửa.

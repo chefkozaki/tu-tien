@@ -1,7 +1,7 @@
 const { getDb } = require('../config/database');
 const { withTransaction } = require('../utils/databaseTransaction');
 
-const MAX_BULK_DEVOUR_WEAPONS = 100;
+const MAX_BULK_DEVOUR_WEAPONS = 50;
 
 async function getUserWeapons(userId) {
   const db = getDb();

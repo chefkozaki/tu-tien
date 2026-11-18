@@ -90,7 +90,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `weapons list` | Xem Linh Khí. |
 | `weapons equip` | Chọn Linh Khí để trang bị qua menu. |
 | `weapons bond` | Chọn Linh Khí để tế luyện thành Bản Mệnh Khí. |
-| `weapons devour` | Chọn Linh Khí làm nguyên liệu cho Bản Mệnh Khí thôn phệ; dùng `aweapons devour all` để thôn phệ tối đa 100 Linh Khí dư thừa không phải Bản Mệnh và không trang bị mỗi lần. |
+| `weapons devour` | Chọn Linh Khí làm nguyên liệu cho Bản Mệnh Khí thôn phệ; dùng `aweapons devour all` để thôn phệ tối đa 50 Linh Khí dư thừa không phải Bản Mệnh và không trang bị mỗi lần. |
 | `pets list` | Xem Linh Thú và Trận Pháp Cộng Hưởng. |
 | `pets equip slot:1` | Chọn Linh Thú cho ô 1; `slot` chỉ nhận `1`, `2`, hoặc `3`. |
 | `pets evolve` | Chọn Linh Thú chính và Linh Thú hiến tế không trang bị qua menu; tối đa 5 Sao và phải trả Ngân Lượng theo mức tiến hóa. |
