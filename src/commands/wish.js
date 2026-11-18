@@ -90,8 +90,7 @@ function buildWishResultEmbed(wishResult, player) {
     bannerTheme = '🌠 **VỆT SÁNG TỬ SẮC HUYỀN ẢO HẠ PHÀM!**\nBảo vật Tiên Phẩm 4★ đã thuộc về đạo hữu!';
   }
 
-  const displayedResults = results.slice(0, 50);
-  let itemsList = displayedResults.map((item, idx) => {
+  const formatResult = (item, idx) => {
     let starStr = '⭐⭐⭐';
     let typeTag = '';
     let badge = '';
@@ -119,28 +118,47 @@ function buildWishResultEmbed(wishResult, player) {
       return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [${role} - Bậc ${item.tier}]${badge}\n` +
              `   └ *${String(item.effect_desc || '').slice(0, 80)}*`;
     }
-  }).join('\n\n');
-  if (results.length > displayedResults.length) {
-    itemsList += `\n\n… và **${results.length - displayedResults.length}** vật phẩm khác đã được thêm vào kho.`;
+  };
+
+  const descriptionPrefix =
+    `${bannerTheme}\n\n` +
+    `⛩️ **Banner:** \`${banner.name}\` | 💫 **Số lượt:** \`${wishCount} Lần\`\n` +
+    `💸 **Chi phí:** \`-${formatNumber(totalCost)}\` Bạc | 🎁 **Hồi đáp:** \`+${formatNumber(totalBonusSilver)}\` Bạc\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🎁 **DANH SÁCH VẬT PHẨM ĐẮC ĐƯỢC:**\n\n`;
+  const descriptionSuffix =
+    `\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `📊 **Bảo Hiểm Sau Lần Quay:** 5★: \`${newPity5}/90\` | 4★: \`${newPity4}/10\`\n` +
+    (wishResult.bannerType !== 'standard'
+      ? `🎯 **Rate-Up 5★ kế tiếp:** ${wishResult.rateUpGuaranteed ? '**Được bảo đảm!**' : '50/50'}\n`
+      : '') +
+    `💰 **Ngân Lượng Còn Lại:** \`${formatNumber(remainingSilver)}\` Bạc\n` +
+    `*(Vật phẩm đã được tự động thêm vào Bách Binh Các, Trân Thú Uyển hoặc Đạo Hữu Các!)*`;
+  const maxDescriptionLength = 4096;
+  const displayedResults = [];
+
+  for (const [index, item] of results.slice(0, 50).entries()) {
+    const candidateResults = [...displayedResults, formatResult(item, index)];
+    const omittedCount = results.length - candidateResults.length;
+    const omittedNote = omittedCount > 0
+      ? `\n\n… và **${omittedCount}** vật phẩm khác đã được thêm vào kho.`
+      : '';
+    const candidateDescription = descriptionPrefix + candidateResults.join('\n\n') + omittedNote + descriptionSuffix;
+    if (candidateDescription.length > maxDescriptionLength) break;
+    displayedResults.push(candidateResults[candidateResults.length - 1]);
   }
+
+  const omittedCount = results.length - displayedResults.length;
+  const itemsList = displayedResults.join('\n\n') +
+    (omittedCount > 0
+      ? `\n\n… và **${omittedCount}** vật phẩm khác đã được thêm vào kho.`
+      : '');
 
   const embed = new EmbedBuilder()
     .setColor(color)
     .setTitle(title)
     .setDescription(
-      `${bannerTheme}\n\n` +
-      `⛩️ **Banner:** \`${banner.name}\` | 💫 **Số lượt:** \`${wishCount} Lần\`\n` +
-      `💸 **Chi phí:** \`-${formatNumber(totalCost)}\` Bạc | 🎁 **Hồi đáp:** \`+${formatNumber(totalBonusSilver)}\` Bạc\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🎁 **DANH SÁCH VẬT PHẨM ĐẮC ĐƯỢC:**\n\n` +
-      itemsList + `\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `📊 **Bảo Hiểm Sau Lần Quay:** 5★: \`${newPity5}/90\` | 4★: \`${newPity4}/10\`\n` +
-      (wishResult.bannerType !== 'standard'
-        ? `🎯 **Rate-Up 5★ kế tiếp:** ${wishResult.rateUpGuaranteed ? '**Được bảo đảm!**' : '50/50'}\n`
-        : '') +
-      `💰 **Ngân Lượng Còn Lại:** \`${formatNumber(remainingSilver)}\` Bạc\n` +
-      `*(Vật phẩm đã được tự động thêm vào Bách Binh Các, Trân Thú Uyển hoặc Đạo Hữu Các!)*`
+      descriptionPrefix + itemsList + descriptionSuffix
     )
     .setFooter({ text: 'Có thể bấm nút bên dưới để tiếp tục Cầu Nguyện hoặc đổi Banner!' });
   const featuredItemImage = results.find(item => item.image_url)?.image_url;

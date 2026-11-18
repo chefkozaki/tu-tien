@@ -83,10 +83,11 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('devour')
         .setDescription('Cho Bản Mệnh Linh Khí nuốt linh khí rác khác để tăng cấp')
-        .addBooleanOption(opt =>
+        .addStringOption(opt =>
           opt.setName('all')
-            .setDescription('Thôn phệ toàn bộ Linh Khí dư thừa không trang bị')
+            .setDescription('Nhập all để thôn phệ toàn bộ Linh Khí dư thừa không trang bị')
             .setRequired(false)
+            .addChoices({ name: 'all', value: 'all' })
         )
     ),
 
@@ -268,7 +269,9 @@ module.exports = {
         });
       }
 
-      const foodWeapons = weapons.filter(w => w.id !== natal.id && w.is_equipped !== 1);
+      const foodWeapons = weapons.filter(w =>
+        w.id !== natal.id && w.is_natal !== 1 && w.is_equipped !== 1
+      );
       if (foodWeapons.length === 0) {
         return interaction.reply({
           embeds: [createErrorEmbed('Không Có Linh Khí Dư Thừa', 'Cần có các linh khí khác không trang bị để làm nguyên liệu cho Bản Mệnh Khí nuốt!')],
@@ -276,7 +279,7 @@ module.exports = {
         });
       }
 
-      if (interaction.options.getBoolean('all')) {
+      if (interaction.options.getString('all') === 'all') {
         const results = [];
         for (const food of foodWeapons) {
           const res = await devourWeapon(userId, natal.id, food.id);

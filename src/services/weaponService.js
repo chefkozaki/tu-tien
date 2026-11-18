@@ -90,6 +90,8 @@ async function devourWeapon(userId, natalWeaponId, foodWeaponId) {
 
   if (!natal || !food) return { success: false, message: 'Không tìm thấy Linh Khí!' };
   if (!natal.is_natal) return { success: false, message: 'Chỉ Bản Mệnh Linh Khí mới có khả năng thôn phệ linh khí khác!' };
+  if (food.is_natal) return { success: false, message: 'Không thể dùng Bản Mệnh Linh Khí làm nguyên liệu thôn phệ!' };
+  if (food.is_equipped) return { success: false, message: 'Không thể thôn phệ Linh Khí đang trang bị!' };
 
   // Xóa vũ khí làm thức ăn
   await db.execute({
