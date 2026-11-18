@@ -84,11 +84,10 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('devour')
         .setDescription('Cho Bản Mệnh Linh Khí nuốt linh khí rác khác để tăng cấp')
-        .addStringOption(opt =>
+        .addBooleanOption(opt =>
           opt.setName('all')
-            .setDescription('Nhập all để thôn phệ toàn bộ Linh Khí dư thừa không trang bị')
+            .setDescription('Thôn phệ toàn bộ Linh Khí dư thừa không trang bị')
             .setRequired(false)
-            .addChoices({ name: 'all', value: 'all' })
         )
     ),
 
@@ -270,7 +269,7 @@ module.exports = {
         });
       }
 
-      if (interaction.options.getString('all') === 'all') {
+      if (interaction.options.getBoolean('all')) {
         const result = await devourAllWeapons(userId);
         return interaction.reply({
           embeds: [result.success

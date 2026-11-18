@@ -69,7 +69,8 @@ function coerceValue(option, rawValue) {
     value = Number(rawValue);
     if (!Number.isFinite(value)) throw new Error(`\`${option.name}\` phải là số.`);
   } else if (option.type === ApplicationCommandOptionType.Boolean) {
-    if (/^(true|yes|1)$/i.test(rawValue)) value = true;
+    if (option.name === 'all' && /^all$/i.test(rawValue)) value = true;
+    else if (/^(true|yes|1)$/i.test(rawValue)) value = true;
     else if (/^(false|no|0)$/i.test(rawValue)) value = false;
     else throw new Error(`\`${option.name}\` phải là true hoặc false.`);
   } else {

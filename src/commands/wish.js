@@ -278,21 +278,25 @@ module.exports = {
 
   async execute(interaction) {
     const userId = interaction.user.id;
+    const sub = interaction.options.getSubcommand();
+    const isPull = sub === 'pull';
+    if (isPull) await interaction.deferReply();
+
     const player = await getPlayer(userId);
     if (!player) {
-      return interaction.reply({
+      const response = {
         embeds: [createErrorEmbed('Chưa Tu Tiên', 'Đạo hữu hãy dùng `/start` trước để bước vào con đường tu chân!')],
-        ephemeral: true
-      });
+        ephemeral: true,
+        components: []
+      };
+      return isPull ? interaction.editReply(response) : interaction.reply(response);
     }
 
-    const sub = interaction.options.getSubcommand();
     let currentBanner = interaction.options.getString('banner') || 'standard';
 
     if (sub === 'pull') {
       const countInput = interaction.options.getString('count') || '1';
       const count = /^all$/i.test(countInput) ? 'all' : Number(countInput);
-      await interaction.deferReply();
       const wishRes = await performWish(userId, currentBanner, count);
 
       if (!wishRes.success) {
