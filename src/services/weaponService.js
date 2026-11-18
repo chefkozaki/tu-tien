@@ -1,6 +1,8 @@
 const { getDb } = require('../config/database');
 const { withTransaction } = require('../utils/databaseTransaction');
 
+const MAX_BULK_DEVOUR_WEAPONS = 100;
+
 async function getUserWeapons(userId) {
   const db = getDb();
   const res = await db.execute({
@@ -160,13 +162,21 @@ async function devourAllWeapons(userId) {
         return { success: false, message: 'Chưa có Bản Mệnh Linh Khí để thôn phệ.' };
       }
 
+      const foodCountRes = await tx.execute({
+        sql: `SELECT COUNT(*) AS count FROM tutien_weapons
+          WHERE user_id = ? AND id != ?
+            AND COALESCE(is_natal, 0) = 0
+            AND COALESCE(is_equipped, 0) = 0`,
+        args: [userId, natal.id]
+      });
       const foodRes = await tx.execute({
         sql: `SELECT id, tier, atk, def FROM tutien_weapons
           WHERE user_id = ? AND id != ?
             AND COALESCE(is_natal, 0) = 0
             AND COALESCE(is_equipped, 0) = 0
-          ORDER BY id`,
-        args: [userId, natal.id]
+          ORDER BY id
+          LIMIT ?`,
+        args: [userId, natal.id, MAX_BULK_DEVOUR_WEAPONS]
       });
       if (foodRes.rows.length === 0) {
         await tx.rollback();
@@ -204,10 +214,18 @@ async function devourAllWeapons(userId) {
       }
 
       await tx.commit();
+      const remainingCount = Math.max(
+        0,
+        Number(foodCountRes.rows[0]?.count || 0) - foodRes.rows.length
+      );
       return {
         success: true,
         count: foodRes.rows.length,
-        message: `Bản Mệnh Linh Khí **${natal.name}** đã thôn phệ **${foodRes.rows.length}** Linh Khí dư thừa, nhận **+${gainedAtk} Công, +${gainedDef} Thủ**! (Bậc hiện tại: Tier ${newTier})`
+        remainingCount,
+        message: `Bản Mệnh Linh Khí **${natal.name}** đã thôn phệ **${foodRes.rows.length}** Linh Khí dư thừa, nhận **+${gainedAtk} Công, +${gainedDef} Thủ**! (Bậc hiện tại: Tier ${newTier})` +
+          (remainingCount > 0
+            ? `\nCòn **${remainingCount}** Linh Khí dư thừa; dùng lệnh lần nữa để tiếp tục (tối đa ${MAX_BULK_DEVOUR_WEAPONS} mỗi lần).`
+            : '')
       };
     } catch (error) {
       await tx.rollback();
