@@ -10,7 +10,7 @@
 
 ### Cân bằng và tiện ích
 
-- **Sửa lỗi Cầu Nguyện nhiều lượt:** Giới hạn danh sách hiển thị trong embed theo giới hạn ký tự Discord; toàn bộ vật phẩm vẫn được thêm vào kho.
+- **Sửa lỗi Cầu Nguyện nhiều lượt:** Giới hạn an toàn phần mô tả embed và xác nhận interaction trước khi xử lý; toàn bộ vật phẩm vẫn được thêm vào kho kể cả khi kết quả quá dài để hiển thị.
 - **Admin reset tài nguyên người chơi:** Có thể reset Ngân Lượng và toàn bộ vật phẩm/tài nguyên trong túi của tất cả người chơi, giữ nguyên cảnh giới, cấp độ, Linh Khí, Linh Thú và Trợ Thủ.
 - **Tham số `all`:**
   - `market sell amount:all` đăng bán toàn bộ vật phẩm của đúng loại đang sở hữu.

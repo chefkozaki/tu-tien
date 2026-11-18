@@ -134,7 +134,7 @@ function buildWishResultEmbed(wishResult, player) {
       : '') +
     `💰 **Ngân Lượng Còn Lại:** \`${formatNumber(remainingSilver)}\` Bạc\n` +
     `*(Vật phẩm đã được tự động thêm vào Bách Binh Các, Trân Thú Uyển hoặc Đạo Hữu Các!)*`;
-  const maxDescriptionLength = 4096;
+  const maxDescriptionLength = 3500;
   const displayedResults = [];
 
   for (const [index, item] of results.slice(0, 50).entries()) {
@@ -148,18 +148,24 @@ function buildWishResultEmbed(wishResult, player) {
     displayedResults.push(candidateResults[candidateResults.length - 1]);
   }
 
-  const omittedCount = results.length - displayedResults.length;
-  const itemsList = displayedResults.join('\n\n') +
-    (omittedCount > 0
-      ? `\n\n… và **${omittedCount}** vật phẩm khác đã được thêm vào kho.`
-      : '');
+  const buildDescription = () => {
+    const omittedCount = results.length - displayedResults.length;
+    const itemsList = displayedResults.join('\n\n') +
+      (omittedCount > 0
+        ? `\n\n… và **${omittedCount}** vật phẩm khác đã được thêm vào kho.`
+        : '');
+    return descriptionPrefix + itemsList + descriptionSuffix;
+  };
+  let description = buildDescription();
+  while (description.length > maxDescriptionLength && displayedResults.length > 0) {
+    displayedResults.pop();
+    description = buildDescription();
+  }
 
   const embed = new EmbedBuilder()
     .setColor(color)
     .setTitle(title)
-    .setDescription(
-      descriptionPrefix + itemsList + descriptionSuffix
-    )
+    .setDescription(description)
     .setFooter({ text: 'Có thể bấm nút bên dưới để tiếp tục Cầu Nguyện hoặc đổi Banner!' });
   const featuredItemImage = results.find(item => item.image_url)?.image_url;
   if (isHttpUrl(featuredItemImage)) embed.setThumbnail(featuredItemImage);
@@ -286,18 +292,19 @@ module.exports = {
     if (sub === 'pull') {
       const countInput = interaction.options.getString('count') || '1';
       const count = /^all$/i.test(countInput) ? 'all' : Number(countInput);
+      await interaction.deferReply();
       const wishRes = await performWish(userId, currentBanner, count);
 
       if (!wishRes.success) {
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [createErrorEmbed('Cầu Nguyện Thất Bại', wishRes.message)],
-          ephemeral: true
+          components: []
         });
       }
 
       const embed = buildWishResultEmbed(wishRes, player);
       const rows = buildActionRows(currentBanner);
-      const msg = await interaction.reply({ embeds: [embed], components: rows });
+      const msg = await interaction.editReply({ embeds: [embed], components: rows });
       setupCollector(msg, userId, currentBanner);
       return;
     }
