@@ -90,7 +90,8 @@ function buildWishResultEmbed(wishResult, player) {
     bannerTheme = '🌠 **VỆT SÁNG TỬ SẮC HUYỀN ẢO HẠ PHÀM!**\nBảo vật Tiên Phẩm 4★ đã thuộc về đạo hữu!';
   }
 
-  const itemsList = results.map((item, idx) => {
+  const displayedResults = results.slice(0, 50);
+  let itemsList = displayedResults.map((item, idx) => {
     let starStr = '⭐⭐⭐';
     let typeTag = '';
     let badge = '';
@@ -119,6 +120,9 @@ function buildWishResultEmbed(wishResult, player) {
              `   └ *${String(item.effect_desc || '').slice(0, 80)}*`;
     }
   }).join('\n\n');
+  if (results.length > displayedResults.length) {
+    itemsList += `\n\n… và **${results.length - displayedResults.length}** vật phẩm khác đã được thêm vào kho.`;
+  }
 
   const embed = new EmbedBuilder()
     .setColor(color)
@@ -236,13 +240,14 @@ module.exports = {
               { name: '🌌 Thiên Mệnh Thần Cơ (Tổng Hợp)', value: 'standard' }
             )
         )
-        .addIntegerOption(opt =>
+        .addStringOption(opt =>
           opt.setName('count')
-            .setDescription('Số lần quay (1 lần hoặc 10 lần)')
+            .setDescription('Số lần quay: 1, 10 hoặc all')
             .setRequired(true)
             .addChoices(
-              { name: '1 Lần (2,000 Bạc)', value: 1 },
-              { name: '10 Lần (18,000 Bạc - Chắc chắn có 4★+)', value: 10 }
+              { name: '1 Lần (2,000 Bạc)', value: '1' },
+              { name: '10 Lần (18,000 Bạc - Chắc chắn có 4★+)', value: '10' },
+              { name: 'Toàn bộ lượt có thể quay (all)', value: 'all' }
             )
         )
     ),
@@ -261,7 +266,8 @@ module.exports = {
     let currentBanner = interaction.options.getString('banner') || 'standard';
 
     if (sub === 'pull') {
-      const count = interaction.options.getInteger('count') || 1;
+      const countInput = interaction.options.getString('count') || '1';
+      const count = /^all$/i.test(countInput) ? 'all' : Number(countInput);
       const wishRes = await performWish(userId, currentBanner, count);
 
       if (!wishRes.success) {

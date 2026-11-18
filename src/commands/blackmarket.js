@@ -42,9 +42,9 @@ module.exports = {
               { name: 'Bách Hóa Kim Đan', value: 'pill:BachHoaKimDan:Bách Hóa Kim Đan' }
             )
         )
-        .addIntegerOption(opt =>
+        .addStringOption(opt =>
           opt.setName('amount')
-            .setDescription('Số lượng muốn bán')
+            .setDescription('Số lượng muốn bán hoặc all để bán toàn bộ')
             .setRequired(true)
         )
         .addIntegerOption(opt =>
@@ -115,11 +115,22 @@ module.exports = {
     if (sub === 'sell') {
       const rawChoice = interaction.options.getString('item');
       const [itemCategory, itemKey, itemName] = rawChoice.split(':');
-      const amount = interaction.options.getInteger('amount');
+      const amountInput = interaction.options.getString('amount');
       const priceSilver = interaction.options.getInteger('price');
 
-      if (amount <= 0 || priceSilver <= 0) {
+      if (priceSilver <= 0) {
         return interaction.reply({ embeds: [createErrorEmbed('Lỗi Dữ Liệu', 'Số lượng và giá phải lớn hơn 0!')], ephemeral: true });
+      }
+
+      let amount;
+      if (/^all$/i.test(amountInput)) {
+        const { getItemAmount } = require('../services/itemService');
+        amount = await getItemAmount(userId, itemCategory, itemKey);
+      } else {
+        amount = Number(amountInput);
+      }
+      if (!Number.isSafeInteger(amount) || amount <= 0) {
+        return interaction.reply({ embeds: [createErrorEmbed('Lỗi Dữ Liệu', 'Số lượng phải là số nguyên dương hoặc all!')], ephemeral: true });
       }
 
       const res = await listItem(userId, player.dao_hieu || player.username, itemCategory, itemKey, itemName, amount, priceSilver);

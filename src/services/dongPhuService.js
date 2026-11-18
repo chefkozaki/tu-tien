@@ -66,23 +66,37 @@ async function upgradeTuLinhTran(userId, requestedLevels = 1) {
   if (!dongPhu || !player) return { success: false, message: 'Chưa có thông tin Động Phủ!' };
 
   const currentLevel = Number(dongPhu.array_level);
-  const levels = Number(requestedLevels);
-  if (!Number.isInteger(levels) || levels < 1) {
+  let levels = requestedLevels === 'all' ? null : Number(requestedLevels);
+  if (levels !== null && (!Number.isInteger(levels) || levels < 1)) {
     return { success: false, message: 'Số cấp nâng phải là số nguyên lớn hơn 0!' };
   }
   if (currentLevel >= 50) return { success: false, message: 'Tụ Linh Trận đã đạt cấp tối đa (Cấp 50)!' };
-  if (currentLevel + levels > 50) {
-    return {
-      success: false,
-      message: `Chỉ có thể nâng tối đa ${50 - currentLevel} cấp từ cấp hiện tại (${currentLevel}) để không vượt quá cấp 50.`
-    };
-  }
 
   if (Number(dongPhu.afk_enabled) === 1) {
     const settlement = await settleAfk(userId, { allowZeroMinutes: true });
     if (!settlement.success) return settlement;
     dongPhu = await getDongPhu(userId);
     player = await getPlayer(userId);
+  }
+
+  if (levels === null) {
+    const maxLevels = 50 - currentLevel;
+    levels = 0;
+    for (let candidate = 1; candidate <= maxLevels; candidate++) {
+      const cost = 2000 * (candidate * currentLevel + (candidate * (candidate - 1)) / 2);
+      if (cost > player.silver) break;
+      levels = candidate;
+    }
+  }
+
+  if (levels < 1) {
+    return { success: false, message: 'Ngân lượng hiện có chưa đủ để nâng cấp Tụ Linh Trận!' };
+  }
+  if (currentLevel + levels > 50) {
+    return {
+      success: false,
+      message: `Chỉ có thể nâng tối đa ${50 - currentLevel} cấp từ cấp hiện tại (${currentLevel}) để không vượt quá cấp 50.`
+    };
   }
 
   const cost = 2000 * (levels * currentLevel + (levels * (levels - 1)) / 2);

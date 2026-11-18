@@ -498,8 +498,29 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
     return { success: false, message: 'Đạo hữu chưa bước vào con đường Tu Tiên! Hãy dùng `/start` trước.' };
   }
 
-  const wishCount = count === 10 ? 10 : 1;
-  const totalCost = wishCount === 10 ? WISH_COST_TEN : WISH_COST_SINGLE;
+  let wishCount;
+  let totalCost;
+  if (count === 'all') {
+    const tenPulls = Math.floor(Number(player.silver) / WISH_COST_TEN);
+    const remainingSilver = Number(player.silver) - tenPulls * WISH_COST_TEN;
+    const singlePulls = Math.floor(remainingSilver / WISH_COST_SINGLE);
+    wishCount = tenPulls * 10 + singlePulls;
+    totalCost = tenPulls * WISH_COST_TEN + singlePulls * WISH_COST_SINGLE;
+    wishCount = Math.min(wishCount, 100);
+    const optimizedTenPulls = Math.floor(wishCount / 10);
+    const optimizedSinglePulls = wishCount % 10;
+    totalCost = optimizedTenPulls * WISH_COST_TEN + optimizedSinglePulls * WISH_COST_SINGLE;
+  } else {
+    wishCount = count === 10 ? 10 : 1;
+    totalCost = wishCount === 10 ? WISH_COST_TEN : WISH_COST_SINGLE;
+  }
+
+  if (wishCount < 1) {
+    return {
+      success: false,
+      message: `Ngân lượng không đủ! Cần ít nhất **${WISH_COST_SINGLE.toLocaleString('vi-VN')}** Bạc để Cầu Nguyện (Hiện có: **${Number(player.silver).toLocaleString('vi-VN')}** Bạc).`
+    };
+  }
 
   if (player.silver < totalCost) {
     return {

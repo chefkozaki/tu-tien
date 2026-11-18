@@ -1,6 +1,11 @@
 const { ChannelType, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const { getPlayer } = require('../services/playerService');
-const { getActiveBoss, attackBoss } = require('../services/bossService');
+const {
+  getActiveBoss,
+  attackBoss,
+  getDailyBossSpawnTime,
+  formatBossSchedule
+} = require('../services/bossService');
 const {
   getBossAnnouncementChannel,
   setBossAnnouncementChannel,
@@ -91,6 +96,19 @@ module.exports = {
 
     if (sub === 'info') {
       const boss = await getActiveBoss();
+      if (!boss) {
+        const nextSpawnTime = getDailyBossSpawnTime();
+        const scheduledToday = Date.now() >= nextSpawnTime;
+        return interaction.reply({
+          embeds: [createErrorEmbed(
+            'Boss Thế Giới Chưa Xuất Hiện',
+            scheduledToday
+              ? `Boss đã bị tiêu diệt hoặc đang chờ chu kỳ tiếp theo. Lần xuất hiện kế tiếp: **${formatBossSchedule(getDailyBossSpawnTime(Date.now() + 86400000))}**.`
+              : `Boss Thế Giới chỉ xuất hiện lúc **20:00 hàng ngày**. Lần xuất hiện kế tiếp: **${formatBossSchedule(nextSpawnTime)}**.`
+          )],
+          ephemeral: true
+        });
+      }
       const currentHp = Number(boss.current_hp);
       const maxHp = Number(boss.max_hp);
       const hpBar = createProgressBar(currentHp, maxHp);

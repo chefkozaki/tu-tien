@@ -148,12 +148,18 @@ module.exports = {
           ephemeral: true
         });
       }
-
+      const eligibleTargets = pets.filter(p => p.star < 5);
+      if (eligibleTargets.length === 0) {
+        return interaction.reply({
+          embeds: [createErrorEmbed('Đã Tối Đa', 'Tất cả Linh Thú chính đều đã đạt 5 Sao!')],
+          ephemeral: true
+        });
+      }
       const menu = new StringSelectMenuBuilder()
         .setCustomId('select_main_pet')
         .setPlaceholder('Chọn Linh Thú CHÍNH muốn tiến hóa...')
         .addOptions(
-          pets.filter(p => p.star < 5).slice(0, 25).map(p => ({
+          eligibleTargets.slice(0, 25).map(p => ({
             label: `${p.name} (${p.star}⭐) [${p.element}]`,
             description: `Công +${p.atk}, HP +${p.hp}`,
             value: p.id.toString()
@@ -161,7 +167,10 @@ module.exports = {
         );
 
       const row = new ActionRowBuilder().addComponents(menu);
-      const msg = await interaction.reply({ content: 'Bước 1: Chọn Linh Thú CHÍNH để tăng Sao:', components: [row] });
+      const msg = await interaction.reply({
+        content: 'Bước 1: Chọn Linh Thú CHÍNH để tăng Sao.\nChi phí theo Sao hiện tại: 1★→2★ 10.000, 2★→3★ 25.000, 3★→4★ 50.000, 4★→5★ 100.000 Bạc.',
+        components: [row]
+      });
 
       const collector = msg.createMessageComponentCollector({
         filter: i => i.user.id === interaction.user.id,
@@ -173,7 +182,7 @@ module.exports = {
       onComponentCollect(collector, async i => {
         if (i.customId === 'select_main_pet') {
           chosenTargetPetId = Number(i.values[0]);
-          const sacrificeOptions = pets.filter(p => p.id !== chosenTargetPetId);
+          const sacrificeOptions = pets.filter(p => p.id !== chosenTargetPetId && p.is_equipped !== 1);
 
           const sacrificeMenu = new StringSelectMenuBuilder()
             .setCustomId('select_sacrifice_pet')

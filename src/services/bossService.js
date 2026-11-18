@@ -10,29 +10,78 @@ const { announceBossSpawn } = require('./bossAnnouncementService');
 const { withTransaction } = require('../utils/databaseTransaction');
 
 const BOSS_LIST = [
-  { name: 'Thôn Thiên Ma Thú (Thượng Cổ)', baseHp: 50000000 },
-  { name: 'Cửu Đầu Thao Thiết', baseHp: 150000000 },
-  { name: 'Viễn Cổ Hắc Long', baseHp: 500000000 },
-  { name: 'Thái Sơ Hỗn Độn Ma Viên', baseHp: 2000000000 }
+  { name: 'Thôn Thiên Ma Thú (Thượng Cổ)', baseHp: 5000000 },
+  { name: 'Cửu Đầu Thao Thiết', baseHp: 15000000 },
+  { name: 'Viễn Cổ Hắc Long', baseHp: 50000000 },
+  { name: 'Thái Sơ Hỗn Độn Ma Viên', baseHp: 100000000 }
 ];
+
+const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+function getVietnamDateParts(timestamp) {
+  const vietnamDate = new Date(timestamp + VIETNAM_OFFSET_MS);
+  return {
+    year: vietnamDate.getUTCFullYear(),
+    month: vietnamDate.getUTCMonth(),
+    day: vietnamDate.getUTCDate()
+  };
+}
+
+function getDailyBossSpawnTime(timestamp = Date.now()) {
+  const parts = getVietnamDateParts(timestamp);
+  return Date.UTC(parts.year, parts.month, parts.day, 20, 0, 0) - VIETNAM_OFFSET_MS;
+}
+
+function getNextDailyBossSpawnTime(timestamp = Date.now()) {
+  const parts = getVietnamDateParts(timestamp);
+  return Date.UTC(parts.year, parts.month, parts.day + 1, 20, 0, 0) - VIETNAM_OFFSET_MS;
+}
+
+function formatBossSchedule(timestamp) {
+  return new Date(timestamp).toLocaleString('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
 
 async function getActiveBoss() {
   const db = getDb();
-  let res = await db.execute("SELECT * FROM tutien_world_boss WHERE status = 'alive' ORDER BY id DESC LIMIT 1");
-  if (res.rows[0]) return res.rows[0];
+  const now = Date.now();
+  const todaysSpawnTime = getDailyBossSpawnTime(now);
 
   const result = await withTransaction(db, async tx => {
     try {
-      const activeResult = await tx.execute(
-        "SELECT * FROM tutien_world_boss WHERE status = 'alive' ORDER BY id DESC LIMIT 1"
+      const latestResult = await tx.execute(
+        'SELECT * FROM tutien_world_boss ORDER BY id DESC LIMIT 1'
       );
-      if (activeResult.rows[0]) {
+      const latest = latestResult.rows[0];
+
+      if (latest?.status === 'alive') {
+        if (now >= todaysSpawnTime && Number(latest.spawn_time) >= todaysSpawnTime) {
+          await tx.commit();
+          return { boss: latest, created: false };
+        }
         await tx.commit();
-        return { boss: activeResult.rows[0], created: false };
+        return { boss: null, created: false };
+      }
+
+      if (latest?.status === 'defeated') {
+        const defeatedAt = Number(latest.defeated_at || latest.spawn_time);
+        const nextSpawnTime = getNextDailyBossSpawnTime(defeatedAt);
+        if (now < nextSpawnTime) {
+          await tx.commit();
+          return { boss: null, created: false, nextSpawnTime };
+        }
+      } else if (now < todaysSpawnTime) {
+        await tx.commit();
+        return { boss: null, created: false, nextSpawnTime: todaysSpawnTime };
       }
 
       const template = BOSS_LIST[Math.floor(Math.random() * BOSS_LIST.length)];
-      const now = Date.now();
       await tx.execute({
         sql: `INSERT INTO tutien_world_boss (name, current_hp, max_hp, status, spawn_time, damage_data)
           VALUES (?, ?, ?, 'alive', ?, '{}')`,
@@ -59,6 +108,17 @@ async function attackBoss(userId) {
   if (!player) return { success: false, message: 'Đạo hữu chưa bước vào con đường tu tiên!' };
 
   const boss = await getActiveBoss();
+  if (!boss) {
+    const now = Date.now();
+    const todaysSpawnTime = getDailyBossSpawnTime(now);
+    const nextSpawnTime = now >= todaysSpawnTime
+      ? getDailyBossSpawnTime(now + 86400000)
+      : todaysSpawnTime;
+    return {
+      success: false,
+      message: `Boss Thế Giới chưa xuất hiện hoặc đã bị tiêu diệt. Lần xuất hiện tiếp theo: **${formatBossSchedule(nextSpawnTime)}**.`
+    };
+  }
   const weapon = await getEquippedWeapon(userId);
   const pets = await getEquippedPets(userId);
   const helper = await getEquippedHelper(userId);
@@ -101,9 +161,15 @@ async function attackBoss(userId) {
       damageMap[userId] = Number(damageMap[userId] || 0) + Number(dealtDamage);
 
       const updateResult = await tx.execute({
-        sql: `UPDATE tutien_world_boss SET current_hp = ?, status = ?, damage_data = ?
+        sql: `UPDATE tutien_world_boss SET current_hp = ?, status = ?, defeated_at = ?, damage_data = ?
           WHERE id = ? AND status = 'alive'`,
-        args: [remainingHp.toString(), isDefeated ? 'defeated' : 'alive', JSON.stringify(damageMap), boss.id]
+        args: [
+          remainingHp.toString(),
+          isDefeated ? 'defeated' : 'alive',
+          isDefeated ? Date.now() : null,
+          JSON.stringify(damageMap),
+          boss.id
+        ]
       });
       if (updateResult.rowsAffected !== 1) {
         await tx.rollback();
@@ -197,5 +263,8 @@ async function distributeBossRewardsInTransaction(tx, damageMap) {
 
 module.exports = {
   getActiveBoss,
-  attackBoss
+  attackBoss,
+  getDailyBossSpawnTime,
+  getNextDailyBossSpawnTime,
+  formatBossSchedule
 };

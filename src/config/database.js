@@ -243,6 +243,7 @@ async function initDatabase() {
       max_hp TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'alive',
       spawn_time INTEGER NOT NULL,
+      defeated_at INTEGER DEFAULT NULL,
       damage_data TEXT NOT NULL DEFAULT '{}'
     );`,
 
@@ -374,6 +375,12 @@ async function initDatabase() {
   await db.execute(
     "UPDATE tutien_players SET dao_hieu = username WHERE dao_hieu IS NULL OR TRIM(dao_hieu) = ''"
   );
+
+  const bossColsRes = await db.execute('PRAGMA table_info(tutien_world_boss)');
+  const bossCols = bossColsRes.rows.map(r => r.name);
+  if (!bossCols.includes('defeated_at')) {
+    await db.execute('ALTER TABLE tutien_world_boss ADD COLUMN defeated_at INTEGER DEFAULT NULL');
+  }
 
   for (const [table, column] of [
     ['tutien_pets', 'image_url'],

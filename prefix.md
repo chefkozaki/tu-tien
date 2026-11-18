@@ -75,12 +75,12 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | Lệnh | Cách dùng / chức năng |
 |---|---|
 | `base harvest` | Thu hoạch XP và Ngân Lượng đã tích lũy; AFK vẫn tiếp tục bật. |
-| `base upgrade` | Nâng Tụ Linh Trận. Ví dụ `abase upgrade levels:10` nâng 10 cấp trong một lần; bỏ `levels` thì nâng 1 cấp. Không vượt quá cấp 50; chi phí tính cộng dồn theo từng cấp. |
+| `base upgrade` | Nâng Tụ Linh Trận. Ví dụ `abase upgrade levels:10` nâng 10 cấp; dùng `levels:all` để nâng tối đa bằng Ngân Lượng hiện có. Không vượt quá cấp 50. |
 | `base garden` | Xem Dược Viên, gieo trồng hoặc thu hoạch linh thảo qua menu/nút. |
 | `base brew` | Luyện đan qua menu tương tác. |
 | `base forge` | Rèn Linh Khí qua menu tương tác. |
 | `wish view` | Xem banner và tiến trình bảo hiểm; `banner` tùy chọn, nhận `weapon`, `pet`, `helper`, `standard`. Ví dụ `awish view banner:pet`. |
-| `wish pull` | Cầu Nguyện; cần `banner` (`weapon`, `pet`, `helper`, `standard`) và `count` (`1` hoặc `10`). Giá: 2.000 Bạc/lượt hoặc 18.000 Bạc/10 lượt. 5★ cơ bản 0,6%, soft pity từ lượt 74, hard pity lượt 90; 4★ cơ bản 5,1%, bảo hiểm 4★+ ở lượt 10. Ví dụ `awish pull banner:weapon count:10`. |
+| `wish pull` | Cầu Nguyện; cần `banner` (`weapon`, `pet`, `helper`, `standard`) và `count` (`1`, `10` hoặc `all`). Giá: 2.000 Bạc/lượt hoặc 18.000 Bạc/10 lượt. `all` dùng tối đa 100 lượt hoặc số lượt hợp lệ theo số bạc hiện có. Ví dụ `awish pull banner:weapon count:10`. |
 | `event` | `aevent` thám hiểm Bí Cảnh, tối đa một lần mỗi 24 giờ; chọn hành động trên nút trong tin nhắn kết quả. |
 
 ### Trang bị và chiến đấu
@@ -90,18 +90,19 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `weapons list` | Xem Linh Khí. |
 | `weapons equip` | Chọn Linh Khí để trang bị qua menu. |
 | `weapons bond` | Chọn Linh Khí để tế luyện thành Bản Mệnh Khí. |
-| `weapons devour` | Chọn Linh Khí làm nguyên liệu cho Bản Mệnh Khí thôn phệ. |
+| `weapons devour` | Chọn Linh Khí làm nguyên liệu cho Bản Mệnh Khí thôn phệ; dùng `aweapons devour all:true` để thôn phệ toàn bộ Linh Khí dư thừa không trang bị. |
 | `pets list` | Xem Linh Thú và Trận Pháp Cộng Hưởng. |
 | `pets equip slot:1` | Chọn Linh Thú cho ô 1; `slot` chỉ nhận `1`, `2`, hoặc `3`. |
-| `pets evolve` | Chọn Linh Thú chính và Linh Thú hiến tế qua menu. |
+| `pets evolve` | Chọn Linh Thú chính và Linh Thú hiến tế không trang bị qua menu; tối đa 5 Sao và phải trả Ngân Lượng theo mức tiến hóa. |
 | `helpers list` | Xem Trợ Thủ. |
 | `helpers deploy` | Chọn Trợ Thủ xuất chiến qua menu. |
 | `helpers rest` | Thu hồi Trợ Thủ đang xuất chiến. |
+| `helpers upgrade` | `ahelpers upgrade` nâng Bậc Trợ Thủ bằng 1 Trợ Thủ chính và 1 Trợ Thủ hiến tế không xuất chiến; tối đa Bậc 7. |
 | `skills` | `askills` xem/quản lý Công Pháp và Thần Thông qua menu. |
 | `duel target:@Tên` | Khiêu chiến người chơi khác. Có cooldown riêng 60 giây cho mỗi người dùng, dùng chung giữa slash và prefix. Có thể thay mention bằng Discord user ID; không thể tự đấu hoặc đấu với bot. |
-| `tower` | `atower` khiêu chiến Thí Luyện Tháp. Mỗi chặng 10 tầng thưởng tổng Linh Kim bằng đúng lượng cần cho lần đột phá phẩm chất đó; lượng thưởng mỗi tầng được chia đều. |
-| `boss info` | Xem Boss Thế Giới, lượng máu và bảng sát thương. |
-| `boss atk` | Tấn công Boss Thế Giới. |
+| `tower` | `atower` khiêu chiến Thí Luyện Tháp. Thủ Vệ dùng đường cong HP/Công/Thủ/Tốc độ độc lập theo tầng, không nhân theo level hoặc trang bị của người chơi. Mỗi chặng 10 tầng thưởng tổng Linh Kim bằng đúng lượng cần cho lần đột phá phẩm chất đó; lượng thưởng mỗi tầng được chia đều. |
+| `boss info` | Xem Boss Thế Giới lúc 20:00 hàng ngày, lượng máu và bảng sát thương; Boss bị tiêu diệt sẽ không xuất hiện lại đến 20:00 hôm sau. |
+| `boss atk` | Tấn công Boss Thế Giới trong giờ hoạt động 20:00 hàng ngày. |
 | `boss channel` | Xem kênh thông báo Boss hiện tại. |
 | `boss channel channel:123456789012345678` | Đặt kênh thông báo bằng ID hoặc mention, ví dụ `aboss channel channel:<#123456789012345678>`. Nhập `off` để tắt. Cần quyền **Quản lý Máy chủ**. |
 
@@ -123,7 +124,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `sect mine action:capture mine-id:1` | Đánh chiếm mỏ theo ID. |
 | `sect mine action:claim mine-id:1` | Thu thuế mỏ theo ID. |
 | `market view` | Xem các bài đăng bán; có thể lọc bằng `category:spirit_gold`, `category:pill`, hoặc `category:herb`. |
-| `market sell item:"pill:TrucCoDan:Trúc Cơ Đan" amount:1 price:1000` | Đăng bán vật phẩm. `item` phải chọn giá trị hợp lệ trong danh mục bên dưới; `amount` là số lượng và `price` là tổng giá bán. |
+| `market sell item:"pill:TrucCoDan:Trúc Cơ Đan" amount:all price:1000` | Đăng bán vật phẩm. `item` phải chọn giá trị hợp lệ trong danh mục bên dưới; `amount` là số lượng hoặc `all` để bán toàn bộ loại vật phẩm đang có, `price` là tổng giá bán. |
 | `market buy id:12` | Mua bài đăng theo ID. |
 | `market cancel id:12` | Hủy bài đăng của chính mình theo ID để thu hồi vật phẩm. |
 | `shop view` | Xem Đan Dược, Linh Kim và giá động theo lượng bạc/nguồn cung toàn server. |

@@ -27,11 +27,9 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('upgrade')
         .setDescription('Nâng cấp Tụ Linh Trận nhiều cấp trong một lần bằng Ngân Lượng')
-        .addIntegerOption(opt =>
+        .addStringOption(opt =>
           opt.setName('levels')
-            .setDescription('Số cấp muốn nâng (mặc định 1, tối đa đến cấp 50)')
-            .setMinValue(1)
-            .setMaxValue(49)
+            .setDescription('Số cấp muốn nâng hoặc all để nâng tối đa bằng bạc có')
             .setRequired(false)
         )
     )
@@ -94,7 +92,8 @@ module.exports = {
 
     // 2. Nâng cấp Tụ Linh Trận
     if (sub === 'upgrade') {
-      const levels = interaction.options.getInteger('levels') || 1;
+      const levelsInput = interaction.options.getString('levels') || '1';
+      const levels = /^all$/i.test(levelsInput) ? 'all' : Number(levelsInput);
       const res = await upgradeTuLinhTran(userId, levels);
       if (!res.success) {
         return replyOrEdit({

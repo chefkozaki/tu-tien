@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const { getUserHelpers, equipHelper, unequipHelper } = require('../services/helperService');
+const { getUserHelpers, equipHelper, unequipHelper, upgradeHelper } = require('../services/helperService');
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { groupDuplicateItems } = require('../utils/groupDuplicateItems');
@@ -21,6 +21,10 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('rest')
         .setDescription('Thu hồi Trợ Thủ về nghỉ ngơi')
+    )
+    .addSubcommand(sub =>
+      sub.setName('upgrade')
+        .setDescription('Nâng Bậc Trợ Thủ bằng cách hiến tế Trợ Thủ khác')
     ),
 
   async execute(interaction) {
@@ -128,6 +132,83 @@ module.exports = {
       await unequipHelper(userId, equipped.id);
       return interaction.reply({
         embeds: [createSuccessEmbed('Thu Hồi Trợ Thủ', `Đã cho Trợ Thủ **${equipped.name}** lui về tĩnh dưỡng!`, player.realm_id)]
+      });
+    }
+
+    // 4. Nâng Bậc Trợ Thủ
+    if (sub === 'upgrade') {
+      const eligibleTargets = helpers.filter(h => h.tier < 7);
+      if (eligibleTargets.length < 1 || helpers.length < 2) {
+        return interaction.reply({
+          embeds: [createErrorEmbed('Không Đủ Trợ Thủ', 'Cần ít nhất 2 Trợ Thủ để nâng Bậc (1 con chính và 1 con hiến tế)!')],
+          ephemeral: true
+        });
+      }
+
+      const targetMenu = new StringSelectMenuBuilder()
+        .setCustomId('select_main_helper')
+        .setPlaceholder('Chọn Trợ Thủ CHÍNH muốn nâng Bậc...')
+        .addOptions(
+          eligibleTargets.slice(0, 25).map(h => ({
+            label: `${h.name} [Bậc ${h.tier}]`,
+            description: `${h.type === 'combat' ? 'Chiến Đấu' : 'Sinh Hoạt'} - ID #${h.id}`,
+            value: h.id.toString()
+          }))
+        );
+
+      const row = new ActionRowBuilder().addComponents(targetMenu);
+      const msg = await interaction.reply({
+        content: 'Bước 1: Chọn Trợ Thủ CHÍNH để nâng Bậc. Chi phí: 20.000 → 50.000 → 100.000 → 200.000 → 400.000 → 800.000 Bạc theo từng Bậc.',
+        components: [row]
+      });
+      const collector = msg.createMessageComponentCollector({
+        filter: i => i.user.id === interaction.user.id,
+        time: 60000
+      });
+      let chosenTargetHelperId = null;
+
+      onComponentCollect(collector, async i => {
+        if (i.customId === 'select_main_helper') {
+          chosenTargetHelperId = Number(i.values[0]);
+          const sacrificeOptions = helpers.filter(h => h.id !== chosenTargetHelperId && h.is_equipped !== 1);
+          const sacrificeMenu = new StringSelectMenuBuilder()
+            .setCustomId('select_sacrifice_helper')
+            .setPlaceholder('Chọn Trợ Thủ HIẾN TẾ (sẽ biến mất)...')
+            .addOptions(
+              sacrificeOptions.slice(0, 25).map(h => ({
+                label: `Hiến tế: ${h.name} [Bậc ${h.tier}]`,
+                description: `${h.type === 'combat' ? 'Chiến Đấu' : 'Sinh Hoạt'} - ID #${h.id}`,
+                value: h.id.toString()
+              }))
+            );
+          return i.update({
+            content: 'Bước 2: Chọn Trợ Thủ HIẾN TẾ để nuốt:',
+            components: [new ActionRowBuilder().addComponents(sacrificeMenu)]
+          });
+        }
+
+        if (i.customId === 'select_sacrifice_helper') {
+          collector.stop();
+          const sacrificeHelperId = Number(i.values[0]);
+          await runComponentAction(
+            i,
+            async () => {
+              const res = await upgradeHelper(userId, chosenTargetHelperId, sacrificeHelperId);
+              return {
+                content: null,
+                embeds: [res.success
+                  ? createSuccessEmbed('Nâng Bậc Thành Công', res.message, player.realm_id)
+                  : createErrorEmbed('Nâng Bậc Thất Bại', res.message)],
+                components: []
+              };
+            },
+            () => ({
+              embeds: [createErrorEmbed('Nâng Bậc Thất Bại', 'Không thể nâng Bậc Trợ Thủ lúc này. Vui lòng thử lại.')],
+              components: []
+            }),
+            'nâng Bậc Trợ Thủ'
+          );
+        }
       });
     }
   }

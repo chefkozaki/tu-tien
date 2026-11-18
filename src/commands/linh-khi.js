@@ -83,6 +83,11 @@ module.exports = {
     .addSubcommand(sub =>
       sub.setName('devour')
         .setDescription('Cho Bản Mệnh Linh Khí nuốt linh khí rác khác để tăng cấp')
+        .addBooleanOption(opt =>
+          opt.setName('all')
+            .setDescription('Thôn phệ toàn bộ Linh Khí dư thừa không trang bị')
+            .setRequired(false)
+        )
     ),
 
   async execute(interaction) {
@@ -268,6 +273,28 @@ module.exports = {
         return interaction.reply({
           embeds: [createErrorEmbed('Không Có Linh Khí Dư Thừa', 'Cần có các linh khí khác không trang bị để làm nguyên liệu cho Bản Mệnh Khí nuốt!')],
           ephemeral: true
+        });
+      }
+
+      if (interaction.options.getBoolean('all')) {
+        const results = [];
+        for (const food of foodWeapons) {
+          const res = await devourWeapon(userId, natal.id, food.id);
+          if (!res.success) break;
+          results.push(res);
+        }
+        if (results.length === 0) {
+          return interaction.reply({
+            embeds: [createErrorEmbed('Thôn Phệ Thất Bại', 'Không thể thôn phệ Linh Khí dư thừa lúc này.')],
+            ephemeral: true
+          });
+        }
+        return interaction.reply({
+          embeds: [createSuccessEmbed(
+            'Thôn Phệ Toàn Bộ Thành Công',
+            `Bản Mệnh Linh Khí **${natal.name}** đã thôn phệ **${results.length}** Linh Khí dư thừa.\n${results.at(-1).message}`,
+            player.realm_id
+          )]
         });
       }
 

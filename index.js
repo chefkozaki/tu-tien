@@ -15,6 +15,7 @@ const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementSe
 const { acquireCommandCooldown, acquireDuelCooldown } = require('./src/utils/commandCooldown');
 const { isCommandDisabled } = require('./src/services/disabledCommandService');
 const { isGuildWhitelisted } = require('./src/services/guildWhitelistService');
+const { getActiveBoss } = require('./src/services/bossService');
 
 const client = new Client({
   intents: [
@@ -52,6 +53,14 @@ client.once('ready', async (c) => {
   // Init Turso Database
   try {
     await initDatabase();
+    await getActiveBoss();
+    setInterval(async () => {
+      try {
+        await getActiveBoss();
+      } catch (err) {
+        console.error('❌ Lỗi kiểm tra chu kỳ Boss Thế Giới:', err);
+      }
+    }, 60000);
   } catch (err) {
     console.error('❌ Lỗi khởi tạo cơ sở dữ liệu Turso:', err);
   }

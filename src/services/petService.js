@@ -1,6 +1,8 @@
 const { getDb } = require('../config/database');
 const { getPetResonance } = require('./petConfigService');
-const { removeItem, getItemAmount } = require('./itemService');
+const { withTransaction } = require('../utils/databaseTransaction');
+
+const PET_EVOLUTION_COSTS = [10000, 25000, 50000, 100000];
 
 async function getUserPets(userId) {
   const db = getDb();
@@ -92,44 +94,76 @@ async function evolvePetWithPet(userId, targetPetId, sacrificePetId) {
   const db = getDb();
   if (targetPetId === sacrificePetId) return { success: false, message: 'Không thể tự nuốt chính mình!' };
 
-  const targetRes = await db.execute({
-    sql: 'SELECT * FROM tutien_pets WHERE id = ? AND user_id = ?',
-    args: [targetPetId, userId]
+  return withTransaction(db, async tx => {
+    try {
+      const targetRes = await tx.execute({
+        sql: 'SELECT * FROM tutien_pets WHERE id = ? AND user_id = ?',
+        args: [targetPetId, userId]
+      });
+      const sacrificeRes = await tx.execute({
+        sql: 'SELECT * FROM tutien_pets WHERE id = ? AND user_id = ?',
+        args: [sacrificePetId, userId]
+      });
+      const playerRes = await tx.execute({
+        sql: 'SELECT silver FROM tutien_players WHERE user_id = ?',
+        args: [userId]
+      });
+
+      const target = targetRes.rows[0];
+      const sacrifice = sacrificeRes.rows[0];
+      const player = playerRes.rows[0];
+      if (!target || !sacrifice) {
+        await tx.rollback();
+        return { success: false, message: 'Không tìm thấy Linh Thú chỉ định!' };
+      }
+      if (target.star >= 5) {
+        await tx.rollback();
+        return { success: false, message: 'Linh Thú đã đạt phẩm chất tối đa 5 Sao!' };
+      }
+      if (sacrifice.is_equipped === 1) {
+        await tx.rollback();
+        return { success: false, message: 'Không thể hiến tế Linh Thú đang trang bị. Hãy thu hồi Linh Thú trước.' };
+      }
+
+      const cost = PET_EVOLUTION_COSTS[Math.max(0, target.star - 1)] || PET_EVOLUTION_COSTS.at(-1);
+      if (!player || Number(player.silver) < cost) {
+        await tx.rollback();
+        return { success: false, message: `Cần **${cost.toLocaleString()}** Ngân Lượng để tiến hóa Linh Thú!` };
+      }
+
+      await tx.execute({
+        sql: 'UPDATE tutien_players SET silver = silver - ? WHERE user_id = ?',
+        args: [cost, userId]
+      });
+      await tx.execute({
+        sql: 'DELETE FROM tutien_pets WHERE id = ? AND user_id = ?',
+        args: [sacrificePetId, userId]
+      });
+
+      const newStar = target.star + 1;
+      const hpBonus = Math.floor(target.hp * 0.35);
+      const atkBonus = Math.floor(target.atk * 0.35);
+      const defBonus = Math.floor(target.def * 0.35);
+
+      await tx.execute({
+        sql: `UPDATE tutien_pets
+          SET star = ?, hp = hp + ?, atk = atk + ?, def = def + ?
+          WHERE id = ? AND user_id = ?`,
+        args: [newStar, hpBonus, atkBonus, defBonus, targetPetId, userId]
+      });
+
+      await tx.commit();
+      return {
+        success: true,
+        cost,
+        newStar,
+        message: `Tiến hóa thành công! **${target.name}** đã đạt **${newStar}⭐** (+${hpBonus} HP, +${atkBonus} Công, +${defBonus} Thủ)!`
+      };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
   });
-  const sacrificeRes = await db.execute({
-    sql: 'SELECT * FROM tutien_pets WHERE id = ? AND user_id = ?',
-    args: [sacrificePetId, userId]
-  });
-
-  const target = targetRes.rows[0];
-  const sacrifice = sacrificeRes.rows[0];
-
-  if (!target || !sacrifice) return { success: false, message: 'Không tìm thấy Linh Thú chỉ định!' };
-  if (target.star >= 5) return { success: false, message: 'Linh Thú đã đạt phẩm chất tối đa 5 Sao!' };
-
-  // Xóa linh thú hiến tế
-  await db.execute({
-    sql: 'DELETE FROM tutien_pets WHERE id = ?',
-    args: [sacrificePetId]
-  });
-
-  // Tăng sao và chỉ số cho linh thú chính
-  const newStar = target.star + 1;
-  const hpBonus = Math.floor(target.hp * 0.35);
-  const atkBonus = Math.floor(target.atk * 0.35);
-  const defBonus = Math.floor(target.def * 0.35);
-
-  await db.execute({
-    sql: `UPDATE tutien_pets 
-      SET star = ?, hp = hp + ?, atk = atk + ?, def = def + ? 
-      WHERE id = ?`,
-    args: [newStar, hpBonus, atkBonus, defBonus, targetPetId]
-  });
-
-  return {
-    success: true,
-    message: `Tiến hóa thành công! **${target.name}** đã đạt **${newStar}⭐** (+${hpBonus} HP, +${atkBonus} Công, +${defBonus} Thủ)!`
-  };
 }
 
 module.exports = {

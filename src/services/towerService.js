@@ -18,27 +18,33 @@ const GOLD_PER_FLOOR_BY_QUALITY = new Map(
   })
 );
 
-function createTowerGuardianStats(playerStats, currentFloor) {
-  const floorStage = Math.floor((currentFloor - 1) / 10);
-  const floorMultiplier = 1 + floorStage * 0.05;
-  const maxHp = Math.floor(
-    (playerStats.atk * 4.5 + playerStats.maxHp * 0.15) * floorMultiplier
-  );
+const TOWER_GUARDIAN_BASE = Object.freeze({
+  maxHp: 1200,
+  atk: 120,
+  def: 60,
+  speed: 85
+});
+
+function createTowerGuardianStats(currentFloor) {
+  const safeFloor = Math.max(1, Math.floor(Number(currentFloor) || 1));
+  const stageIndex = Math.floor((safeFloor - 1) / 10);
+  const floorInStage = (safeFloor - 1) % 10;
+  const stageMultiplier = Math.pow(1.18, stageIndex);
+  const floorMultiplier = Math.pow(1.025, floorInStage);
+  const maxHp = Math.floor(TOWER_GUARDIAN_BASE.maxHp * stageMultiplier * floorMultiplier);
+  const atk = Math.floor(TOWER_GUARDIAN_BASE.atk * stageMultiplier * floorMultiplier);
+  const def = Math.floor(TOWER_GUARDIAN_BASE.def * stageMultiplier * floorMultiplier);
 
   return {
-    name: `Thủ Vệ Tháp Tầng ${currentFloor}`,
+    name: `Thủ Vệ Tháp Tầng ${safeFloor}`,
     race: 'nhan_toc',
     spiritRoot: 'kim',
     maxHp,
     hp: maxHp,
-    atk: Math.floor(
-      (playerStats.atk * 0.75 + playerStats.def * 0.5 + playerStats.maxHp * 0.02) * floorMultiplier
-    ),
-    def: Math.floor(
-      (playerStats.atk * 0.3 + playerStats.maxHp * 0.015) * floorMultiplier
-    ),
-    speed: Math.floor(playerStats.speed * (0.9 + floorStage * 0.015)),
-    crit: Math.min(0.15, 0.08 + floorStage * 0.005),
+    atk,
+    def,
+    speed: TOWER_GUARDIAN_BASE.speed + stageIndex * 8 + floorInStage,
+    crit: Math.min(0.25, 0.08 + stageIndex * 0.008 + floorInStage * 0.002),
     critDmg: 1.5,
     lifesteal: 0,
     physResist: 0.05,
@@ -64,7 +70,7 @@ async function challengeTower(userId) {
   const petResonance = await getPetResonance();
   const playerStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance);
 
-  const guardianStats = createTowerGuardianStats(playerStats, currentFloor);
+  const guardianStats = createTowerGuardianStats(currentFloor);
   const battleResult = simulateCombat(playerStats, guardianStats);
 
   if (battleResult.isAttackerWin) {
