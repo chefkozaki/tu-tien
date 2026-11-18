@@ -9,7 +9,8 @@ const {
   getUserWeapons, 
   equipWeapon, 
   setNatalWeapon, 
-  devourWeapon 
+  devourWeapon,
+  devourAllWeapons
 } = require('../services/weaponService');
 const { getPlayer } = require('../services/playerService');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
@@ -269,35 +270,25 @@ module.exports = {
         });
       }
 
+      if (interaction.options.getString('all') === 'all') {
+        const result = await devourAllWeapons(userId);
+        return interaction.reply({
+          embeds: [result.success
+            ? createSuccessEmbed('Thôn Phệ Toàn Bộ Thành Công', result.message, player.realm_id)
+            : createErrorEmbed('Thôn Phệ Thất Bại', result.message)],
+          ephemeral: !result.success
+        });
+      }
+
       const foodWeapons = weapons.filter(w =>
-        w.id !== natal.id && w.is_natal !== 1 && w.is_equipped !== 1
+        Number(w.id) !== Number(natal.id) &&
+        Number(w.is_natal) !== 1 &&
+        Number(w.is_equipped) !== 1
       );
       if (foodWeapons.length === 0) {
         return interaction.reply({
           embeds: [createErrorEmbed('Không Có Linh Khí Dư Thừa', 'Cần có các linh khí khác không trang bị để làm nguyên liệu cho Bản Mệnh Khí nuốt!')],
           ephemeral: true
-        });
-      }
-
-      if (interaction.options.getString('all') === 'all') {
-        const results = [];
-        for (const food of foodWeapons) {
-          const res = await devourWeapon(userId, natal.id, food.id);
-          if (!res.success) break;
-          results.push(res);
-        }
-        if (results.length === 0) {
-          return interaction.reply({
-            embeds: [createErrorEmbed('Thôn Phệ Thất Bại', 'Không thể thôn phệ Linh Khí dư thừa lúc này.')],
-            ephemeral: true
-          });
-        }
-        return interaction.reply({
-          embeds: [createSuccessEmbed(
-            'Thôn Phệ Toàn Bộ Thành Công',
-            `Bản Mệnh Linh Khí **${natal.name}** đã thôn phệ **${results.length}** Linh Khí dư thừa.\n${results.at(-1).message}`,
-            player.realm_id
-          )]
         });
       }
 
