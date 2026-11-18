@@ -1100,6 +1100,26 @@
 
       <!-- ================= 12. TAB: TOOLS & SQL ================= -->
       <section id="tab-tools" class="tab-view hidden space-y-6">
+        <div class="xianxia-card rounded-xl p-5 space-y-3 border-amber-500/30">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 class="text-sm font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-coins"></i>
+                Reset tài nguyên người chơi
+              </h2>
+              <p class="text-xs text-slate-400 mt-2">
+                Đưa Ngân Lượng của toàn bộ người chơi về 0 và xóa toàn bộ vật phẩm/tài nguyên trong túi, bao gồm Linh Kim.
+                Giữ nguyên cảnh giới, cấp độ, Linh Khí, Linh Thú và Trợ Thủ.
+              </p>
+            </div>
+            <button id="btn-reset-player-resources" onclick="handleResetPlayerResources()" class="shrink-0 px-4 py-2 text-xs font-bold rounded-lg bg-amber-700 hover:bg-amber-600 text-white border border-amber-500/50 transition">
+              <i class="fa-solid fa-rotate mr-1"></i>
+              Reset tài nguyên
+            </button>
+          </div>
+          <p class="text-[11px] text-amber-300/80">Thao tác không thể hoàn tác. Hệ thống sẽ yêu cầu xác nhận hai lần.</p>
+        </div>
+
         <div class="xianxia-card rounded-xl p-5 space-y-3 border-red-500/30">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>

@@ -2255,6 +2255,36 @@ function setSqlPreset(sql) {
   if (el) el.value = sql;
 }
 
+async function handleResetPlayerResources() {
+  const confirmed = confirm(
+    'CẢNH BÁO: Thao tác này sẽ đưa Ngân Lượng về 0 và xóa toàn bộ vật phẩm/tài nguyên trong túi của TẤT CẢ người chơi, bao gồm Linh Kim. Cảnh giới, cấp độ, Linh Khí, Linh Thú và Trợ Thủ được giữ nguyên. Bạn có chắc chắn muốn tiếp tục?'
+  );
+  if (!confirmed) return;
+
+  if (prompt('Để xác nhận lần cuối, hãy nhập chính xác RESET TAI NGUYEN:') !== 'RESET TAI NGUYEN') {
+    showToast('Xác nhận không khớp. Không có tài nguyên nào bị reset.', 'info');
+    return;
+  }
+
+  const button = document.getElementById('btn-reset-player-resources');
+  if (button) button.disabled = true;
+
+  try {
+    const res = await fetch('/api/reset-player-resources', { method: 'POST' }).then(r => r.json());
+    if (!res.success) {
+      showToast(res.error || 'Không thể reset tài nguyên người chơi.', 'error');
+      return;
+    }
+
+    await Promise.all([loadStats(), loadPlayers(), loadInventory()]);
+    showToast(res.message, 'success');
+  } catch (err) {
+    showToast('Lỗi reset tài nguyên người chơi: ' + err.message, 'error');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 async function handleResetGameData() {
   const confirmed = confirm(
     'CẢNH BÁO: Thao tác này sẽ xóa toàn bộ dữ liệu người chơi và tiến trình game. Cấu hình Gacha, linh thú và mỏ vẫn được giữ lại. Bạn có chắc chắn muốn tiếp tục?'

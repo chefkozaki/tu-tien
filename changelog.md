@@ -10,12 +10,14 @@
 
 ### Cân bằng và tiện ích
 
+- **Admin reset tài nguyên người chơi:** Có thể reset Ngân Lượng và toàn bộ vật phẩm/tài nguyên trong túi của tất cả người chơi, giữ nguyên cảnh giới, cấp độ, Linh Khí, Linh Thú và Trợ Thủ.
 - **Tham số `all`:**
   - `market sell amount:all` đăng bán toàn bộ vật phẩm của đúng loại đang sở hữu.
   - `base upgrade levels:all` nâng Tụ Linh Trận tối đa bằng bạc hiện có, không vượt cấp 50.
   - `wish pull count:all` Cầu Nguyện tối đa 100 lượt theo số bạc hợp lệ hiện có.
   - `aweapons devour all:true` thôn phệ toàn bộ Linh Khí dư thừa không trang bị.
 - **Cân bằng Thủ Vệ Tháp:** Thủ Vệ dùng đường cong riêng theo tầng/chặng 10 tầng cho HP, Công, Thủ, Tốc độ và bạo kích. Chỉ số không còn nhân theo level, cảnh giới, Linh Lực hoặc trang bị của người chơi.
+- **Giảm thưởng Thí Luyện Tháp:** Linh Kim mỗi tầng giảm còn 1% lượng cần cho lần đột phá tương ứng (làm tròn xuống, tối thiểu 1 viên); Bạc và Linh Lực giảm còn một nửa.
 
 ### Tài liệu
 

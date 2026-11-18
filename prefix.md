@@ -100,7 +100,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `helpers upgrade` | `ahelpers upgrade` nâng Bậc Trợ Thủ bằng 1 Trợ Thủ chính và 1 Trợ Thủ hiến tế không xuất chiến; tối đa Bậc 7. |
 | `skills` | `askills` xem/quản lý Công Pháp và Thần Thông qua menu. |
 | `duel target:@Tên` | Khiêu chiến người chơi khác. Có cooldown riêng 60 giây cho mỗi người dùng, dùng chung giữa slash và prefix. Có thể thay mention bằng Discord user ID; không thể tự đấu hoặc đấu với bot. |
-| `tower` | `atower` khiêu chiến Thí Luyện Tháp. Thủ Vệ dùng đường cong HP/Công/Thủ/Tốc độ độc lập theo tầng, không nhân theo level hoặc trang bị của người chơi. Mỗi chặng 10 tầng thưởng tổng Linh Kim bằng đúng lượng cần cho lần đột phá phẩm chất đó; lượng thưởng mỗi tầng được chia đều. |
+| `tower` | `atower` khiêu chiến Thí Luyện Tháp. Thủ Vệ dùng đường cong HP/Công/Thủ/Tốc độ độc lập theo tầng, không nhân theo level hoặc trang bị của người chơi. Mỗi tầng thưởng 1% lượng Linh Kim cần cho lần đột phá phẩm chất tương ứng (làm tròn xuống, tối thiểu 1 viên), cùng Bạc và Linh Lực. |
 | `boss info` | Xem Boss Thế Giới lúc 20:00 hàng ngày, lượng máu và bảng sát thương; Boss bị tiêu diệt sẽ không xuất hiện lại đến 20:00 hôm sau. |
 | `boss atk` | Tấn công Boss Thế Giới trong giờ hoạt động 20:00 hàng ngày. |
 | `boss channel` | Xem kênh thông báo Boss hiện tại. |

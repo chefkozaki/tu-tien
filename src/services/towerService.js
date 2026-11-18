@@ -13,7 +13,7 @@ const GOLD_PER_FLOOR_BY_QUALITY = new Map(
   REALMS.flatMap(realm => {
     const requirement = realm.breakthrough;
     return requirement?.spiritGoldQuality
-      ? [[requirement.spiritGoldQuality, requirement.spiritGoldAmount / 10]]
+      ? [[requirement.spiritGoldQuality, Math.max(1, Math.floor(requirement.spiritGoldAmount / 100))]]
       : [];
   })
 );
@@ -81,12 +81,12 @@ async function challengeTower(userId) {
     });
 
     // Phần thưởng
-    const silverReward = 3000 + currentFloor * 1000;
-    const xpReward = 1000 + currentFloor * 800;
+    const silverReward = 1500 + currentFloor * 500;
+    const xpReward = 500 + currentFloor * 400;
     await addSilver(userId, silverReward);
     await addXp(userId, xpReward);
 
-    // Mỗi chặng 10 tầng thưởng đúng lượng Linh Kim cần cho lần đột phá tương ứng.
+    // Mỗi tầng thưởng 1% Linh Kim đột phá, làm tròn xuống và tối thiểu 1 viên.
     const goldIndex = Math.min(
       SPIRIT_GOLD_QUALITIES.length - 1,
       Math.floor((currentFloor - 1) / 10)

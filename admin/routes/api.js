@@ -5,6 +5,7 @@ const { REALMS, RACES, SPIRIT_ROOTS, SPIRIT_GOLD_QUALITIES } = require('../../sr
 const { getPlayer, createPlayer, executeBreakthrough, addSilver, addXp } = require('../../src/services/playerService');
 const { addItem, removeItem, getInventory } = require('../../src/services/itemService');
 const { getXpRequired } = require('../../src/utils/formatters');
+const { withTransaction } = require('../../src/utils/databaseTransaction');
 const { getPetSettings } = require('../../src/services/petConfigService');
 const { announceBossSpawn } = require('../../src/services/bossAnnouncementService');
 const {
@@ -1777,6 +1778,43 @@ router.delete('/market/:id', async (req, res) => {
 // ==========================================
 // 12. TOOLS, SQL RUNNER & SYSTEM INFO
 // ==========================================
+router.post('/reset-player-resources', async (req, res) => {
+  try {
+    const db = getDb();
+    const result = await withTransaction(db, async tx => {
+      try {
+        const players = await tx.execute(
+          'SELECT COUNT(*) AS player_count, COALESCE(SUM(silver), 0) AS silver_removed FROM tutien_players'
+        );
+        const inventory = await tx.execute(
+          'SELECT COALESCE(SUM(amount), 0) AS inventory_items FROM tutien_inventory'
+        );
+        await tx.execute('UPDATE tutien_players SET silver = 0');
+        const deletedInventory = await tx.execute('DELETE FROM tutien_inventory');
+        await tx.commit();
+        return {
+          playerCount: Number(players.rows[0]?.player_count || 0),
+          silverRemoved: Number(players.rows[0]?.silver_removed || 0),
+          inventoryRowsRemoved: deletedInventory.rowsAffected,
+          inventoryItemsRemoved: Number(inventory.rows[0]?.inventory_items || 0)
+        };
+      } catch (error) {
+        await tx.rollback();
+        throw error;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Đã reset Ngân Lượng và vật phẩm trong túi của ${result.playerCount} người chơi. Cấp độ, Linh Khí, Linh Thú và Trợ Thủ được giữ nguyên.`
+    });
+  } catch (error) {
+    console.error('API POST /reset-player-resources error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/reset-game-data', async (req, res) => {
   try {
     const db = getDb();
