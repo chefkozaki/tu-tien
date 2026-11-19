@@ -1,6 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { getShopCatalog, buyShopItem } = require('../services/shopService');
+const { convertSpiritGold } = require('../services/itemService');
 const { getPlayer } = require('../services/playerService');
+const { SPIRIT_GOLD_CONVERT_CHOICES } = require('../config/constants');
 const { createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
 const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPagination');
@@ -44,6 +46,36 @@ module.exports = {
             .setMaxValue(100)
             .setRequired(true)
         )
+    )
+    .addSubcommand(sub =>
+      sub.setName('convert')
+        .setDescription('Đổi 100 Linh Kim phẩm thấp lấy 1 Linh Kim phẩm cao hơn 1 bậc')
+        .addStringOption(opt =>
+          opt.setName('from')
+            .setDescription('Phẩm chất Linh Kim muốn đổi lên bậc cao hơn')
+            .setRequired(true)
+            .addChoices(...SPIRIT_GOLD_CONVERT_CHOICES)
+        )
+        .addStringOption(opt =>
+          opt.setName('amount')
+            .setDescription('Số lượng Linh Kim bậc cao muốn nhận (mặc định: 1, hoặc nhập "all" để đổi tối đa)')
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(sub =>
+      sub.setName('exchange')
+        .setDescription('Đổi 100 Linh Kim phẩm thấp lấy 1 Linh Kim phẩm cao hơn 1 bậc (alias của convert)')
+        .addStringOption(opt =>
+          opt.setName('from')
+            .setDescription('Phẩm chất Linh Kim muốn đổi lên bậc cao hơn')
+            .setRequired(true)
+            .addChoices(...SPIRIT_GOLD_CONVERT_CHOICES)
+        )
+        .addStringOption(opt =>
+          opt.setName('amount')
+            .setDescription('Số lượng Linh Kim bậc cao muốn nhận (mặc định: 1, hoặc nhập "all" để đổi tối đa)')
+            .setRequired(false)
+        )
     ),
 
   async execute(interaction) {
@@ -55,7 +87,9 @@ module.exports = {
       });
     }
 
-    if (interaction.options.getSubcommand() === 'view') {
+    const sub = interaction.options.getSubcommand();
+
+    if (sub === 'view') {
       const catalog = await getShopCatalog();
       const items = catalog.map(item =>
         `**${String(item.name).slice(0, 100)}** — **${formatNumber(item.unitPrice)}** Bạc/món\n` +
@@ -71,6 +105,31 @@ module.exports = {
         footer: 'Giá được tính lại khi xem và mua; tối đa 100 món mỗi giao dịch.'
       });
       return replyWithEmbedPages(interaction, embeds, { customIdPrefix: 'shop_page' });
+    }
+
+    if (sub === 'convert' || sub === 'exchange') {
+      const fromQuality = interaction.options.getString('from');
+      const amount = interaction.options.getString('amount') || '1';
+      const result = await convertSpiritGold(interaction.user.id, fromQuality, amount);
+
+      if (!result.success) {
+        return interaction.reply({
+          embeds: [createErrorEmbed('Quy Đổi Thất Bại', result.message)],
+          ephemeral: true
+        });
+      }
+
+      const embed = createSuccessEmbed(
+        '✨ Quy Đổi Linh Kim Thành Công',
+        `Đạo hữu đã đến Tiên Gia Bách Hóa quy đổi Linh Kim:\n\n` +
+        `• **Tiêu Hao:** \`-${formatNumber(result.consumedAmount)}\` ${result.fromQuality.name}\n` +
+        `• **Thu Nhận:** \`+${formatNumber(result.receivedAmount)}\` **${result.toQuality.name}**\n` +
+        `• **Còn Lại:** \`${formatNumber(result.remainingLowerAmount)}\` ${result.fromQuality.name}\n\n` +
+        `*Tỷ lệ quy đổi: 100 viên bậc thấp = 1 viên bậc cao hơn 1 bậc.*`,
+        player.realm_id
+      );
+
+      return interaction.reply({ embeds: [embed] });
     }
 
     const itemKey = interaction.options.getString('item');

@@ -54,6 +54,10 @@ function getDb() {
   return client;
 }
 
+function setDb(newClient) {
+  client = newClient;
+}
+
 async function initDatabase() {
   const db = getDb();
 
@@ -581,5 +585,6 @@ async function initDatabase() {
 
 module.exports = {
   getDb,
+  setDb,
   initDatabase
 };

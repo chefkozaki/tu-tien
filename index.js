@@ -13,8 +13,14 @@ const { getPrefix, setPrefix } = require('./src/services/prefixService');
 const { executePrefixCommand, tokenize } = require('./src/utils/prefixCommand');
 const { setBossAnnouncementClient } = require('./src/services/bossAnnouncementService');
 const { acquireCommandCooldown, acquireDuelCooldown } = require('./src/utils/commandCooldown');
-const { isCommandDisabled } = require('./src/services/disabledCommandService');
-const { isGuildWhitelisted } = require('./src/services/guildWhitelistService');
+const {
+  isCommandDisabled,
+  loadDisabledCommandCache
+} = require('./src/services/disabledCommandService');
+const {
+  isGuildWhitelisted,
+  loadGuildWhitelistCache
+} = require('./src/services/guildWhitelistService');
 const { getActiveBoss } = require('./src/services/bossService');
 
 const client = new Client({
@@ -50,9 +56,7 @@ client.once('ready', async (c) => {
   // Set Presence
   client.user.setActivity('con đường Tu Tiên Nghịch Thiên | /help', { type: 0 });
 
-  // Init Turso Database
   try {
-    await initDatabase();
     await getActiveBoss();
     setInterval(async () => {
       try {
@@ -331,13 +335,20 @@ client.on('messageCreate', async message => {
       return message.reply(`Đã đổi prefix thành \`${updatedPrefix}\`.`);
     }
 
-    const command = client.commands.get(commandName);
+    let targetCommandName = commandName;
+    let command = client.commands.get(commandName);
+    if (!command && ['convert', 'exchange', 'doi'].includes(commandName)) {
+      command = client.commands.get('bag');
+      targetCommandName = 'bag';
+      args.unshift('convert');
+    }
+
     if (!command) {
       return message.reply(`Không tìm thấy lệnh \`${commandName}\`. Dùng \`${prefix} help\` để xem hướng dẫn.`);
     }
 
-    if (commandName !== 'disable' &&
-      await isCommandDisabled(message.guildId, message.channelId, commandName)) {
+    if (targetCommandName !== 'disable' &&
+      await isCommandDisabled(message.guildId, message.channelId, targetCommandName)) {
       return message.reply(`Lệnh \`${commandName}\` đã bị tắt trong kênh này.`);
     }
 
@@ -361,6 +372,12 @@ client.on('messageCreate', async message => {
 });
 
 async function startApplication() {
+  await initDatabase();
+  await Promise.all([
+    loadGuildWhitelistCache(),
+    loadDisabledCommandCache()
+  ]);
+
   if (process.env.START_ADMIN_WITH_BOT === 'true') {
     const { startAdminServer } = require('./admin/server');
     await startAdminServer();

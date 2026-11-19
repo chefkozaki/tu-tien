@@ -61,7 +61,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `profile` | `aprofile` xem hồ sơ của mình; `aprofile user:@Tên` xem hồ sơ người khác. |
 | `verify` | `/verify`, `averify` hoặc `a verify` xác minh máy chủ hiện tại; chỉ ID chủ bot trong `BOT_OWNER_ID` dùng được lệnh này. |
 | `inv` | `ainv` xem Ngân Lượng, Linh Lực, Linh Kim và số lượng tài nguyên. Hiển thị ID vật phẩm để dùng ở lệnh `bag use`. |
-| `bag` | `abag view` xem túi; `abag use item_id:123` dùng đan dược theo ID lấy từ `ainv`. |
+| `bag` | `abag view` xem túi; `abag use item_id:123` dùng đan dược theo ID lấy từ `ainv`; `abag convert from:Phàm amount:1` (hoặc `aconvert Phàm all`) đổi 100 Linh Kim phẩm thấp lấy 1 viên phẩm cao hơn 1 bậc. |
 | `code` | `acode <mã>` đổi mã quà tặng còn hạn, gồm vật phẩm hoặc Ngân Lượng; mỗi tài khoản chỉ đổi mỗi mã một lần. |
 | `train` | `atrain` đả tọa, hấp thụ Linh Lực. |
 | `break` | `abreak` đột phá đại cảnh giới khi đủ điều kiện. |
@@ -129,6 +129,7 @@ Alias `adisable` luôn dùng được để quản lý lệnh, kể cả khi l�
 | `market cancel id:12` | Hủy bài đăng của chính mình theo ID để thu hồi vật phẩm. |
 | `shop view` | Xem Đan Dược, Linh Kim và giá động theo lượng bạc/nguồn cung toàn server. |
 | `shop buy item:TrucCoDan amount:1` | Mua vật phẩm trong cửa hàng hệ thống; số lượng từ 1 đến 100. `item` nhận `TrucCoDan`, `TuLinhDan`, `TayTuyDan`, `BachHoaKimDan`, `Phàm`, `Tinh`, `Linh`, `Địa`, `Thiên`, `Thánh`, `Thần`, hoặc `"Hỗn Độn"` (đặt tên có khoảng trắng trong dấu nháy). |
+| `shop convert from:Phàm amount:1` | Quy đổi Linh Kim: cứ 100 Linh Kim bậc thấp đổi được 1 Linh Kim bậc cao hơn 1 bậc (`amount` có thể là số hoặc `all`). Có thể dùng `ashop convert`, `abag convert` hoặc alias `aconvert`. |
 
 Các giá trị `item` được hỗ trợ ở `market sell`:
 

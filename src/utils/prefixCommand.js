@@ -78,9 +78,20 @@ function coerceValue(option, rawValue) {
   }
 
   if (option.choices?.length) {
-    const choice = option.choices.find(candidate =>
-      candidate.value === value || candidate.name.toLowerCase() === String(rawValue).toLowerCase()
-    );
+    const normalize = str => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const rawLower = String(rawValue).toLowerCase().trim();
+    const rawNorm = normalize(rawValue);
+    const choice = option.choices.find(candidate => {
+      const candValStr = String(candidate.value);
+      const candNameStr = String(candidate.name);
+      return (
+        candidate.value === value ||
+        candValStr.toLowerCase() === rawLower ||
+        candNameStr.toLowerCase() === rawLower ||
+        normalize(candValStr) === rawNorm ||
+        normalize(candNameStr) === rawNorm
+      );
+    });
     if (!choice) {
       throw new Error(`Giá trị \`${rawValue}\` không hợp lệ cho \`${option.name}\`.`);
     }

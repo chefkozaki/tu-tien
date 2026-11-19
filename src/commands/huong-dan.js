@@ -16,6 +16,7 @@ module.exports = {
         `• Kết quả của lệnh prefix luôn gửi trong kênh đã nhập lệnh; lệnh slash vẫn giữ chế độ phản hồi riêng tư nếu được thiết lập.\n` +
         `• Dùng \`/inv\` hoặc \`ainv\` để xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên.\n` +
         `• Dùng đan dược bằng \`/bag use item_id:<ID>\` hoặc \`abag use <ID>\`; lấy ID trong \`/inv\`.\n` +
+        `• Đổi 100 Linh Kim bậc thấp lấy 1 Linh Kim bậc cao hơn bằng \`/bag convert from:<phẩm> amount:<số lượng/all>\` hoặc \`aconvert <phẩm> [số lượng/all]\`.\n` +
         `• Đổi mã quà tặng bằng \`/code code:<mã>\` hoặc \`acode <mã>\`; mỗi mã chỉ đổi một lần và cần còn hạn.\n` +
         `• Chỉ máy chủ nằm trong whitelist mới dùng được bot; chủ bot xác minh máy chủ bằng \`/verify\` hoặc \`averify\`.\n` +
         `• Đổi prefix bằng \`/prefix value:<prefix>\` hoặc \`aprefix <prefix>\`; cần quyền Quản lý Máy chủ.\n\n` +
@@ -57,7 +58,7 @@ module.exports = {
         `• \`/event\` - Thám hiểm Bí Cảnh Ngẫu Nhiên, mỗi 24 giờ một lần\n` +
         `• \`/boss\`, \`/tower\`, \`/duel\` - Khiêu chiến Boss, Thí Luyện Tháp và người chơi; Tháp thưởng 1% Linh Kim đột phá mỗi tầng (làm tròn xuống, tối thiểu 1 viên); \`/duel\` có cooldown riêng 60 giây mỗi người\n` +
         `• \`/boss channel channel:<#kênh>\` - Đặt kênh thông báo boss mới; dùng \`off\` để tắt (cần quyền Quản lý Máy chủ)\n` +
-        `• \`/inv\`, \`/bag\` - Xem tài nguyên, Linh Kim và túi trữ vật\n` +
+        `• \`/inv\`, \`/bag\` - Xem tài nguyên, Linh Kim, túi trữ vật và quy đổi Linh Kim (100 viên phẩm thấp = 1 viên phẩm cao hơn 1 bậc)\n` +
         `• \`/sect\`, \`/market\`, \`/rank\` - Tông môn, chợ và bảng xếp hạng\n` +
         `• \`/shop view\`, \`/shop buy\` - Mua Đan Dược và Linh Kim với giá động, áp dụng khan hiếm\n` +
         `• \`/code code:<mã>\` - Đổi mã quà tặng còn hạn (prefix: \`acode <mã>\`)\n` +

@@ -2,10 +2,11 @@ const { SlashCommandBuilder } = require('discord.js');
 const {
   getInventory,
   getInventoryItemById,
-  removeInventoryItemById
+  removeInventoryItemById,
+  convertSpiritGold
 } = require('../services/itemService');
 const { getPlayer, addXp } = require('../services/playerService');
-const { SPIRIT_ROOTS } = require('../config/constants');
+const { SPIRIT_ROOTS, SPIRIT_GOLD_CONVERT_CHOICES } = require('../config/constants');
 const { getDb } = require('../config/database');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
@@ -14,10 +15,40 @@ const { createTextEmbedPages, replyWithEmbedPages } = require('../utils/embedPag
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('bag')
-    .setDescription('Xem túi trữ vật hoặc sử dụng đan dược')
+    .setDescription('Xem túi trữ vật, đổi Linh Kim hoặc sử dụng đan dược')
     .addSubcommand(sub =>
       sub.setName('view')
         .setDescription('Xem toàn bộ Linh Kim, Đan Dược và Linh Thảo trong túi')
+    )
+    .addSubcommand(sub =>
+      sub.setName('convert')
+        .setDescription('Đổi 100 Linh Kim phẩm thấp lấy 1 Linh Kim phẩm cao hơn 1 bậc')
+        .addStringOption(opt =>
+          opt.setName('from')
+            .setDescription('Phẩm chất Linh Kim muốn đổi lên bậc cao hơn')
+            .setRequired(true)
+            .addChoices(...SPIRIT_GOLD_CONVERT_CHOICES)
+        )
+        .addStringOption(opt =>
+          opt.setName('amount')
+            .setDescription('Số lượng Linh Kim bậc cao muốn nhận (mặc định: 1, hoặc nhập "all" để đổi tối đa)')
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(sub =>
+      sub.setName('exchange')
+        .setDescription('Đổi 100 Linh Kim phẩm thấp lấy 1 Linh Kim phẩm cao hơn 1 bậc (alias của convert)')
+        .addStringOption(opt =>
+          opt.setName('from')
+            .setDescription('Phẩm chất Linh Kim muốn đổi lên bậc cao hơn')
+            .setRequired(true)
+            .addChoices(...SPIRIT_GOLD_CONVERT_CHOICES)
+        )
+        .addStringOption(opt =>
+          opt.setName('amount')
+            .setDescription('Số lượng Linh Kim bậc cao muốn nhận (mặc định: 1, hoặc nhập "all" để đổi tối đa)')
+            .setRequired(false)
+        )
     )
     .addSubcommand(sub =>
       sub.setName('use')
@@ -83,6 +114,31 @@ module.exports = {
         title: `🎒 Túi Trữ Vật • ${player.dao_hieu || player.username}`,
         realmId: player.realm_id
       }), { ephemeral: true, customIdPrefix: 'bag_page' });
+    }
+
+    if (sub === 'convert' || sub === 'exchange') {
+      const fromQuality = interaction.options.getString('from');
+      const amount = interaction.options.getString('amount') || '1';
+      const result = await convertSpiritGold(userId, fromQuality, amount);
+
+      if (!result.success) {
+        return replyOrEdit({
+          embeds: [createErrorEmbed('Quy Đổi Thất Bại', result.message)],
+          ephemeral: true
+        });
+      }
+
+      const embed = createSuccessEmbed(
+        '✨ Quy Đổi Linh Kim Thành Công',
+        `Đạo hữu đã vận chuyển linh hỏa dung hợp Linh Kim:\n\n` +
+        `• **Tiêu Hao:** \`-${formatNumber(result.consumedAmount)}\` ${result.fromQuality.name}\n` +
+        `• **Thu Nhận:** \`+${formatNumber(result.receivedAmount)}\` **${result.toQuality.name}**\n` +
+        `• **Còn Lại:** \`${formatNumber(result.remainingLowerAmount)}\` ${result.fromQuality.name}\n\n` +
+        `*Tỷ lệ quy đổi: 100 viên bậc thấp = 1 viên bậc cao hơn 1 bậc.*`,
+        player.realm_id
+      );
+
+      return replyOrEdit({ embeds: [embed] });
     }
 
     if (sub === 'use') {

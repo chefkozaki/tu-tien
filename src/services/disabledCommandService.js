@@ -1,7 +1,13 @@
 const { getDb } = require('../config/database');
 const { withTransaction } = require('../utils/databaseTransaction');
 
+const disabledCommands = new Set();
 let tableReady;
+let cacheInitialized = false;
+
+function getCommandKey(guildId, channelId, commandName) {
+  return `${guildId}\0${channelId}\0${commandName.toLowerCase()}`;
+}
 
 async function ensureDisabledCommandTable() {
   if (!tableReady) {
@@ -17,15 +23,32 @@ async function ensureDisabledCommandTable() {
   await tableReady;
 }
 
+async function loadDisabledCommandCache() {
+  await ensureDisabledCommandTable();
+  const result = await getDb().execute(
+    'SELECT guild_id, channel_id, command_name FROM tutien_channel_disabled_commands'
+  );
+  disabledCommands.clear();
+  for (const row of result.rows) {
+    disabledCommands.add(getCommandKey(row.guild_id, row.channel_id, row.command_name));
+  }
+  cacheInitialized = true;
+}
+
 async function isCommandDisabled(guildId, channelId, commandName) {
   if (!guildId || !channelId || !commandName) return false;
+  const key = getCommandKey(guildId, channelId, commandName);
+  if (cacheInitialized) return disabledCommands.has(key);
+
   await ensureDisabledCommandTable();
   const result = await getDb().execute({
     sql: `SELECT 1 FROM tutien_channel_disabled_commands
       WHERE guild_id = ? AND channel_id = ? AND command_name = ?`,
     args: [guildId, channelId, commandName.toLowerCase()]
   });
-  return Boolean(result.rows[0]);
+  const isDisabled = Boolean(result.rows[0]);
+  if (isDisabled) disabledCommands.add(key);
+  return isDisabled;
 }
 
 async function toggleCommandDisabled(guildId, channelId, commandName) {
@@ -57,6 +80,12 @@ async function toggleCommandDisabled(guildId, channelId, commandName) {
         });
       }
       await tx.commit();
+      const key = getCommandKey(guildId, channelId, commandName);
+      if (wasDisabled) {
+        disabledCommands.delete(key);
+      } else {
+        disabledCommands.add(key);
+      }
       return !wasDisabled;
     } catch (error) {
       await tx.rollback();
@@ -65,4 +94,8 @@ async function toggleCommandDisabled(guildId, channelId, commandName) {
   });
 }
 
-module.exports = { isCommandDisabled, toggleCommandDisabled };
+module.exports = {
+  isCommandDisabled,
+  toggleCommandDisabled,
+  loadDisabledCommandCache
+};

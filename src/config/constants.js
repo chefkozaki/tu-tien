@@ -290,6 +290,14 @@ const SPIRIT_GOLD_QUALITIES = [
   { id: 'Hỗn Độn', name: 'Linh Kim (Hỗn Độn)', realmTarget: 'Thần -> Tối Thượng', price: 3000000 }
 ];
 
+const SPIRIT_GOLD_CONVERT_CHOICES = SPIRIT_GOLD_QUALITIES.slice(0, -1).map((q, idx) => {
+  const nextQ = SPIRIT_GOLD_QUALITIES[idx + 1];
+  return {
+    name: `${q.id} ➔ ${nextQ.id} (100 ${q.id} = 1 ${nextQ.id})`,
+    value: q.id
+  };
+});
+
 // 5. Trận Pháp Linh Thú (Cộng Hưởng)
 const PET_RESONANCES = {
   same_element_3: {
@@ -313,5 +321,6 @@ module.exports = {
   RACES,
   SPIRIT_ROOTS,
   SPIRIT_GOLD_QUALITIES,
+  SPIRIT_GOLD_CONVERT_CHOICES,
   PET_RESONANCES
 };
