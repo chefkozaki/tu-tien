@@ -385,6 +385,23 @@ async function startApplication() {
   await client.login(process.env.DISCORD_TOKEN);
 }
 
+let isShuttingDown = false;
+async function handleShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`\n🛑 [Bot Tu Tiên] Nhận tín hiệu ${signal}. Đang tiến hành lưu toàn bộ dữ liệu lên Turso và tắt bot an toàn...`);
+  try {
+    const { shutdownDatabase } = require('./src/config/database');
+    await shutdownDatabase();
+  } catch (err) {
+    console.error('❌ [Bot Tu Tiên] Lỗi khi lưu dữ liệu lúc tắt bot:', err);
+  }
+  process.exit(0);
+}
+
+process.once('SIGINT', () => handleShutdown('SIGINT'));
+process.once('SIGTERM', () => handleShutdown('SIGTERM'));
+
 startApplication().catch(error => {
   console.error('Không thể khởi chạy ứng dụng:', error);
   process.exitCode = 1;

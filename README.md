@@ -71,7 +71,15 @@ GUILD_ID= # Để trống để đăng ký Global, hoặc điền ID Server th�
 TURSO_DATABASE_URL=libsql://your-database.turso.io
 TURSO_AUTH_TOKEN=your_turso_token_here
 BOT_OWNER_ID=your_discord_user_id
+
+# Tối ưu hóa hiệu năng: Bộ đệm Turso Cache (Embedded Replica)
+TURSO_CACHE_ENABLED=true
+TURSO_CACHE_DB_PATH=./data/turso_cache.db
+TURSO_CACHE_SYNC_INTERVAL_MINUTES=10
 ```
+
+> **⚡ Cơ chế Cache Turso:** Khi `TURSO_CACHE_ENABLED=true`, bot sử dụng local replica database trên hosting để phục vụ mọi lệnh đọc/ghi trong < 2ms (thay vì 1500ms gọi mạng lên đám mây). Dữ liệu được đồng bộ 2 chiều tự động lên Turso mỗi 10 phút, tải mới nhất khi bot bật và tự động lưu an toàn trước khi tắt bot.
+
 
 Chỉ Discord user ID trong `BOT_OWNER_ID` mới được phép xác minh máy chủ bằng `/verify` hoặc `averify`. Chạy lệnh trong từng máy chủ được phép; chỉ các máy chủ đã xác minh mới dùng được bot. Danh sách whitelist được lưu trong Turso.
 

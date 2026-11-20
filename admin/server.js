@@ -148,7 +148,26 @@ async function startAdminServer(port = PORT) {
 
 // If run directly: node admin/server.js
 if (require.main === module) {
-  startAdminServer();
+  let isShuttingDown = false;
+  const handleShutdown = async (signal) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`\n🛑 [Admin Server] Nhận tín hiệu ${signal}. Đang lưu dữ liệu lên Turso và thoát...`);
+    try {
+      const { shutdownDatabase } = require('../src/config/database');
+      await shutdownDatabase();
+    } catch (err) {
+      console.error('❌ Lỗi khi lưu dữ liệu:', err);
+    }
+    process.exit(0);
+  };
+  process.once('SIGINT', () => handleShutdown('SIGINT'));
+  process.once('SIGTERM', () => handleShutdown('SIGTERM'));
+
+  startAdminServer().catch(err => {
+    console.error('Không thể khởi chạy admin server:', err);
+    process.exit(1);
+  });
 }
 
 module.exports = {

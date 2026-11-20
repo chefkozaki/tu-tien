@@ -2369,8 +2369,63 @@ async function loadSystemInfo() {
     document.getElementById('info-uptime').textContent = `${Math.floor(d.uptimeSeconds / 60)} phút`;
     document.getElementById('info-platform').textContent = d.platform;
     document.getElementById('sys-node-version').textContent = d.nodeVersion;
+
+    if (d.cache) {
+      const badge = document.getElementById('cache-status-badge');
+      if (badge) {
+        if (d.cache.enabled) {
+          badge.textContent = 'Đang Bật (Local Replica)';
+          badge.className = 'text-sm font-semibold text-emerald-400 mt-1';
+        } else {
+          badge.textContent = 'Đang Tắt (Direct Remote)';
+          badge.className = 'text-sm font-semibold text-slate-400 mt-1';
+        }
+      }
+      const intervalEl = document.getElementById('cache-interval');
+      if (intervalEl) {
+        intervalEl.textContent = `${d.cache.syncIntervalMinutes} phút`;
+      }
+      const lastSyncEl = document.getElementById('cache-last-sync');
+      if (lastSyncEl) {
+        if (d.cache.lastSyncAt) {
+          const date = new Date(d.cache.lastSyncAt);
+          lastSyncEl.textContent = date.toLocaleTimeString('vi-VN') + ' ' + date.toLocaleDateString('vi-VN');
+        } else {
+          lastSyncEl.textContent = 'Chưa đồng bộ';
+        }
+      }
+      const framesEl = document.getElementById('cache-frames');
+      if (framesEl) {
+        const dur = d.cache.lastSyncDurationMs != null ? `${d.cache.lastSyncDurationMs}ms` : '-';
+        const frames = d.cache.lastSyncFrames != null ? d.cache.lastSyncFrames : 0;
+        framesEl.textContent = `${dur} / ${frames} frames`;
+      }
+    }
   } catch (err) {
     console.error('Lỗi nạp system info:', err);
+  }
+}
+
+async function handleSyncCacheNow() {
+  const btn = document.getElementById('btn-sync-cache-now');
+  const spinner = document.getElementById('sync-cache-spinner');
+  try {
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.classList.add('fa-spin');
+    showToast('Đang tiến hành lưu và đồng bộ dữ liệu lên Turso...', 'info');
+
+    const res = await fetch('/api/cache/sync', { method: 'POST' }).then(r => r.json());
+    if (res.success) {
+      showToast(`Đồng bộ thành công lên Turso! (${res.data?.durationMs || 0}ms, frames: ${res.data?.frames_synced || 0})`, 'success');
+      await loadSystemInfo();
+    } else {
+      showToast('Lỗi khi đồng bộ Turso: ' + (res.error || 'Thất bại'), 'error');
+    }
+  } catch (err) {
+    showToast('Lỗi khi gọi API đồng bộ: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.classList.remove('fa-spin');
   }
 }
 

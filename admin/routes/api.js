@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../../src/config/database');
+const { getDb, getCacheStatus, syncDatabase } = require('../../src/config/database');
 const { REALMS, RACES, SPIRIT_ROOTS, SPIRIT_GOLD_QUALITIES } = require('../../src/config/constants');
 const { getPlayer, createPlayer, executeBreakthrough, addSilver, addXp } = require('../../src/services/playerService');
 const { addItem, removeItem, getInventory } = require('../../src/services/itemService');
@@ -1932,9 +1932,28 @@ router.get('/system/info', async (req, res) => {
           heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
           heapUsed: Math.round(mem.heapUsed / 1024 / 1024)
         },
-        databaseUrl: (process.env.TURSO_DATABASE_URL || '').replace(/:\/\/[^@]+@/, '://***@')
+        databaseUrl: (process.env.TURSO_DATABASE_URL || '').replace(/:\/\/[^@]+@/, '://***@'),
+        cache: getCacheStatus()
       }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Turso Cache status and manual sync
+router.get('/cache/status', async (req, res) => {
+  try {
+    res.json({ success: true, data: getCacheStatus() });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/cache/sync', async (req, res) => {
+  try {
+    const result = await syncDatabase({ silent: false, throwOnError: true });
+    res.json({ success: true, data: result, status: getCacheStatus() });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

@@ -1,4 +1,6 @@
 const { createClient } = require('@libsql/client');
+const fs = require('fs');
+const path = require('path');
 const { PET_RESONANCES } = require('./constants');
 require('dotenv').config();
 
@@ -39,17 +41,73 @@ const DEFAULT_5_STAR_PETS = [
   }
 ];
 
+function isCacheEnabled() {
+  const envVal = process.env.TURSO_CACHE_ENABLED;
+  if (envVal === undefined || envVal === null || envVal === '') {
+    return true; // Mặc định bật cache để tăng tốc độ tối đa
+  }
+  const normalized = String(envVal).trim().toLowerCase();
+  return normalized !== 'false' && normalized !== '0' && normalized !== 'no' && normalized !== 'off';
+}
+
+function getCacheDbPath() {
+  const customPath = process.env.TURSO_CACHE_DB_PATH;
+  if (customPath && customPath.trim()) {
+    return path.resolve(customPath.trim());
+  }
+  return path.resolve(path.join(__dirname, '../../data/turso_cache.db'));
+}
+
+function getSyncIntervalMs() {
+  if (process.env.TURSO_CACHE_SYNC_INTERVAL_MS) {
+    const ms = Number(process.env.TURSO_CACHE_SYNC_INTERVAL_MS);
+    if (!Number.isNaN(ms) && ms > 0) return ms;
+  }
+  if (process.env.TURSO_CACHE_SYNC_INTERVAL_MINUTES) {
+    const mins = Number(process.env.TURSO_CACHE_SYNC_INTERVAL_MINUTES);
+    if (!Number.isNaN(mins) && mins > 0) return mins * 60 * 1000;
+  }
+  // Mặc định: 10 phút (600,000 ms)
+  return 10 * 60 * 1000;
+}
+
 let client = null;
+let syncTimer = null;
+let isSyncing = false;
+let syncQueue = Promise.resolve();
+let lastSyncAt = null;
+let lastSyncDurationMs = null;
+let lastSyncFrames = 0;
+let lastSyncError = null;
+let isInitialized = false;
 
 function getDb() {
   if (!client) {
     if (!process.env.TURSO_DATABASE_URL) {
       throw new Error('TURSO_DATABASE_URL is not configured in .env');
     }
-    client = createClient({
-      url: process.env.TURSO_DATABASE_URL,
-      authToken: process.env.TURSO_AUTH_TOKEN
-    });
+
+    if (isCacheEnabled()) {
+      const dbPath = getCacheDbPath();
+      const dbDir = path.dirname(dbPath);
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+
+      client = createClient({
+        url: `file:${dbPath}`,
+        syncUrl: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN,
+        offline: true
+      });
+      console.log(`⚡ [Turso Cache] Đã kích hoạt bộ đệm dữ liệu cục bộ trên hosting: ${dbPath}`);
+    } else {
+      client = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN
+      });
+      console.log(`🌐 [Turso Database] Kết nối trực tiếp từ xa tới Turso (Bộ đệm cache tắt).`);
+    }
   }
   return client;
 }
@@ -58,8 +116,139 @@ function setDb(newClient) {
   client = newClient;
 }
 
-async function initDatabase() {
+async function syncDatabase(options = {}) {
+  const { silent = false, throwOnError = false } = options;
+
+  if (!isCacheEnabled()) {
+    return { skipped: true, reason: 'Bộ đệm cache đang tắt' };
+  }
+
   const db = getDb();
+  if (!db || typeof db.sync !== 'function') {
+    return { skipped: true, reason: 'Client hiện tại không hỗ trợ sync' };
+  }
+
+  const doSync = async () => {
+    isSyncing = true;
+    const start = Date.now();
+    try {
+      if (!silent) {
+        console.log('🔄 [Turso Cache] Bắt đầu đồng bộ 2 chiều dữ liệu giữa hosting và Turso...');
+      }
+      const res = await db.sync();
+      const durationMs = Date.now() - start;
+      lastSyncAt = new Date();
+      lastSyncDurationMs = durationMs;
+      lastSyncFrames = res?.frames_synced ?? 0;
+      lastSyncError = null;
+
+      if (!silent) {
+        console.log(`✅ [Turso Cache] Đồng bộ thành công sau ${durationMs}ms (frames: ${lastSyncFrames}). Dữ liệu đã an toàn trên Turso!`);
+      }
+      return {
+        success: true,
+        durationMs,
+        frames_synced: lastSyncFrames,
+        timestamp: lastSyncAt
+      };
+    } catch (err) {
+      lastSyncError = err.message;
+      console.error(`⚠️ [Turso Cache] Cảnh báo lỗi đồng bộ dữ liệu với Turso:`, err.message);
+      if (throwOnError) {
+        throw err;
+      }
+      return {
+        success: false,
+        error: err.message,
+        timestamp: new Date()
+      };
+    } finally {
+      isSyncing = false;
+    }
+  };
+
+  syncQueue = syncQueue.then(doSync, doSync);
+  return syncQueue;
+}
+
+function startSyncInterval() {
+  if (syncTimer) return;
+  if (!isCacheEnabled()) return;
+
+  const intervalMs = getSyncIntervalMs();
+  const minutes = Math.round(intervalMs / 60000);
+  console.log(`⏰ [Turso Cache] Đã kích hoạt lịch đồng bộ dữ liệu tự động: mỗi ${minutes} phút (${intervalMs}ms).`);
+
+  syncTimer = setInterval(async () => {
+    try {
+      await syncDatabase({ silent: false, throwOnError: false });
+    } catch (err) {
+      console.error('❌ [Turso Cache] Lỗi trong chu kỳ đồng bộ định kỳ:', err);
+    }
+  }, intervalMs);
+
+  if (typeof syncTimer.unref === 'function') {
+    syncTimer.unref();
+  }
+}
+
+function stopSyncInterval() {
+  if (syncTimer) {
+    clearInterval(syncTimer);
+    syncTimer = null;
+  }
+}
+
+async function shutdownDatabase() {
+  stopSyncInterval();
+  if (isCacheEnabled() && client && typeof client.sync === 'function') {
+    console.log('💾 [Turso Cache] Đang lưu và đồng bộ toàn bộ dữ liệu lên Turso trước khi thoát...');
+    try {
+      await syncDatabase({ silent: false, throwOnError: false });
+      console.log('✅ [Turso Cache] Dữ liệu đã được lưu trữ an toàn lên Turso.');
+    } catch (err) {
+      console.error('⚠️ [Turso Cache] Lỗi khi đồng bộ trước khi thoát:', err.message);
+    }
+  }
+  if (client && typeof client.close === 'function') {
+    try {
+      client.close();
+      client = null;
+    } catch {}
+  }
+  isInitialized = false;
+}
+
+function getCacheStatus() {
+  return {
+    enabled: isCacheEnabled(),
+    localDbPath: isCacheEnabled() ? getCacheDbPath() : null,
+    syncIntervalMs: getSyncIntervalMs(),
+    syncIntervalMinutes: Math.round(getSyncIntervalMs() / 60000),
+    isSyncing,
+    lastSyncAt: lastSyncAt ? lastSyncAt.toISOString() : null,
+    lastSyncDurationMs,
+    lastSyncFrames,
+    lastSyncError
+  };
+}
+
+async function initDatabase() {
+  if (isInitialized) {
+    return;
+  }
+
+  const db = getDb();
+
+  // 1. Tải dữ liệu ban đầu từ Turso về Hosting nếu bật Cache
+  if (isCacheEnabled()) {
+    console.log('📥 [Turso Cache] Đang kiểm tra và tải dữ liệu mới nhất từ Turso về hosting...');
+    try {
+      await syncDatabase({ silent: false, throwOnError: false });
+    } catch (syncErr) {
+      console.warn('⚠️ [Turso Cache] Cảnh báo: Tải dữ liệu ban đầu từ Turso gặp lỗi, sẽ sử dụng cache hiện có:', syncErr.message);
+    }
+  }
 
   // Create tables if not exist
   const schema = [
@@ -580,11 +769,30 @@ async function initDatabase() {
     console.log(`✅ Đã bổ sung ${missingFiveStarPets.length} vật phẩm Linh Thú 5★ mặc định vào Bể Cầu Nguyện Gacha!`);
   }
 
+  // 3. Đẩy schema hoặc seed data khởi tạo lên Turso nếu có cập nhật
+  if (isCacheEnabled()) {
+    try {
+      await syncDatabase({ silent: true, throwOnError: false });
+    } catch (pushErr) {
+      console.warn('⚠️ [Turso Cache] Cảnh báo khi đồng bộ schema lên Turso:', pushErr.message);
+    }
+  }
+
+  // 4. Kích hoạt chu kỳ tự động lưu/đồng bộ định kỳ (mặc định mỗi 10 phút)
+  startSyncInterval();
+
+  isInitialized = true;
   console.log('✅ Turso Tu Tiên Database initialized successfully!');
 }
 
 module.exports = {
   getDb,
   setDb,
-  initDatabase
+  initDatabase,
+  syncDatabase,
+  shutdownDatabase,
+  getCacheStatus,
+  startSyncInterval,
+  stopSyncInterval,
+  isCacheEnabled
 };
