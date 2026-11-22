@@ -355,6 +355,10 @@ client.on('messageCreate', async message => {
       command = client.commands.get('bag');
       targetCommandName = 'bag';
       args.unshift('convert');
+    } else if (!command && ['split', 'downgrade', 'tach'].includes(commandName)) {
+      command = client.commands.get('bag');
+      targetCommandName = 'bag';
+      args.unshift('split');
     }
 
     if (!command) {

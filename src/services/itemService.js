@@ -110,6 +110,7 @@ function normalizeKey(str) {
   return String(str || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
     .toLowerCase()
     .trim();
 }
@@ -125,6 +126,7 @@ function findSpiritGoldQualityIndex(key) {
     .trim();
 
   const normCleaned = normalizeKey(cleaned);
+  const compactCleaned = normCleaned.replace(/[\s_-]+/g, '');
   const normRaw = normalizeKey(raw);
 
   // 1. Direct match on cleaned ID
@@ -135,8 +137,11 @@ function findSpiritGoldQualityIndex(key) {
   idx = SPIRIT_GOLD_QUALITIES.findIndex(q => q.id.toLowerCase() === cleaned.toLowerCase());
   if (idx !== -1) return idx;
 
-  // 3. Diacritic-insensitive match on cleaned ID
-  idx = SPIRIT_GOLD_QUALITIES.findIndex(q => normalizeKey(q.id) === normCleaned);
+  // 3. Diacritic-insensitive & compact match on cleaned ID (e.g. hon_don, hondon, dia)
+  idx = SPIRIT_GOLD_QUALITIES.findIndex(q => {
+    const normId = normalizeKey(q.id);
+    return normId === normCleaned || normId.replace(/[\s_-]+/g, '') === compactCleaned;
+  });
   if (idx !== -1) return idx;
 
   // 4. Match full name
@@ -279,6 +284,139 @@ async function convertSpiritGold(userId, fromQualityKey, requestedAmount = 1) {
   });
 }
 
+async function downgradeSpiritGold(userId, fromQualityKey, requestedAmount = 1) {
+  const db = getDb();
+  const player = await getPlayer(userId);
+  if (!player) {
+    return {
+      success: false,
+      reason: 'no_player',
+      message: 'Chưa Tu Tiên! Hãy dùng `/start` trước.'
+    };
+  }
+
+  const fromIndex = findSpiritGoldQualityIndex(fromQualityKey);
+  if (fromIndex === -1) {
+    return {
+      success: false,
+      reason: 'invalid_quality',
+      message: `Phẩm chất Linh Kim \`${fromQualityKey}\` không hợp lệ. Hãy chọn: Tinh, Linh, Địa, Thiên, Thánh, Thần hoặc Hỗn Độn.`
+    };
+  }
+
+  if (fromIndex <= 0) {
+    return {
+      success: false,
+      reason: 'min_tier',
+      message: `**${SPIRIT_GOLD_QUALITIES[fromIndex].name}** đã là phẩm chất thấp nhất, không thể trao đổi ngược xuống bậc thấp hơn!`
+    };
+  }
+
+  const fromQuality = SPIRIT_GOLD_QUALITIES[fromIndex];
+  const toQuality = SPIRIT_GOLD_QUALITIES[fromIndex - 1];
+
+  return withTransaction(db, async tx => {
+    try {
+      const inventory = await tx.execute({
+        sql: 'SELECT id, amount FROM tutien_inventory WHERE user_id = ? AND item_type = ? AND item_key = ? AND amount > 0 ORDER BY id',
+        args: [userId, 'spirit_gold', fromQuality.id]
+      });
+
+      const available = inventory.rows.reduce((total, row) => total + BigInt(row.amount), 0n);
+
+      let consumeCount;
+      if (typeof requestedAmount === 'string' && requestedAmount.trim().toLowerCase() === 'all') {
+        consumeCount = available;
+        if (consumeCount < 1n) {
+          await tx.rollback();
+          return {
+            success: false,
+            reason: 'insufficient_items',
+            message: `Đạo hữu cần ít nhất **1** viên **${fromQuality.name}** để đổi thành 10 viên **${toQuality.name}**, hiện không có viên nào.`
+          };
+        }
+      } else {
+        const parsed = Number(requestedAmount);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          await tx.rollback();
+          return {
+            success: false,
+            reason: 'invalid_amount',
+            message: 'Số lượng muốn phân tách phải là số nguyên dương hoặc `all`.'
+          };
+        }
+        consumeCount = BigInt(parsed);
+      }
+
+      if (available < consumeCount) {
+        await tx.rollback();
+        return {
+          success: false,
+          reason: 'insufficient_items',
+          message: `Đạo hữu không đủ Linh Kim! Cần **${consumeCount.toLocaleString('vi-VN')}x ${fromQuality.name}**, hiện chỉ có **${available.toLocaleString('vi-VN')}** viên.`
+        };
+      }
+
+      const receivedAmount = consumeCount * 10n;
+
+      let remainingToDeduct = consumeCount;
+      for (const row of inventory.rows) {
+        if (remainingToDeduct === 0n) break;
+        const rowAmount = BigInt(row.amount);
+        const consumed = rowAmount < remainingToDeduct ? rowAmount : remainingToDeduct;
+        const result = await tx.execute({
+          sql: 'UPDATE tutien_inventory SET amount = amount - ? WHERE id = ? AND amount >= ?',
+          args: [Number(consumed), row.id, Number(consumed)]
+        });
+        if (result.rowsAffected !== 1) {
+          throw new Error('Inventory changed while downgrading spirit gold.');
+        }
+        remainingToDeduct -= consumed;
+      }
+
+      if (remainingToDeduct > 0n) {
+        throw new Error('Could not deduct all required spirit gold.');
+      }
+
+      const existingTarget = await tx.execute({
+        sql: 'SELECT id FROM tutien_inventory WHERE user_id = ? AND item_type = ? AND item_key = ? ORDER BY id LIMIT 1',
+        args: [userId, 'spirit_gold', toQuality.id]
+      });
+
+      if (existingTarget.rows[0]) {
+        await tx.execute({
+          sql: 'UPDATE tutien_inventory SET amount = amount + ? WHERE id = ?',
+          args: [Number(receivedAmount), existingTarget.rows[0].id]
+        });
+      } else {
+        await tx.execute({
+          sql: 'INSERT INTO tutien_inventory (user_id, item_type, item_key, item_name, amount) VALUES (?, ?, ?, ?, ?)',
+          args: [userId, 'spirit_gold', toQuality.id, toQuality.name, Number(receivedAmount)]
+        });
+      }
+
+      await tx.commit();
+
+      const remainingSource = available - consumeCount;
+
+      return {
+        success: true,
+        fromQuality,
+        toQuality,
+        consumedAmount: Number(consumeCount),
+        receivedAmount: Number(receivedAmount),
+        remainingSourceAmount: Number(remainingSource),
+        message: `Đã phân tách thành công **${consumeCount.toLocaleString('vi-VN')}x ${fromQuality.name}** ➔ **+${receivedAmount.toLocaleString('vi-VN')}x ${toQuality.name}**!`
+      };
+    } catch (error) {
+      try {
+        await tx.rollback();
+      } catch (_) {}
+      throw error;
+    }
+  });
+}
+
 module.exports = {
   getInventory,
   getInventoryItemById,
@@ -286,5 +424,6 @@ module.exports = {
   getItemAmount,
   addItem,
   removeItem,
-  convertSpiritGold
+  convertSpiritGold,
+  downgradeSpiritGold
 };

@@ -3,10 +3,15 @@ const {
   getInventory,
   getInventoryItemById,
   removeInventoryItemById,
-  convertSpiritGold
+  convertSpiritGold,
+  downgradeSpiritGold
 } = require('../services/itemService');
 const { getPlayer, addXp } = require('../services/playerService');
-const { SPIRIT_ROOTS, SPIRIT_GOLD_CONVERT_CHOICES } = require('../config/constants');
+const {
+  SPIRIT_ROOTS,
+  SPIRIT_GOLD_CONVERT_CHOICES,
+  SPIRIT_GOLD_DOWNGRADE_CHOICES
+} = require('../config/constants');
 const { getDb } = require('../config/database');
 const { createTuTienEmbed, createErrorEmbed, createSuccessEmbed } = require('../utils/embedBuilder');
 const { formatNumber } = require('../utils/formatters');
@@ -47,6 +52,21 @@ module.exports = {
         .addStringOption(opt =>
           opt.setName('amount')
             .setDescription('Số lượng Linh Kim bậc cao muốn nhận (mặc định: 1, hoặc nhập "all" để đổi tối đa)')
+            .setRequired(false)
+        )
+    )
+    .addSubcommand(sub =>
+      sub.setName('split')
+        .setDescription('Đổi ngược 1 Linh Kim phẩm cao lấy 10 Linh Kim phẩm thấp hơn 1 bậc')
+        .addStringOption(opt =>
+          opt.setName('from')
+            .setDescription('Phẩm chất Linh Kim bậc cao muốn phân tách xuống bậc thấp hơn')
+            .setRequired(true)
+            .addChoices(...SPIRIT_GOLD_DOWNGRADE_CHOICES)
+        )
+        .addStringOption(opt =>
+          opt.setName('amount')
+            .setDescription('Số lượng Linh Kim bậc cao muốn phân tách (mặc định: 1, hoặc nhập "all" để đổi hết)')
             .setRequired(false)
         )
     )
@@ -135,6 +155,31 @@ module.exports = {
         `• **Thu Nhận:** \`+${formatNumber(result.receivedAmount)}\` **${result.toQuality.name}**\n` +
         `• **Còn Lại:** \`${formatNumber(result.remainingLowerAmount)}\` ${result.fromQuality.name}\n\n` +
         `*Tỷ lệ quy đổi: 100 viên bậc thấp = 1 viên bậc cao hơn 1 bậc.*`,
+        player.realm_id
+      );
+
+      return replyOrEdit({ embeds: [embed] });
+    }
+
+    if (sub === 'split') {
+      const fromQuality = interaction.options.getString('from');
+      const amount = interaction.options.getString('amount') || '1';
+      const result = await downgradeSpiritGold(userId, fromQuality, amount);
+
+      if (!result.success) {
+        return replyOrEdit({
+          embeds: [createErrorEmbed('Phân Tách Thất Bại', result.message)],
+          ephemeral: true
+        });
+      }
+
+      const embed = createSuccessEmbed(
+        '✨ Trao Đổi Ngược Linh Kim Thành Công',
+        `Đạo hữu đã vận chuyển linh lực phân tách Linh Kim:\n\n` +
+        `• **Tiêu Hao:** \`-${formatNumber(result.consumedAmount)}\` ${result.fromQuality.name}\n` +
+        `• **Thu Nhận:** \`+${formatNumber(result.receivedAmount)}\` **${result.toQuality.name}**\n` +
+        `• **Còn Lại:** \`${formatNumber(result.remainingSourceAmount)}\` ${result.fromQuality.name}\n\n` +
+        `*Tỷ lệ trao đổi ngược: 1 viên bậc cao = 10 viên bậc thấp hơn 1 bậc.*`,
         player.realm_id
       );
 

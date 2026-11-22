@@ -45,7 +45,7 @@ module.exports = {
       `• **Ngân Lượng:** \`${formatNumber(player.silver)}\`\n` +
       `• **Linh Lực:** \`${formatNumber(player.xp)}\` XP\n\n` +
       `**✨ Linh Kim**\n${goldLinesWithIds.join('\n')}\n` +
-      `*Quy đổi: 100 Linh Kim bậc thấp = 1 viên bậc cao hơn 1 bậc (\`/bag convert\` hoặc \`aconvert\`)*\n\n` +
+      `*Quy đổi: 100 viên bậc thấp = 1 viên bậc cao (\`/bag convert\` / \`aconvert\`) • Đổi ngược: 1 viên bậc cao = 10 viên bậc thấp (\`/bag split\` / \`asplit\`)*\n\n` +
       `**📦 Tài Nguyên Khác**\n${resourceLines.length ? resourceLines.join('\n') : '*Không có*'}`;
     const embeds = createTextEmbedPages(description, {
       title: `💰 Tài Nguyên • ${player.dao_hieu || player.username}`,

@@ -2,6 +2,14 @@
 
 ## Thay đổi trong ngày — 22/11/2026
 
+### Tính năng mới
+
+- **Trao đổi ngược Linh Kim (1 bậc cao = 10 bậc thấp):**
+  - Cho phép phân tách 1 Linh Kim phẩm cao thành 10 Linh Kim phẩm thấp hơn liền kề (Hỗn Độn ➔ Thần ➔ Thánh ➔ Thiên ➔ Địa ➔ Linh ➔ Tinh ➔ Phàm).
+  - Hỗ trợ lệnh slash: `/bag split from:<phẩm> [amount:<số/all>]` và `/shop split from:<phẩm> [amount:<số/all>]`.
+  - Hỗ trợ lệnh prefix: `abag split <phẩm> [số/all]` hoặc alias nhanh `asplit`, `adowngrade`, `atach` (hỗ trợ gõ không dấu/gạch dưới như `hon_don`, `hondon`, `dia`).
+  - Toàn bộ thao tác trừ và cộng Linh Kim chạy an toàn trong 1 transaction.
+
 ### Sửa lỗi (Bug Fixes)
 
 - **Sửa lỗi Boss Thế Giới không spawn đúng hạn, bị nhảy sang ngày hôm sau và lỗi `ConnectTimeoutError`:**

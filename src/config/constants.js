@@ -298,6 +298,14 @@ const SPIRIT_GOLD_CONVERT_CHOICES = SPIRIT_GOLD_QUALITIES.slice(0, -1).map((q, i
   };
 });
 
+const SPIRIT_GOLD_DOWNGRADE_CHOICES = SPIRIT_GOLD_QUALITIES.slice(1).map((q, idx) => {
+  const prevQ = SPIRIT_GOLD_QUALITIES[idx];
+  return {
+    name: `${q.id} ➔ ${prevQ.id} (1 ${q.id} = 10 ${prevQ.id})`,
+    value: q.id
+  };
+});
+
 // 5. Trận Pháp Linh Thú (Cộng Hưởng)
 const PET_RESONANCES = {
   same_element_3: {
@@ -322,5 +330,6 @@ module.exports = {
   SPIRIT_ROOTS,
   SPIRIT_GOLD_QUALITIES,
   SPIRIT_GOLD_CONVERT_CHOICES,
+  SPIRIT_GOLD_DOWNGRADE_CHOICES,
   PET_RESONANCES
 };

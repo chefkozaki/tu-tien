@@ -17,6 +17,7 @@ module.exports = {
         `• Dùng \`/inv\` hoặc \`ainv\` để xem Ngân Lượng, Linh Lực, số lượng Linh Kim từng phẩm và tài nguyên.\n` +
         `• Dùng đan dược bằng \`/bag use item_id:<ID>\` hoặc \`abag use <ID>\`; lấy ID trong \`/inv\`.\n` +
         `• Đổi 100 Linh Kim bậc thấp lấy 1 Linh Kim bậc cao hơn bằng \`/bag convert from:<phẩm> amount:<số lượng/all>\` hoặc \`aconvert <phẩm> [số lượng/all]\`.\n` +
+        `• Đổi ngược 1 Linh Kim bậc cao lấy 10 Linh Kim bậc thấp hơn bằng \`/bag split from:<phẩm> amount:<số lượng/all>\` hoặc \`asplit <phẩm> [số lượng/all]\`.\n` +
         `• Đổi mã quà tặng bằng \`/code code:<mã>\` hoặc \`acode <mã>\`; mỗi mã chỉ đổi một lần và cần còn hạn.\n` +
         `• Chỉ máy chủ nằm trong whitelist mới dùng được bot; chủ bot xác minh máy chủ bằng \`/verify\` hoặc \`averify\`.\n` +
         `• Đổi prefix bằng \`/prefix value:<prefix>\` hoặc \`aprefix <prefix>\`; cần quyền Quản lý Máy chủ.\n\n` +
