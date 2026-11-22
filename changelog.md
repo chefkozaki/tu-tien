@@ -4,6 +4,16 @@
 
 ### Tính năng mới
 
+- **Cân bằng hệ thống Đấu Pháp Đài (`/duel`):**
+  - **Giới hạn chênh lệch cảnh giới (`±2` cảnh giới):** Chế độ Đấu Xếp Hạng (`mode:rank`, mặc định) chỉ cho phép thách đấu trong phạm vi `±2` đại cảnh giới để tránh áp đảo tân thủ.
+  - **Chế độ Đồng Cảnh Giới (`/duel target:@user mode:fair` hoặc `aduel @user fair`):** Không giới hạn cảnh giới, tự động chuẩn hóa cả 2 về cùng mốc cảnh giới & cấp độ để so tài thuần túy theo Tộc, Linh Căn, Trận Pháp, Linh Khí và Công Pháp.
+  - **Tính điểm Elo theo chênh lệch thực lực:** Thắng đối thủ mạnh hơn nhận `+30` đến `+45` điểm (thua chỉ mất ít); thắng đối thủ yếu hơn nhiều bị giới hạn còn `+1`–`+5` điểm (hoặc `+0` điểm / `0` bạc nếu chênh lệch quá lớn) để chống farm tân thủ.
+  - **Cân bằng Combat PvP (`combat.js`):**
+    - Giảm độ dốc `realmMultiplier` trong PvP (`1.0`/cảnh giới) và áp dụng **PvP Damage Reduction (65%)** để trận đấu kéo dài qua nhiều hiệp hơn.
+    - Áp dụng **Soft Cap theo cảnh giới** cho tổng chỉ số cộng thêm từ Linh Khí, Linh Thú, Trợ Thủ trong PvP (phần vượt ngưỡng trần tính 35%).
+    - Tương khắc Linh Căn vừa tăng `+25%` ST gây ra vừa giảm `-10%` ST nhận vào; hỗ trợ **Công Pháp khác hệ khắc chế ngược** linh căn đối thủ (`+20%` ST và bỏ qua bất lợi giảm ST).
+    - Hết 20 hiệp xét thắng thua theo **% HP còn lại** (và hỗ trợ kết quả **Hòa** nếu % HP ngang nhau).
+
 - **Trao đổi ngược Linh Kim (1 bậc cao = 10 bậc thấp):**
   - Cho phép phân tách 1 Linh Kim phẩm cao thành 10 Linh Kim phẩm thấp hơn liền kề (Hỗn Độn ➔ Thần ➔ Thánh ➔ Thiên ➔ Địa ➔ Linh ➔ Tinh ➔ Phàm).
   - Hỗ trợ lệnh slash: `/bag split from:<phẩm> [amount:<số/all>]` và `/shop split from:<phẩm> [amount:<số/all>]`.

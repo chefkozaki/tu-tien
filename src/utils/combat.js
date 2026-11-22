@@ -1,20 +1,51 @@
 const { RACES, SPIRIT_ROOTS, PET_RESONANCES } = require('../config/constants');
 
+const ELEMENT_COUNTERS = Object.values(SPIRIT_ROOTS).reduce((acc, root) => {
+  acc[root.element] = root.counters;
+  return acc;
+}, {});
+
+const PVP_DAMAGE_MULTIPLIER = 0.65;
+const PVP_SOFT_CAP_OVERFLOW_RATIO = 0.35;
+
+/**
+ * Giới hạn mềm (Soft Cap) cho chỉ số cộng thêm từ trang bị/linh thú/trợ thủ trong PvP:
+ * - Phần dưới ngưỡng trần giữ nguyên 100%
+ * - Phần vượt ngưỡng trần chỉ tính 35% để tránh mất cân bằng ở đầu game
+ */
+function applyPvpSoftCap(rawBonus, cap) {
+  if (rawBonus <= 0) return 0;
+  if (rawBonus <= cap) return Math.floor(rawBonus);
+  return Math.floor(cap + (rawBonus - cap) * PVP_SOFT_CAP_OVERFLOW_RATIO);
+}
+
 /**
  * Tính toán chỉ số tổng hợp của người chơi bao gồm:
  * - Base stats theo Tộc & Cảnh giới & Level
  * - Chỉ số từ Linh Khí (Bản mệnh / Thường)
  * - Chỉ số từ 3 Linh Thú (kể cả cộng hưởng Trận Pháp)
  * - Trợ Thủ Chiến Đấu
+ *
+ * @param {object} options
+ * @param {boolean} [options.isPvp=false] - Bật chuẩn hóa & soft cap cho PvP
+ * @param {{ realm_id: number, level: number }} [options.equalizeRealm] - Chuẩn hóa cảnh giới/cấp độ cho chế độ Đồng Cảnh Giới
  */
-function calculateCombatStats(player, weapon, pets = [], helper = null, skills = [], petResonance = null) {
+function calculateCombatStats(player, weapon, pets = [], helper = null, skills = [], petResonance = null, options = {}) {
+  const { isPvp = false, equalizeRealm = null } = options || {};
   const race = RACES[player.race] || RACES.nhan_toc;
-  const realmMultiplier = 1 + player.realm_id * 1.5 + (player.level - 1) * 0.15;
+
+  const effectiveRealmId = equalizeRealm ? equalizeRealm.realm_id : Number(player.realm_id || 0);
+  const effectiveLevel = equalizeRealm ? equalizeRealm.level : Number(player.level || 1);
+
+  // Trong PvP giảm độ dốc realmMultiplier (1.0/cảnh giới thay vì 1.5) để hạn chế one-shot khi lệch 1-2 cảnh giới
+  const realmMultiplier = isPvp
+    ? 1 + effectiveRealmId * 1.0 + (effectiveLevel - 1) * 0.10
+    : 1 + effectiveRealmId * 1.5 + (effectiveLevel - 1) * 0.15;
 
   let hp = Math.floor(race.baseStats.hp * realmMultiplier);
   let atk = Math.floor(race.baseStats.atk * realmMultiplier);
   let def = Math.floor(race.baseStats.def * realmMultiplier);
-  let speed = Math.floor(race.baseStats.speed * (1 + (player.realm_id * 0.05)));
+  let speed = Math.floor(race.baseStats.speed * (1 + (effectiveRealmId * 0.05)));
   let crit = race.baseStats.crit;
   let critDmg = race.baseStats.critDmg;
   let lifesteal = 0;
@@ -37,18 +68,29 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
     ccResist += race.passive.ccResist;
   }
 
+  // Lưu base stats sau Tộc & Cảnh giới để tính ngưỡng soft cap PvP
+  const baseHp = hp;
+  const baseAtk = atk;
+  const baseDef = def;
+  const baseSpeed = speed;
+
+  let gearHp = 0;
+  let gearAtk = 0;
+  let gearDef = 0;
+  let gearSpeed = 0;
+
   // Weapon Stats
   if (weapon) {
     let weaponAtk = weapon.atk;
     let weaponDef = weapon.def;
     if (weapon.is_natal) {
       // Bản mệnh linh khí tăng tiến theo cảnh giới chủ nhân
-      const natalBonus = 1 + player.realm_id * 0.3;
+      const natalBonus = 1 + effectiveRealmId * (isPvp ? 0.22 : 0.3);
       weaponAtk = Math.floor(weaponAtk * natalBonus);
       weaponDef = Math.floor(weaponDef * natalBonus);
     }
-    atk += weaponAtk;
-    def += weaponDef;
+    gearAtk += weaponAtk;
+    gearDef += weaponDef;
   }
 
   // Pet Stats & Resonance (Trận Pháp Linh Thú)
@@ -56,10 +98,10 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
   if (pets && pets.length > 0) {
     for (const pet of pets) {
       const starBonus = 1 + (pet.star - 1) * 0.25;
-      hp += Math.floor(pet.hp * starBonus);
-      atk += Math.floor(pet.atk * starBonus);
-      def += Math.floor(pet.def * starBonus);
-      speed += Math.floor(pet.speed * starBonus);
+      gearHp += Math.floor(pet.hp * starBonus);
+      gearAtk += Math.floor(pet.atk * starBonus);
+      gearDef += Math.floor(pet.def * starBonus);
+      gearSpeed += Math.floor(pet.speed * starBonus);
       crit += pet.crit || 0.02;
     }
 
@@ -74,12 +116,6 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
           desc: resonance.desc,
           buff: resonance.buff
         };
-        hp = Math.floor(hp * activeResonance.buff.hpMultiplier);
-        atk = Math.floor(atk * activeResonance.buff.atkMultiplier);
-        def = Math.floor(def * activeResonance.buff.defMultiplier);
-        speed = Math.floor(speed * activeResonance.buff.speedMultiplier);
-        crit += activeResonance.buff.critBonus;
-        physResist = Math.min(0.9, physResist + activeResonance.buff.physResistBonus);
       }
     }
   }
@@ -87,9 +123,33 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
   // Helper (Trợ thủ chiến đấu)
   if (helper && helper.type === 'combat') {
     const helperTierBonus = 1 + (helper.tier - 1) * 0.3;
-    atk += Math.floor(100 * helperTierBonus);
-    hp += Math.floor(600 * helperTierBonus);
-    def += Math.floor(50 * helperTierBonus);
+    gearAtk += Math.floor(100 * helperTierBonus);
+    gearHp += Math.floor(600 * helperTierBonus);
+    gearDef += Math.floor(50 * helperTierBonus);
+  }
+
+  // Trong PvP áp dụng Soft Cap theo cảnh giới cho tổng chỉ số từ Linh Khí + Linh Thú + Trợ Thủ
+  if (isPvp) {
+    const capScale = 1.2 + effectiveRealmId * 0.25;
+    hp += applyPvpSoftCap(gearHp, baseHp * capScale);
+    atk += applyPvpSoftCap(gearAtk, baseAtk * capScale);
+    def += applyPvpSoftCap(gearDef, baseDef * capScale);
+    speed += applyPvpSoftCap(gearSpeed, baseSpeed * 0.8);
+  } else {
+    hp += gearHp;
+    atk += gearAtk;
+    def += gearDef;
+    speed += gearSpeed;
+  }
+
+  // Áp dụng buff Cộng Hưởng Trận Pháp Linh Thú
+  if (activeResonance && activeResonance.buff) {
+    hp = Math.floor(hp * activeResonance.buff.hpMultiplier);
+    atk = Math.floor(atk * activeResonance.buff.atkMultiplier);
+    def = Math.floor(def * activeResonance.buff.defMultiplier);
+    speed = Math.floor(speed * activeResonance.buff.speedMultiplier);
+    crit += activeResonance.buff.critBonus;
+    physResist = Math.min(0.9, physResist + activeResonance.buff.physResistBonus);
   }
 
   return {
@@ -117,13 +177,18 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
 
 /**
  * Mô phỏng trận đấu theo lượt giữa 2 chiến binh (PvP hoặc PvE)
+ * @param {object} options
+ * @param {boolean} [options.isPvp=false] - Bật PvP Damage Reduction (65%)
  */
-function simulateCombat(attackerStats, defenderStats, maxTurns = 20) {
+function simulateCombat(attackerStats, defenderStats, maxTurns = 20, options = {}) {
+  const { isPvp = false } = options || {};
+  const pvpDmgMult = isPvp ? PVP_DAMAGE_MULTIPLIER : 1;
+
   const logs = [];
   let a = { ...attackerStats };
   let d = { ...defenderStats };
 
-  logs.push(`⚔️ **Trận Đấu Bắt Đầu!**`);
+  logs.push(`⚔️ **Trận Đấu Bắt Đầu!**${isPvp ? ' *(Chế độ PvP: Sát thương điều chỉnh 65%)*' : ''}`);
   logs.push(`• **${a.name}** [HP: ${a.maxHp.toLocaleString()} | Công: ${a.atk.toLocaleString()} | Thủ: ${a.def.toLocaleString()}]`);
   logs.push(`• **${d.name}** [HP: ${d.maxHp.toLocaleString()} | Công: ${d.atk.toLocaleString()} | Thủ: ${d.def.toLocaleString()}]`);
 
@@ -134,19 +199,23 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20) {
     logs.push(`🔥 **${d.name}** kích hoạt trận pháp: **${d.activeResonance.name}**!`);
   }
 
-  // Khắc chế Linh Căn
+  // Khắc chế Linh Căn: +25% ST gây ra & -10% ST nhận vào từ đối thủ bị khắc
   const rootA = SPIRIT_ROOTS[a.spiritRoot];
   const rootD = SPIRIT_ROOTS[d.spiritRoot];
   let aElementalBonus = 1;
   let dElementalBonus = 1;
+  let aElementalMitigation = 1;
+  let dElementalMitigation = 1;
 
   if (rootA && rootD) {
     if (rootA.counters === rootD.element) {
       aElementalBonus = 1.25;
-      logs.push(`🌟 **${a.name}** mang linh căn **${rootA.element}** tương khắc **${rootD.element}** của đối thủ (+25% ST)!`);
+      aElementalMitigation = 0.90;
+      logs.push(`🌟 **${a.name}** mang linh căn **${rootA.element}** tương khắc **${rootD.element}** của đối thủ (+25% ST & -10% ST nhận vào)!`);
     } else if (rootD.counters === rootA.element) {
       dElementalBonus = 1.25;
-      logs.push(`🌟 **${d.name}** mang linh căn **${rootD.element}** tương khắc **${rootA.element}** của đối thủ (+25% ST)!`);
+      dElementalMitigation = 0.90;
+      logs.push(`🌟 **${d.name}** mang linh căn **${rootD.element}** tương khắc **${rootA.element}** của đối thủ (+25% ST & -10% ST nhận vào)!`);
     }
   }
 
@@ -157,13 +226,15 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20) {
     const second = isAFaster ? d : a;
     const firstBonus = isAFaster ? aElementalBonus : dElementalBonus;
     const secondBonus = isAFaster ? dElementalBonus : aElementalBonus;
+    const firstTargetMitigation = isAFaster ? dElementalMitigation : aElementalMitigation;
+    const secondTargetMitigation = isAFaster ? aElementalMitigation : dElementalMitigation;
 
-    // First attacker turns
-    executeTurnAction(first, second, firstBonus, logs, turn);
+    // First attacker turn
+    executeTurnAction(first, second, firstBonus, firstTargetMitigation, pvpDmgMult, logs, turn);
     if (second.hp <= 0) break;
 
-    // Second attacker turns
-    executeTurnAction(second, first, secondBonus, logs, turn);
+    // Second attacker turn
+    executeTurnAction(second, first, secondBonus, secondTargetMitigation, pvpDmgMult, logs, turn);
     if (first.hp <= 0) break;
 
     // Hồi phục từ Cộng Hưởng Trận Pháp
@@ -179,22 +250,56 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20) {
     turn++;
   }
 
-  const winner = a.hp > 0 && d.hp <= 0 ? a : (d.hp > 0 && a.hp <= 0 ? d : (a.hp >= d.hp ? a : d));
-  const isAttackerWin = winner === a;
+  const completedTurns = Math.min(turn, maxTurns);
+  let winner = null;
+  let isAttackerWin = false;
+  let isDraw = false;
 
-  logs.push(`\n🏆 **Kết Quả:** **${winner.name}** giành chiến thắng oanh liệt! (Sau ${Math.min(turn, maxTurns)} hiệp)`);
+  if (a.hp > 0 && d.hp <= 0) {
+    winner = a;
+    isAttackerWin = true;
+  } else if (d.hp > 0 && a.hp <= 0) {
+    winner = d;
+    isAttackerWin = false;
+  } else {
+    // Hết maxTurns mà cả 2 còn sống: xét thắng thua theo % HP còn lại
+    const aHpRatio = a.maxHp > 0 ? a.hp / a.maxHp : 0;
+    const dHpRatio = d.maxHp > 0 ? d.hp / d.maxHp : 0;
+    const aPct = (aHpRatio * 100).toFixed(1);
+    const dPct = (dHpRatio * 100).toFixed(1);
+
+    if (Math.abs(aHpRatio - dHpRatio) < 0.0001) {
+      isDraw = true;
+      logs.push(`\n⚖️ **Kết Quả:** Hết ${completedTurns} hiệp — **HÒA NHAU!** (${a.name}: ${aPct}% HP vs ${d.name}: ${dPct}% HP)`);
+    } else if (aHpRatio > dHpRatio) {
+      winner = a;
+      isAttackerWin = true;
+      logs.push(`\n🏆 **Kết Quả:** Hết ${completedTurns} hiệp — **${a.name}** thắng nhờ % Sinh Lực cao hơn (${aPct}% vs ${dPct}%)!`);
+    } else {
+      winner = d;
+      isAttackerWin = false;
+      logs.push(`\n🏆 **Kết Quả:** Hết ${completedTurns} hiệp — **${d.name}** thắng nhờ % Sinh Lực cao hơn (${dPct}% vs ${aPct}%)!`);
+    }
+  }
+
+  if (!isDraw && (a.hp <= 0 || d.hp <= 0)) {
+    logs.push(`\n🏆 **Kết Quả:** **${winner.name}** giành chiến thắng oanh liệt! (Sau ${completedTurns} hiệp)`);
+  }
 
   return {
-    winner: winner.name,
+    winner: winner ? winner.name : null,
     isAttackerWin,
-    turns: Math.min(turn, maxTurns),
+    isDraw,
+    turns: completedTurns,
     attackerRemainingHp: Math.max(0, a.hp),
     defenderRemainingHp: Math.max(0, d.hp),
+    attackerHpPercent: a.maxHp > 0 ? Number(((Math.max(0, a.hp) / a.maxHp) * 100).toFixed(1)) : 0,
+    defenderHpPercent: d.maxHp > 0 ? Number(((Math.max(0, d.hp) / d.maxHp) * 100).toFixed(1)) : 0,
     logs
   };
 }
 
-function executeTurnAction(attacker, defender, elementalBonus, logs, turnNumber) {
+function executeTurnAction(attacker, defender, elementalBonus, targetElementalMitigation, pvpDmgMult, logs, turnNumber) {
   // Long Tộc: Long Uy (HP < 30%)
   if (attacker.race === 'long_toc' && !attacker.longUyTriggered && (attacker.hp / attacker.maxHp) <= 0.30) {
     attacker.longUyTriggered = true;
@@ -209,8 +314,27 @@ function executeTurnAction(attacker, defender, elementalBonus, logs, turnNumber)
     berserkMultiplier = 1 + (missingHpRatio * 0.5);
   }
 
+  // Thần thông / Kỹ năng thi triển ngẫu nhiên (xác định trước để xét khắc chế hệ công pháp)
+  let skillUsed = null;
+  let skillCountered = false;
+  if (attacker.skills && attacker.skills.length > 0 && Math.random() < 0.4) {
+    const randomSkill = attacker.skills[Math.floor(Math.random() * attacker.skills.length)];
+    skillUsed = randomSkill;
+  }
+
+  // Xét tương khắc hệ: Công Pháp khác hệ có thể khắc chế ngược linh căn đối thủ!
+  let effectiveElementalMult = elementalBonus * targetElementalMitigation;
+  const defenderRoot = SPIRIT_ROOTS[defender.spiritRoot];
+  if (skillUsed && skillUsed.element && defenderRoot) {
+    if (ELEMENT_COUNTERS[skillUsed.element] === defenderRoot.element) {
+      // Bỏ qua bất lợi giảm ST của linh căn và cộng thêm +20% khắc hệ chiêu thức
+      effectiveElementalMult = Math.max(elementalBonus, 1) * 1.20;
+      skillCountered = true;
+    }
+  }
+
   // Base Damage calculation
-  let damage = attacker.atk * elementalBonus * berserkMultiplier;
+  let damage = attacker.atk * effectiveElementalMult * berserkMultiplier;
 
   // Giáp & Sát thương chuẩn
   if (attacker.trueDamage) {
@@ -226,20 +350,21 @@ function executeTurnAction(attacker, defender, elementalBonus, logs, turnNumber)
     damage *= attacker.critDmg;
   }
 
-  // Thần thông / Kỹ năng thi triển ngẫu nhiên
-  let skillUsed = null;
-  if (attacker.skills && attacker.skills.length > 0 && Math.random() < 0.4) {
-    const randomSkill = attacker.skills[Math.floor(Math.random() * attacker.skills.length)];
-    skillUsed = randomSkill;
-    damage *= (randomSkill.damage_mult || 1.3);
+  // Hệ số kỹ năng
+  if (skillUsed) {
+    damage *= (skillUsed.damage_mult || 1.3);
   }
 
-  damage = Math.floor(damage);
+  // Điều chỉnh sát thương PvP
+  damage = Math.max(1, Math.floor(damage * pvpDmgMult));
   defender.hp = Math.max(0, defender.hp - damage);
 
   let logMsg = `Hiệp ${turnNumber}: **${attacker.name}** `;
   if (skillUsed) {
     logMsg += `thi triển thần thông ⚡**[${skillUsed.name}]** `;
+    if (skillCountered) {
+      logMsg += `*(khắc chế hệ ${defenderRoot.element}!)* `;
+    }
   } else {
     logMsg += `tung đòn tấn công `;
   }
@@ -262,7 +387,7 @@ function executeTurnAction(attacker, defender, elementalBonus, logs, turnNumber)
 
   // Trợ thủ Hộ Đạo Giả trợ chiến
   if (attacker.helper && Math.random() < 0.35) {
-    const helperDmg = Math.floor(attacker.atk * 0.35);
+    const helperDmg = Math.max(1, Math.floor(attacker.atk * 0.35 * pvpDmgMult));
     defender.hp = Math.max(0, defender.hp - helperDmg);
     logs.push(`🛡️ Hộ Đạo Giả **[${attacker.helper.name}]** xuất kích, chém thêm **${helperDmg.toLocaleString()}** sát thương!`);
   }
@@ -270,5 +395,7 @@ function executeTurnAction(attacker, defender, elementalBonus, logs, turnNumber)
 
 module.exports = {
   calculateCombatStats,
-  simulateCombat
+  simulateCombat,
+  applyPvpSoftCap,
+  PVP_DAMAGE_MULTIPLIER
 };
