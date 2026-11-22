@@ -4,7 +4,7 @@ const { getEquippedWeapon } = require('./weaponService');
 const { getEquippedArmor } = require('./armorService');
 const { getEquippedPets } = require('./petService');
 const { getEquippedHelper } = require('./helperService');
-const { getEquippedSkills } = require('./skillService');
+const { getEquippedSkills, grantSkillScrolls } = require('./skillService');
 const { getPetResonance } = require('./petConfigService');
 const { calculateCombatStats, simulateCombat } = require('../utils/combat');
 const { addItem } = require('./itemService');
@@ -100,6 +100,13 @@ async function challengeTower(userId) {
     }
     await addItem(userId, 'spirit_gold', goldQuality, `Linh Kim (Phẩm ${goldQuality})`, goldAmount);
 
+    // Mốc mỗi 10 tầng thưởng thêm Tàn Quyển Công Pháp
+    let skillScrollReward = 0;
+    if (currentFloor % 10 === 0) {
+      skillScrollReward = 2 + Math.floor(currentFloor / 10);
+      await grantSkillScrolls(userId, skillScrollReward);
+    }
+
     return {
       success: true,
       clearedFloor: currentFloor,
@@ -108,6 +115,7 @@ async function challengeTower(userId) {
       xpReward,
       goldQuality,
       goldAmount,
+      skillScrollReward,
       logs: battleResult.logs
     };
   } else {

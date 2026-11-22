@@ -571,6 +571,14 @@ function applySkillPreset(index) {
   document.getElementById('skill-type').value = s.type;
   document.getElementById('skill-dmg-mult').value = s.damage_mult;
   document.getElementById('skill-desc').value = s.desc;
+  const tierEl = document.getElementById('skill-tier');
+  if (tierEl) tierEl.value = s.tier || 1;
+  const effTypeEl = document.getElementById('skill-effect-type');
+  if (effTypeEl) effTypeEl.value = s.effect_type || 'none';
+  const effValEl = document.getElementById('skill-effect-value');
+  if (effValEl) effValEl.value = s.effect_value || 0;
+  const cdEl = document.getElementById('skill-cooldown');
+  if (cdEl) cdEl.value = s.cooldown ?? 2;
 }
 
 function applyBossPreset(index) {
@@ -1840,25 +1848,32 @@ async function loadSkills() {
       return;
     }
 
+    const tierNames = { 1: 'Phàm', 2: 'Hoàng', 3: 'Huyền', 4: 'Địa', 5: 'Thiên', 6: 'Tiên' };
     tbody.innerHTML = res.data.map(s => `
       <tr>
         <td class="text-slate-500 font-mono text-xs">#${s.id}</td>
         <td>
-          <div class="font-medium text-white">${s.username || 'N/A'}</div>
-          <div class="text-[11px] text-slate-500 font-mono">${s.user_id}</div>
+          <div class="font-medium text-white">${escapeHtml(s.username || 'N/A')}</div>
+          <div class="text-[11px] text-slate-500 font-mono">${escapeHtml(s.user_id)}</div>
         </td>
-        <td class="font-bold text-white flex items-center gap-1.5">
-          <span>📜</span>
-          <span>${s.name}</span>
+        <td class="font-bold text-white">
+          <div class="flex items-center gap-1.5">
+            <span>📜</span>
+            <span>${escapeHtml(s.name)}</span>
+          </div>
+          <div class="text-[10px] text-amber-300 font-normal">[${tierNames[s.tier || 1] || 'Phàm'} Giai • Tầng ${s.level || 1}/${s.max_level || 5}]</div>
         </td>
         <td>
           <span class="text-xs px-2 py-0.5 rounded ${s.type === 'active' ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'}">
-            ${s.type === 'active' ? 'Chủ Động' : 'Bị Động'}
+            ${s.type === 'active' ? '⚡ Chủ Động' : '🧘 Bị Động'}
           </span>
         </td>
-        <td class="text-xs font-semibold text-slate-200">Hệ ${s.element}</td>
-        <td class="text-amber-400 font-bold">x${s.damage_mult}</td>
-        <td class="text-xs text-slate-300 max-w-xs truncate" title="${s.desc}">${s.desc}</td>
+        <td class="text-xs font-semibold text-slate-200">Hệ ${escapeHtml(s.element)}</td>
+        <td class="text-xs">
+          <div class="text-amber-400 font-bold">${s.type === 'active' ? `x${s.damage_mult}` : `+${(Number(s.effect_value || 0) * 100).toFixed(1)}%`}</div>
+          ${s.effect_type && s.effect_type !== 'none' ? `<div class="text-[10px] text-emerald-400">${escapeHtml(s.effect_type)} (${(Number(s.effect_value || 0) * 100).toFixed(0)}%)</div>` : ''}
+        </td>
+        <td class="text-xs text-slate-300 max-w-xs truncate" title="${escapeHtml(s.desc || '')}">${escapeHtml(s.desc || '')}</td>
         <td>
           <span class="text-xs ${s.is_equipped ? 'text-emerald-400 font-semibold' : 'text-slate-500'}">
             ${s.is_equipped ? `Ô ${s.slot}` : 'Chưa trang bị'}
@@ -1887,7 +1902,12 @@ async function handleSkillFormSubmit(e) {
   const name = document.getElementById('skill-name').value.trim();
   const element = document.getElementById('skill-element').value;
   const type = document.getElementById('skill-type').value;
+  const tier = Number(document.getElementById('skill-tier')?.value || 1);
+  const level = Number(document.getElementById('skill-level')?.value || 1);
   const damage_mult = Number(document.getElementById('skill-dmg-mult').value);
+  const effect_type = document.getElementById('skill-effect-type')?.value || 'none';
+  const effect_value = Number(document.getElementById('skill-effect-value')?.value || 0);
+  const cooldown = Number(document.getElementById('skill-cooldown')?.value ?? 2);
   const slot = Number(document.getElementById('skill-slot').value);
   const is_equipped = slot > 0 ? 1 : 0;
   const desc = document.getElementById('skill-desc').value.trim();
@@ -1896,7 +1916,7 @@ async function handleSkillFormSubmit(e) {
     const res = await fetch('/api/skills', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, name, element, type, damage_mult, is_equipped, slot, desc })
+      body: JSON.stringify({ user_id: userId, name, element, type, tier, level, damage_mult, effect_type, effect_value, cooldown, is_equipped, slot, desc })
     }).then(r => r.json());
 
     if (!res.success) {

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb, getCacheStatus, syncDatabase } = require('../../src/config/database');
-const { REALMS, RACES, SPIRIT_ROOTS, SPIRIT_GOLD_QUALITIES } = require('../../src/config/constants');
+const { REALMS, RACES, SPIRIT_ROOTS, SPIRIT_GOLD_QUALITIES, SKILL_CATALOG, SKILL_TIERS } = require('../../src/config/constants');
 const { getPlayer, createPlayer, executeBreakthrough, addSilver, addXp } = require('../../src/services/playerService');
 const { addItem, removeItem, getInventory } = require('../../src/services/itemService');
 const { getXpRequired } = require('../../src/utils/formatters');
@@ -1501,21 +1501,61 @@ router.get('/skills', async (req, res) => {
 });
 
 router.get('/skills/presets', (req, res) => {
-  res.json({ success: true, data: SKILL_PRESETS });
+  const merged = [...SKILL_CATALOG];
+  for (const preset of SKILL_PRESETS) {
+    if (!merged.some(s => s.name === preset.name)) {
+      merged.push({ tier: 3, effect_type: 'none', effect_value: 0, cooldown: 2, ...preset });
+    }
+  }
+  res.json({ success: true, data: merged });
 });
 
 router.post('/skills', async (req, res) => {
   try {
-    const { user_id, name, type = 'active', element = 'Kim', damage_mult = 1.25, desc = '', is_equipped = 0, slot = 0 } = req.body;
+    const {
+      user_id,
+      name,
+      type = 'active',
+      element = 'Kim',
+      tier = 1,
+      level = 1,
+      max_level,
+      damage_mult = 1.25,
+      effect_type = 'none',
+      effect_value = 0,
+      cooldown = 2,
+      desc = '',
+      is_equipped = 0,
+      slot = 0
+    } = req.body;
     if (!user_id || !name) {
       return res.status(400).json({ success: false, error: 'Thiếu user_id hoặc name!' });
     }
 
+    const parsedTier = Math.min(6, Math.max(1, Number(tier) || 1));
+    const resolvedMaxLevel = Number(max_level) || SKILL_TIERS[parsedTier]?.maxLevel || 5;
+
     const db = getDb();
     await db.execute({
-      sql: `INSERT INTO tutien_skills (user_id, name, type, element, damage_mult, desc, is_equipped, slot)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [user_id, name, type, element, Number(damage_mult), desc, Number(is_equipped), Number(slot)]
+      sql: `INSERT INTO tutien_skills
+        (user_id, name, type, element, tier, level, max_level, damage_mult, effect_type, effect_value, cooldown, desc, is_equipped, slot)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        user_id,
+        name,
+        type,
+        element,
+        parsedTier,
+        Math.max(1, Number(level) || 1),
+        resolvedMaxLevel,
+        Number(damage_mult),
+        effect_type || 'none',
+        Number(effect_value) || 0,
+        Number(cooldown) || 0,
+        desc,
+        Number(is_equipped),
+        Number(slot)
+      ]
     });
 
     res.json({ success: true, message: `Đã truyền dạy Kỹ Năng / Công Pháp "${name}"!` });
@@ -1528,7 +1568,7 @@ router.post('/skills', async (req, res) => {
 router.put('/skills/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, element, damage_mult, desc, is_equipped, slot } = req.body;
+    const { name, type, element, tier, level, max_level, damage_mult, effect_type, effect_value, cooldown, desc, is_equipped, slot } = req.body;
     const db = getDb();
 
     await db.execute({
@@ -1536,7 +1576,13 @@ router.put('/skills/:id', async (req, res) => {
         name = COALESCE(?, name),
         type = COALESCE(?, type),
         element = COALESCE(?, element),
+        tier = COALESCE(?, tier),
+        level = COALESCE(?, level),
+        max_level = COALESCE(?, max_level),
         damage_mult = COALESCE(?, damage_mult),
+        effect_type = COALESCE(?, effect_type),
+        effect_value = COALESCE(?, effect_value),
+        cooldown = COALESCE(?, cooldown),
         desc = COALESCE(?, desc),
         is_equipped = COALESCE(?, is_equipped),
         slot = COALESCE(?, slot)
@@ -1545,7 +1591,13 @@ router.put('/skills/:id', async (req, res) => {
         name || null,
         type || null,
         element || null,
+        tier !== undefined ? Number(tier) : null,
+        level !== undefined ? Number(level) : null,
+        max_level !== undefined ? Number(max_level) : null,
         damage_mult !== undefined ? Number(damage_mult) : null,
+        effect_type || null,
+        effect_value !== undefined ? Number(effect_value) : null,
+        cooldown !== undefined ? Number(cooldown) : null,
         desc || null,
         is_equipped !== undefined ? Number(is_equipped) : null,
         slot !== undefined ? Number(slot) : null,

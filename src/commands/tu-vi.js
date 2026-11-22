@@ -4,6 +4,7 @@ const { getEquippedWeapon } = require('../services/weaponService');
 const { getEquippedArmor } = require('../services/armorService');
 const { getEquippedPets, checkResonance } = require('../services/petService');
 const { getEquippedHelper } = require('../services/helperService');
+const { getEquippedSkills, getMaxSkillSlots, getTierInfo } = require('../services/skillService');
 const { getDongPhu } = require('../services/dongPhuService');
 const { getPetResonance } = require('../services/petConfigService');
 const { RACES, SPIRIT_ROOTS, REALMS } = require('../config/constants');
@@ -54,16 +55,18 @@ module.exports = {
     const xpBar = createProgressBar(xpCurrent, xpMax);
 
     // Lấy thông tin trang bị
-    const [weapon, armor, pets, resonance, helper, dongPhu, petResonance] = await Promise.all([
+    const [weapon, armor, pets, resonance, helper, skills, dongPhu, petResonance] = await Promise.all([
       getEquippedWeapon(player.user_id),
       getEquippedArmor(player.user_id),
       getEquippedPets(player.user_id),
       checkResonance(player.user_id),
       getEquippedHelper(player.user_id),
+      getEquippedSkills(player.user_id),
       getDongPhu(player.user_id),
       getPetResonance()
     ]);
-    const combatStats = calculateCombatStats(player, weapon, pets, helper, [], petResonance, { armor });
+    const combatStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance, { armor });
+    const maxSkillSlots = getMaxSkillSlots(player);
 
     const embed = createTuTienEmbed(player.realm_id)
       .setTitle(`📜 Hồ Sơ Tu Tiên • ${player.dao_hieu || player.username}`)
@@ -113,6 +116,13 @@ module.exports = {
           value: armor
             ? `**${String(armor.name).slice(0, 100)}** [Bậc ${armor.tier}] ${armor.is_natal ? '🌟 *(Bản Mệnh)*' : ''}\n  • HP +${formatNumber(armor.hp)} | Thủ +${formatNumber(armor.def)} | Giảm ST **${(Number(armor.dmg_reduction || 0) * 100).toFixed(1)}%**\n  • *${String(armor.effect_desc || '').slice(0, 300)}*`
             : '*Chưa trang bị Linh Giáp (`/armor equip` hoặc `/wish pull banner:armor`)*',
+          inline: false
+        },
+        {
+          name: `📜 Công Pháp & Thần Thông (${skills.length}/${maxSkillSlots})`,
+          value: skills.length > 0
+            ? skills.map((s, idx) => `**Ô ${idx + 1}:** [${s.type === 'active' ? '⚡ Chủ Động' : '🧘 Bị Động'}] **${String(s.name).slice(0, 60)}** (${getTierInfo(s.tier || 1).name} • Tầng ${s.level || 1})`).join('\n')
+            : '*Chưa trang bị Công Pháp (`/skills library` & `/skills equip`)*',
           inline: false
         },
         {

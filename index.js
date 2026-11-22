@@ -362,6 +362,9 @@ client.on('messageCreate', async message => {
     } else if (!command && ['giap', 'linhgiap'].includes(commandName)) {
       command = client.commands.get('armor');
       targetCommandName = 'armor';
+    } else if (!command && ['congphap', 'tangkinhcac', 'skill'].includes(commandName)) {
+      command = client.commands.get('skills');
+      targetCommandName = 'skills';
     }
 
     if (!command) {

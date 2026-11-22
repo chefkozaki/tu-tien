@@ -499,7 +499,13 @@ async function initDatabase() {
       name TEXT NOT NULL,
       type TEXT NOT NULL,
       element TEXT NOT NULL,
+      tier INTEGER NOT NULL DEFAULT 1,
+      level INTEGER NOT NULL DEFAULT 1,
+      max_level INTEGER NOT NULL DEFAULT 5,
       damage_mult REAL NOT NULL DEFAULT 1.0,
+      effect_type TEXT NOT NULL DEFAULT 'none',
+      effect_value REAL NOT NULL DEFAULT 0,
+      cooldown INTEGER NOT NULL DEFAULT 2,
       desc TEXT NOT NULL,
       is_equipped INTEGER NOT NULL DEFAULT 0,
       slot INTEGER DEFAULT 0
@@ -632,6 +638,23 @@ async function initDatabase() {
   }
   if (!dongPhuCols.includes('afk_started_at')) {
     await db.execute('ALTER TABLE tutien_dongphu ADD COLUMN afk_started_at INTEGER DEFAULT NULL');
+  }
+
+  // Nâng cấp schema cho tutien_skills (Tàng Kinh Các • Công Pháp)
+  const skillColsRes = await db.execute('PRAGMA table_info(tutien_skills)');
+  const skillCols = skillColsRes.rows.map(row => row.name);
+  const skillMigrations = [
+    ['tier', 'INTEGER NOT NULL DEFAULT 1'],
+    ['level', 'INTEGER NOT NULL DEFAULT 1'],
+    ['max_level', 'INTEGER NOT NULL DEFAULT 5'],
+    ['effect_type', "TEXT NOT NULL DEFAULT 'none'"],
+    ['effect_value', 'REAL NOT NULL DEFAULT 0'],
+    ['cooldown', 'INTEGER NOT NULL DEFAULT 2']
+  ];
+  for (const [col, def] of skillMigrations) {
+    if (!skillCols.includes(col)) {
+      await db.execute(`ALTER TABLE tutien_skills ADD COLUMN ${col} ${def}`);
+    }
   }
 
   const defaultElements = [

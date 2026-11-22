@@ -323,6 +323,69 @@ const PET_RESONANCES = {
   }
 };
 
+// 6. Tàng Kinh Các • Hệ Thống Công Pháp & Thần Thông
+const SKILL_TIERS = {
+  1: { tier: 1, name: 'Phàm Giai', maxLevel: 5, salvageScrolls: 2, comprehendWeight: 38, buyPrice: 4000 },
+  2: { tier: 2, name: 'Hoàng Giai', maxLevel: 5, salvageScrolls: 4, comprehendWeight: 28, buyPrice: 12000 },
+  3: { tier: 3, name: 'Huyền Giai', maxLevel: 7, salvageScrolls: 8, comprehendWeight: 18, buyPrice: null },
+  4: { tier: 4, name: 'Địa Giai', maxLevel: 7, salvageScrolls: 15, comprehendWeight: 10, buyPrice: null },
+  5: { tier: 5, name: 'Thiên Giai', maxLevel: 10, salvageScrolls: 30, comprehendWeight: 4.5, buyPrice: null },
+  6: { tier: 6, name: 'Tiên Giai', maxLevel: 10, salvageScrolls: 60, comprehendWeight: 1.5, buyPrice: null }
+};
+
+const SKILL_EFFECT_LABELS = {
+  none: 'Không hiệu ứng phụ',
+  burn: '🔥 Thiêu Đốt (gây thêm sát thương theo % máu địch trong 2 lượt)',
+  stun: '⚡ Choáng / Khống Chế (làm choáng đối thủ 1 lượt)',
+  armor_break: '💥 Phá Giáp (giảm 30% phòng thủ địch trong 2 lượt)',
+  lifesteal: '🩸 Hút Huyết (hồi phục HP theo sát thương chiêu thức)',
+  shield: '🛡️ Hộ Thuẫn (tạo lá chắn hấp thụ sát thương theo % Max HP)',
+  true_dmg: '✨ Sát Thương Chuẩn (xuyên qua phòng thủ địch)',
+  stat_hp: '❤️ Tâm Pháp Sinh Lực (+% HP tối đa)',
+  stat_atk: '⚔️ Tâm Pháp Công Kích (+% Công)',
+  stat_def: '🛡️ Tâm Pháp Hộ Thể (+% Thủ)',
+  stat_crit: '🎯 Tâm Pháp Chí Mạng (+Tỷ lệ Bạo kích)',
+  stat_lifesteal: '🩸 Tâm Pháp Huyết Ma (+Hút máu)',
+  stat_dmg_reduction: '🧱 Tâm Pháp Kim Thân (+Giảm ST nhận vào)',
+  stat_regen: '🌿 Tâm Pháp Hồi Nguyên (+Hồi % HP mỗi lượt)'
+};
+
+const SKILL_CATALOG = [
+  // === TIER 1 (PHÀM GIAI — Có thể mua trực tiếp tại Tàng Kinh Các) ===
+  { key: 'kim_quang_kiem', name: 'Kim Quang Kiếm Quyết', type: 'active', element: 'Kim', tier: 1, damage_mult: 1.35, effect_type: 'armor_break', effect_value: 0.20, cooldown: 2, desc: 'Phóng kiếm khí hệ Kim sắc bén, phá nhẹ phòng ngự địch.' },
+  { key: 'hoa_cau_thuat', name: 'Liệt Hỏa Phần Tâm Chưởng', type: 'active', element: 'Hỏa', tier: 1, damage_mult: 1.35, effect_type: 'burn', effect_value: 0.04, cooldown: 2, desc: 'Chưởng lực hỏa diễm gây thiêu đốt kẻ địch trong 2 lượt.' },
+  { key: 'thanh_moc_quyet', name: 'Thanh Mộc Trường Xuân Công', type: 'passive', element: 'Mộc', tier: 1, damage_mult: 1.0, effect_type: 'stat_regen', effect_value: 0.03, cooldown: 0, desc: 'Tâm pháp hệ Mộc giúp tự hồi phục 3% Max HP mỗi lượt.' },
+  { key: 'hau_tho_ho_the', name: 'Hậu Thổ Hộ Thể Quyết', type: 'passive', element: 'Thổ', tier: 1, damage_mult: 1.0, effect_type: 'stat_def', effect_value: 0.12, cooldown: 0, desc: 'Nội công hệ Thổ gia tăng 12% Phòng Thủ toàn phần.' },
+
+  // === TIER 2 (HOÀNG GIAI — Có thể mua trực tiếp tại Tàng Kinh Các) ===
+  { key: 'han_bang_chuong', name: 'Hàn Băng Phá Mạch Chưởng', type: 'active', element: 'Băng', tier: 2, damage_mult: 1.50, effect_type: 'stun', effect_value: 0.25, cooldown: 2, desc: 'Chưởng khí băng hàn có 25% tỷ lệ đóng băng làm choáng đối thủ 1 lượt.' },
+  { key: 'thuy_mac_ho_thuan', name: 'Thủy Mạc Lưu Ly Thuẫn', type: 'active', element: 'Thủy', tier: 2, damage_mult: 1.40, effect_type: 'shield', effect_value: 0.12, cooldown: 2, desc: 'Vừa đánh vừa tạo khiên nước hấp thụ 12% Max HP sát thương.' },
+  { key: 'cuong_phong_bo', name: 'Tật Phong Liệt Ảnh Quyết', type: 'passive', element: 'Phong', tier: 2, damage_mult: 1.0, effect_type: 'stat_crit', effect_value: 0.08, cooldown: 0, desc: 'Tâm pháp hệ Phong tăng 8% tỷ lệ Bạo Kích.' },
+  { key: 'huyet_sat_tam_kinh', name: 'Huyết Sát Tâm Kinh', type: 'passive', element: 'Hỏa', tier: 2, damage_mult: 1.0, effect_type: 'stat_lifesteal', effect_value: 0.06, cooldown: 0, desc: 'Nội công ma đạo giúp tăng thêm 6% Hút Máu.' },
+
+  // === TIER 3 (HUYỀN GIAI — Lĩnh Ngộ / Tháp / Boss) ===
+  { key: 'loi_dinh_khu_ma', name: 'Lôi Đình Khu Ma Chỉ', type: 'active', element: 'Lôi', tier: 3, damage_mult: 1.75, effect_type: 'stun', effect_value: 0.35, cooldown: 2, desc: 'Chỉ pháp lôi điện uy mãnh, 35% tỷ lệ gây tê liệt làm choáng 1 lượt.' },
+  { key: 'huyet_ma_tram', name: 'Huyết Ma Đoạt Hồn Trảm', type: 'active', element: 'Hỏa', tier: 3, damage_mult: 1.70, effect_type: 'lifesteal', effect_value: 0.25, cooldown: 2, desc: 'Đao khí huyết sát hồi phục 25% sát thương gây ra thành Sinh Lực.' },
+  { key: 'thai_co_luyen_the', name: 'Thái Cổ Luyện Thể Quyết', type: 'passive', element: 'Thổ', tier: 3, damage_mult: 1.0, effect_type: 'stat_hp', effect_value: 0.18, cooldown: 0, desc: 'Rèn luyện nhục thân cường hãn, tăng vĩnh viễn 18% HP tối đa.' },
+  { key: 'pha_thien_chien_y', name: 'Phá Thiên Chiến Ý Quyết', type: 'passive', element: 'Kim', tier: 3, damage_mult: 1.0, effect_type: 'stat_atk', effect_value: 0.16, cooldown: 0, desc: 'Tâm pháp chiến ý tăng vĩnh viễn 16% Công Kích.' },
+
+  // === TIER 4 (ĐỊA GIAI) ===
+  { key: 'van_kiem_quy_tong', name: 'Vạn Kiếm Quy Tông', type: 'active', element: 'Kim', tier: 4, damage_mult: 2.05, effect_type: 'armor_break', effect_value: 0.30, cooldown: 3, desc: 'Ngưng tụ vạn thanh linh kiếm xuyên phá 30% phòng thủ địch trong 2 lượt.' },
+  { key: 'phuong_hoang_niet_ban_hoa', name: 'Phượng Hoàng Niết Bàn Hỏa', type: 'active', element: 'Hỏa', tier: 4, damage_mult: 2.00, effect_type: 'burn', effect_value: 0.06, cooldown: 3, desc: 'Chân hỏa Phượng Hoàng thiêu đốt 6% máu địch mỗi lượt trong 2 lượt.' },
+  { key: 'cuc_han_bang_vuc', name: 'Cực Hàn Băng Vực', type: 'active', element: 'Băng', tier: 4, damage_mult: 1.95, effect_type: 'shield', effect_value: 0.18, cooldown: 3, desc: 'Triệu hồi lĩnh vực băng sương gây sát thương và tạo khiên 18% Max HP.' },
+  { key: 'bat_diet_kim_than', name: 'Bất Diệt Kim Thân Biến', type: 'passive', element: 'Kim', tier: 4, damage_mult: 1.0, effect_type: 'stat_dmg_reduction', effect_value: 0.10, cooldown: 0, desc: 'Nội công phòng ngự thượng thừa, vĩnh viễn giảm 10% sát thương nhận vào.' },
+
+  // === TIER 5 (THIÊN GIAI) ===
+  { key: 'cuu_thien_than_loi', name: 'Cửu Thiên Thần Lôi Quyết', type: 'active', element: 'Lôi', tier: 5, damage_mult: 2.45, effect_type: 'stun', effect_value: 0.45, cooldown: 3, desc: 'Triệu hồi Cửu Trùng Thần Lôi, sát thương cực đại kèm 45% làm choáng.' },
+  { key: 'tru_tien_kiem_tran', name: 'Tru Tiên Tứ Kiếm Trận', type: 'active', element: 'Phong', tier: 5, damage_mult: 2.40, effect_type: 'true_dmg', effect_value: 1.0, cooldown: 3, desc: 'Kiếm trận thượng cổ gây sát thương chuẩn xuyên qua toàn bộ phòng ngự địch.' },
+  { key: 'thai_so_truong_sinh_kinh', name: 'Thái Sơ Trường Sinh Kinh', type: 'passive', element: 'Mộc', tier: 5, damage_mult: 1.0, effect_type: 'stat_regen', effect_value: 0.06, cooldown: 0, desc: 'Tiên kinh sinh mệnh tự động hồi phục 6% Max HP mỗi lượt giao tranh.' },
+  { key: 'ma_than_huyet_hai', name: 'Ma Thần Huyết Hải Quyết', type: 'passive', element: 'Hỏa', tier: 5, damage_mult: 1.0, effect_type: 'stat_atk', effect_value: 0.24, cooldown: 0, desc: 'Tâm pháp chí tôn gia tăng 24% Công Kích toàn diện.' },
+
+  // === TIER 6 (TIÊN GIAI) ===
+  { key: 'hon_don_khai_thien', name: 'Hỗn Độn Khai Thiên Kình', type: 'active', element: 'Lôi', tier: 6, damage_mult: 2.95, effect_type: 'true_dmg', effect_value: 1.0, cooldown: 3, desc: 'Tuyệt kỹ chí tôn khai thiên lập địa, gây sát thương chuẩn hủy thiên diệt địa.' },
+  { key: 'van_co_bat_hoai_than', name: 'Vạn Cổ Bất Hoại Thần Công', type: 'passive', element: 'Thổ', tier: 6, damage_mult: 1.0, effect_type: 'stat_dmg_reduction', effect_value: 0.15, cooldown: 0, desc: 'Tiên giai hộ thể thần công, vĩnh viễn giảm 15% mọi sát thương nhận vào.' }
+];
+
 module.exports = {
   REALMS,
   LEVEL_SUB_TITLES,
@@ -331,5 +394,8 @@ module.exports = {
   SPIRIT_GOLD_QUALITIES,
   SPIRIT_GOLD_CONVERT_CHOICES,
   SPIRIT_GOLD_DOWNGRADE_CHOICES,
-  PET_RESONANCES
+  PET_RESONANCES,
+  SKILL_TIERS,
+  SKILL_EFFECT_LABELS,
+  SKILL_CATALOG
 };

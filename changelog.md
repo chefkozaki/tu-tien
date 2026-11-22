@@ -4,6 +4,19 @@
 
 ### Tính năng mới
 
+- **Hệ thống Tàng Kinh Các • Công Pháp & Thần Thông (Toàn Diện):**
+  - **Cơ sở dữ liệu & Danh mục:** Nâng cấp bảng `tutien_skills` (tự động migrate) với `tier` (Phàm ➔ Tiên Giai), `level`, `max_level`, `effect_type`, `effect_value`, `cooldown` và bổ sung 22 bí tịch Công Pháp / Thần Thông trải đều 8 hệ trong `SKILL_CATALOG`.
+  - **Lệnh `/skills` (prefix: `askills`, `acongphap`, `atangkinhcac`, `askill`):**
+    - `/skills list`: Xem các ô đang trang bị (tách rõ Chủ Động / Bị Động, phẩm giai, tầng, hiệu ứng) & số **Tàn Quyển Công Pháp**.
+    - `/skills library`: Vào **Tàng Kinh Các** thỉnh bí tịch Phàm–Hoàng Giai bằng Bạc hoặc **Lĩnh Ngộ x1 (3K Bạc) / x5 (13.5K Bạc — bảo đảm Huyền Giai+)**; bí tịch trùng tự động hóa thành **Tàn Quyển Công Pháp**.
+    - `/skills equip` / `/skills unequip`: Lắp và tháo Công Pháp theo giới hạn ô (3 ô, Nhân Tộc 4 ô).
+    - `/skills upgrade` / `/skills salvage`: Tu luyện nâng tầng Công Pháp bằng Bạc + Tàn Quyển và phân giải bí tịch dư thừa.
+  - **Tích hợp Combat, Hồ Sơ & Tháp:**
+    - **Công Pháp Bị Động** cộng trực tiếp HP%, Công%, Thủ%, Crit, Hút máu, Giảm ST%, Hồi máu/lượt (có điều chỉnh cân bằng PvP) và hiển thị trong `/profile`.
+    - **Thần Thông Chủ Động** có hồi chiêu theo lượt, đồng điệu Linh Căn (`+10%` ST) và 6 hiệu ứng chiến đấu (`burn`, `stun`, `armor_break`, `lifesteal`, `shield`, `true_dmg`).
+    - Vượt mỗi mốc 10 tầng Thí Luyện Tháp (`/tower`) thưởng thêm **Tàn Quyển Công Pháp**.
+  - **Admin Panel:** Nâng cấp tab & API **Công Pháp / Kỹ Năng** hỗ trợ đầy đủ `tier`, `level`, `effect_type`, `effect_value`, `cooldown` và gộp toàn bộ 22 bí tịch `SKILL_CATALOG` vào Presets.
+
 - **Hệ thống Linh Giáp (HP + Thủ + Giảm Sát Thương nhận vào) & Cầu Nguyện Giáp:**
   - **Cơ sở dữ liệu:** Thêm bảng `tutien_armors`, bổ sung cột `dmg_reduction` cho `tutien_gacha_items`, cột pity riêng (`armor_pity_4`, `armor_pity_5`, `armor_rate_up_guaranteed`) cho `tutien_wish_pity`, và tự động khởi tạo 9 Linh Giáp mặc định (3★–5★).
   - **Cầu Nguyện (`/wish`):** Thêm Đài Cầu Nguyện mới **🛡️ Huyền Giáp Kim Thân (`banner:armor`)** cùng hỗ trợ Linh Giáp trong banner Tổng Hợp (`standard`).

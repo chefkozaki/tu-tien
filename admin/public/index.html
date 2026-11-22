@@ -1975,17 +1975,60 @@
           <div>
             <label class="block text-slate-300 font-medium mb-1">Loại:</label>
             <select id="skill-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
-              <option value="active">Chủ Động</option>
-              <option value="passive">Bị Động</option>
+              <option value="active">⚡ Chủ Động</option>
+              <option value="passive">🧘 Bị Động</option>
             </select>
           </div>
           <div>
-            <label class="block text-slate-300 font-medium mb-1">Hệ Số ST (vd: 1.5):</label>
-            <input type="number" step="0.05" id="skill-dmg-mult" value="1.25" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+            <label class="block text-slate-300 font-medium mb-1">Phẩm Giai (1-6):</label>
+            <select id="skill-tier" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+              <option value="1">1 - Phàm Giai</option>
+              <option value="2">2 - Hoàng Giai</option>
+              <option value="3">3 - Huyền Giai</option>
+              <option value="4">4 - Địa Giai</option>
+              <option value="5">5 - Thiên Giai</option>
+              <option value="6">6 - Tiên Giai</option>
+            </select>
           </div>
           <div>
-            <label class="block text-slate-300 font-medium mb-1">Ô Trang Bị:</label>
-            <input type="number" id="skill-slot" min="0" max="4" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+            <label class="block text-slate-300 font-medium mb-1">Tầng / Ô:</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <input type="number" id="skill-level" min="1" max="10" value="1" title="Tầng" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-100">
+              <input type="number" id="skill-slot" min="0" max="4" value="0" title="Ô trang bị (0=kho)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-100">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Hệ Số ST:</label>
+            <input type="number" step="0.05" id="skill-dmg-mult" value="1.35" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Hiệu Ứng:</label>
+            <select id="skill-effect-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-100">
+              <option value="none">Không</option>
+              <option value="burn">🔥 Thiêu Đốt</option>
+              <option value="stun">⚡ Choáng</option>
+              <option value="armor_break">💥 Phá Giáp</option>
+              <option value="lifesteal">🩸 Hút Huyết</option>
+              <option value="shield">🛡️ Hộ Thuẫn</option>
+              <option value="true_dmg">✨ ST Chuẩn</option>
+              <option value="stat_hp">❤️ +HP%</option>
+              <option value="stat_atk">⚔️ +ATK%</option>
+              <option value="stat_def">🛡️ +DEF%</option>
+              <option value="stat_crit">🎯 +Crit</option>
+              <option value="stat_lifesteal">🩸 +Hút máu</option>
+              <option value="stat_dmg_reduction">🧱 +Giảm ST</option>
+              <option value="stat_regen">🌿 +Hồi HP/lượt</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Giá Trị / CD:</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <input type="number" step="0.01" min="0" max="1" id="skill-effect-value" value="0" title="Giá trị hiệu ứng (VD: 0.15 = 15%)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-emerald-300">
+              <input type="number" min="0" max="10" id="skill-cooldown" value="2" title="Hồi chiêu (lượt)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-slate-100">
+            </div>
           </div>
         </div>
 

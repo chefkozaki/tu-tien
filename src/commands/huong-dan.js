@@ -40,6 +40,10 @@ module.exports = {
         `• Trang bị tối đa **1 Linh Khí** (\`/weapons\`) và **1 Linh Giáp** (\`/armor\` hoặc \`aarmor\`, \`agiap\`).\n` +
         `• **Linh Giáp** giúp tăng **HP**, **Thủ** và chỉ số **Giảm Sát Thương Nhận Vào (%)**! Cầu nguyện tại banner **Huyền Giáp Kim Thân** (\`/wish pull banner:armor\`).\n` +
         `• Đặt làm **Bản Mệnh** (\`/weapons bond\`, \`/armor bond\`) để mạnh lên theo cảnh giới và thôn phệ đồ dư thừa (\`devour\`) để tăng bậc!\n\n` +
+        `📜 **4B. TÀNG KINH CÁC • CÔNG PHÁP & THẦN THÔNG:**\n` +
+        `• Dùng \`/skills library\` (hoặc \`atangkinhcac library\`) để thỉnh bí tịch cơ bản hoặc **Lĩnh Ngộ** tìm bí tịch Phàm ➔ Tiên Giai.\n` +
+        `• Tách biệt **Công Pháp Bị Động** (cộng chỉ số nền HP/Công/Thủ/Crit/Hút máu/Giảm ST/Hồi máu) và **Thần Thông Chủ Động** (hiệu ứng Thiêu đốt, Choáng, Phá giáp, Hút huyết, Hộ thuẫn, ST chuẩn).\n` +
+        `• Dùng \`/skills equip\`, \`/skills unequip\`, \`/skills upgrade\` (dùng Tàn Quyển nâng tầng) và \`/skills salvage\` (phân giải bí tịch dư thừa).\n\n` +
         `🤝 **5. TRỢ THỦ:**\n` +
         `• **Hộ Đạo Giả (Chiến Đấu):** Trực tiếp tham chiến đánh quái, đỡ đòn.\n` +
         `• **Đạo Đồng (Sinh Hoạt):** Tăng +30% tài nguyên AFK khi trạng thái AFK đang bật, tăng tỷ lệ luyện đan và giảm giá Chợ Đen 15%.\n\n` +
