@@ -35,6 +35,10 @@
 
 ### Sửa lỗi (Bug Fixes)
 
+- **Tự động khôi phục xung đột đồng bộ Turso Cache (`InvalidPushFrameConflict`):**
+  - Khi nhiều tiến trình cùng ghi lên Turso khiến local replica bị lệch frame (`Sync(InvalidPushFrameConflict(...))`), [`src/config/database.js`](file:///home/kozaki/Documents/tu-tien/src/config/database.js) sẽ tự động sao lưu file replica cũ vào `data/backups/` (giữ tối đa 3 bản), xóa bản replica bị xung đột, khởi tạo lại client và đồng bộ bản mới nhất từ Turso thay vì lặp lỗi mãi.
+  - Sửa `syncDatabase()` luôn gọi `getDb()` bên trong hàng đợi đồng bộ để không dùng nhầm client cũ sau khi khôi phục.
+
 - **Sửa lỗi Boss Thế Giới không spawn đúng hạn, bị nhảy sang ngày hôm sau và lỗi `ConnectTimeoutError`:**
   - Viết lại logic kiểm tra chu kỳ Boss Thế Giới theo mốc chu kỳ 20:00 (giờ VN) trong `src/services/bossService.js`:
     - Tự động dọn dẹp (`expired`) các boss `alive` thuộc chu kỳ cũ thay vì trả về `null` vĩnh viễn gây tắc chu kỳ spawn.

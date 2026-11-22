@@ -133,6 +133,63 @@ function setDb(newClient) {
   client = newClient;
 }
 
+function isPushFrameConflictError(err) {
+  const msg = String(err?.message || err || '');
+  return msg.includes('InvalidPushFrameConflict') || msg.includes('InvalidPushFrame');
+}
+
+function backupAndRemoveLocalReplica(dbPath) {
+  const suffixes = ['', '-wal', '-shm', '-info', '-journal'];
+  const backupDir = path.join(path.dirname(dbPath), 'backups');
+  try {
+    if (fs.existsSync(dbPath)) {
+      fs.mkdirSync(backupDir, { recursive: true });
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const baseName = path.basename(dbPath);
+      fs.copyFileSync(dbPath, path.join(backupDir, `${baseName}.conflict-${stamp}.bak`));
+
+      // Giữ tối đa 3 bản sao lưu gần nhất để tránh đầy ổ đĩa hosting
+      const backups = fs.readdirSync(backupDir)
+        .filter(f => f.startsWith(`${baseName}.conflict-`))
+        .sort();
+      while (backups.length > 3) {
+        const oldest = backups.shift();
+        try { fs.unlinkSync(path.join(backupDir, oldest)); } catch {}
+      }
+    }
+  } catch (backupErr) {
+    console.warn('⚠️ [Turso Cache] Không thể sao lưu file replica cũ trước khi khôi phục:', backupErr.message);
+  }
+
+  for (const suffix of suffixes) {
+    const filePath = `${dbPath}${suffix}`;
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (unlinkErr) {
+      console.warn(`⚠️ [Turso Cache] Không thể xóa file ${filePath}:`, unlinkErr.message);
+    }
+  }
+}
+
+async function recoverFromSyncConflict() {
+  const dbPath = getCacheDbPath();
+  console.warn('🔧 [Turso Cache] Phát hiện xung đột frame (InvalidPushFrameConflict) do Turso đã được cập nhật từ nguồn khác. Đang tự động sao lưu và đồng bộ lại bản sạch từ Turso...');
+
+  if (client && typeof client.close === 'function') {
+    try {
+      client.close();
+    } catch {}
+    client = null;
+  }
+
+  backupAndRemoveLocalReplica(dbPath);
+
+  const freshDb = getDb();
+  const res = await freshDb.sync();
+  console.log(`✅ [Turso Cache] Khôi phục xung đột thành công! Đã đồng bộ lại bản mới nhất từ Turso (frames: ${res?.frames_synced ?? 0}).`);
+  return res;
+}
+
 async function syncDatabase(options = {}) {
   const { silent = false, throwOnError = false } = options;
 
@@ -140,12 +197,12 @@ async function syncDatabase(options = {}) {
     return { skipped: true, reason: 'Bộ đệm cache đang tắt' };
   }
 
-  const db = getDb();
-  if (!db || typeof db.sync !== 'function') {
-    return { skipped: true, reason: 'Client hiện tại không hỗ trợ sync' };
-  }
-
   const doSync = async () => {
+    const db = getDb();
+    if (!db || typeof db.sync !== 'function') {
+      return { skipped: true, reason: 'Client hiện tại không hỗ trợ sync' };
+    }
+
     isSyncing = true;
     const start = Date.now();
     try {
@@ -169,6 +226,35 @@ async function syncDatabase(options = {}) {
         timestamp: lastSyncAt
       };
     } catch (err) {
+      if (isPushFrameConflictError(err)) {
+        try {
+          const recoveredRes = await recoverFromSyncConflict();
+          const durationMs = Date.now() - start;
+          lastSyncAt = new Date();
+          lastSyncDurationMs = durationMs;
+          lastSyncFrames = recoveredRes?.frames_synced ?? 0;
+          lastSyncError = null;
+          return {
+            success: true,
+            recovered: true,
+            durationMs,
+            frames_synced: lastSyncFrames,
+            timestamp: lastSyncAt
+          };
+        } catch (recoverErr) {
+          lastSyncError = recoverErr.message;
+          console.error('❌ [Turso Cache] Khôi phục xung đột thất bại:', recoverErr.message);
+          if (throwOnError) {
+            throw recoverErr;
+          }
+          return {
+            success: false,
+            error: recoverErr.message,
+            timestamp: new Date()
+          };
+        }
+      }
+
       lastSyncError = err.message;
       console.error(`⚠️ [Turso Cache] Cảnh báo lỗi đồng bộ dữ liệu với Turso:`, err.message);
       if (throwOnError) {
