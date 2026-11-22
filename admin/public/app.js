@@ -145,6 +145,8 @@ async function loadTabData(tabId) {
       return loadPets();
     case 'tab-weapons':
       return loadWeapons();
+    case 'tab-armors':
+      return loadArmors();
     case 'tab-helpers':
       return loadHelpers();
     case 'tab-skills':
@@ -193,6 +195,10 @@ function setupEventListeners() {
   document.getElementById('weapon-filter-tier')?.addEventListener('change', loadWeapons);
   document.getElementById('weapon-filter-user')?.addEventListener('change', loadWeapons);
 
+  document.getElementById('armor-search')?.addEventListener('input', debounce(loadArmors));
+  document.getElementById('armor-filter-tier')?.addEventListener('change', loadArmors);
+  document.getElementById('armor-filter-user')?.addEventListener('change', loadArmors);
+
   document.getElementById('helper-filter-type')?.addEventListener('change', loadHelpers);
   document.getElementById('helper-filter-user')?.addEventListener('change', loadHelpers);
 
@@ -222,11 +228,12 @@ async function refreshAllData() {
 // ==========================================
 async function loadConstantsAndPresets() {
   try {
-    const [constRes, invPresetRes, petPresetRes, weapPresetRes, helpPresetRes, skillPresetRes, bossPresetRes, petSettingsRes] = await Promise.all([
+    const [constRes, invPresetRes, petPresetRes, weapPresetRes, armorPresetRes, helpPresetRes, skillPresetRes, bossPresetRes, petSettingsRes] = await Promise.all([
       fetch('/api/constants').then(r => r.json()),
       fetch('/api/inventory/presets').then(r => r.json()),
       fetch('/api/pets/presets').then(r => r.json()),
       fetch('/api/weapons/presets').then(r => r.json()),
+      fetch('/api/armors/presets').then(r => r.json()).catch(() => ({ success: true, data: [] })),
       fetch('/api/helpers/presets').then(r => r.json()),
       fetch('/api/skills/presets').then(r => r.json()),
       fetch('/api/boss/presets').then(r => r.json()).catch(() => ({ success: true, data: [] })),
@@ -237,6 +244,7 @@ async function loadConstantsAndPresets() {
     if (invPresetRes.success) state.itemPresets = invPresetRes.data;
     if (petPresetRes.success) state.petPresets = petPresetRes.data;
     if (weapPresetRes.success) state.weaponPresets = weapPresetRes.data;
+    if (armorPresetRes.success) state.armorPresets = armorPresetRes.data;
     if (helpPresetRes.success) state.helperPresets = helpPresetRes.data;
     if (skillPresetRes.success) state.skillPresets = skillPresetRes.data;
     if (bossPresetRes.success) state.bossPresets = bossPresetRes.data;
@@ -283,6 +291,13 @@ function populatePresetDropdowns() {
   if (weapSelect) {
     weapSelect.innerHTML = '<option value="">-- Chọn Thần Khí mẫu hoặc tự điền --</option>' +
       state.weaponPresets.map((w, idx) => `<option value="${idx}">[Bậc ${w.tier}] ${w.name} (+${w.atk} Công)</option>`).join('');
+  }
+
+  // 3B. Armor Presets
+  const armorSelect = document.getElementById('armor-preset-select');
+  if (armorSelect && state.armorPresets) {
+    armorSelect.innerHTML = '<option value="">-- Chọn Thần Giáp mẫu hoặc tự điền --</option>' +
+      state.armorPresets.map((a, idx) => `<option value="${idx}">[Bậc ${a.tier}] ${a.name} (+${a.hp} HP, -${(Number(a.dmg_reduction || 0) * 100).toFixed(0)}% ST)</option>`).join('');
   }
 
   // 4. Helper Presets
@@ -445,9 +460,9 @@ async function handlePetResonanceSubmit(event) {
 
 function populateUserSelects() {
   const userSelects = [
-    'give-item-user', 'pet-user-id', 'weapon-user-id', 'helper-user-id',
+    'give-item-user', 'pet-user-id', 'weapon-user-id', 'armor-user-id', 'helper-user-id',
     'skill-user-id', 'sect-leader-id', 'inv-filter-user', 'pet-filter-user',
-    'weapon-filter-user', 'helper-filter-user', 'skill-filter-user'
+    'weapon-filter-user', 'armor-filter-user', 'helper-filter-user', 'skill-filter-user'
   ];
 
   userSelects.forEach(selId => {
@@ -519,6 +534,21 @@ function applyWeaponPreset(index) {
   document.getElementById('weapon-effect-desc').value = w.effect_desc;
   document.getElementById('weapon-image-url').value = w.image_url || '';
   document.getElementById('weapon-is-natal').checked = Number(w.is_natal) === 1;
+}
+
+function applyArmorPreset(index) {
+  if (index === '') return;
+  const a = (state.armorPresets || [])[Number(index)];
+  if (!a) return;
+  document.getElementById('armor-name').value = a.name;
+  document.getElementById('armor-tier').value = a.tier;
+  document.getElementById('armor-hp').value = a.hp;
+  document.getElementById('armor-def').value = a.def;
+  document.getElementById('armor-dmg-reduction').value = Number(a.dmg_reduction || 0.05);
+  document.getElementById('armor-effect-name').value = a.effect_name || 'Hộ Giáp';
+  document.getElementById('armor-effect-desc').value = a.effect_desc || '';
+  document.getElementById('armor-image-url').value = a.image_url || '';
+  document.getElementById('armor-is-natal').checked = Number(a.is_natal) === 1;
 }
 
 function applyHelperPreset(index) {
@@ -1488,6 +1518,142 @@ async function handleDeleteWeapon(id) {
     loadWeapons();
   } catch (err) {
     showToast('Lỗi xóa linh khí: ' + err.message, 'error');
+  }
+}
+
+// ==========================================
+// 7B. ARMORS CONTROLLER (LINH GIÁP)
+// ==========================================
+async function loadArmors() {
+  try {
+    const search = document.getElementById('armor-search')?.value || '';
+    const tier = document.getElementById('armor-filter-tier')?.value || '';
+    const user_id = document.getElementById('armor-filter-user')?.value || '';
+
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (tier) params.append('tier', tier);
+    if (user_id) params.append('user_id', user_id);
+
+    const res = await fetch(`/api/armors?${params.toString()}`).then(r => r.json());
+    if (!res.success) return;
+
+    const tbody = document.getElementById('armors-table-body');
+    if (!tbody) return;
+
+    if (!res.data.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">Chưa có linh giáp nào khớp bộ lọc.</td></tr>';
+      return;
+    }
+
+    const tierColors = {
+      1: 'text-slate-400',
+      2: 'text-emerald-400',
+      3: 'text-sky-400',
+      4: 'text-purple-400',
+      5: 'text-amber-400',
+      6: 'text-rose-400',
+      7: 'text-yellow-300 font-bold'
+    };
+
+    tbody.innerHTML = res.data.map(a => `
+      <tr>
+        <td class="text-slate-500 font-mono text-xs">#${a.id}</td>
+        <td>
+          <div class="font-medium text-white">${escapeHtml(a.username || 'N/A')}</div>
+          <div class="text-[11px] text-slate-500 font-mono">${escapeHtml(a.user_id)}</div>
+        </td>
+        <td class="font-bold text-white">
+          ${safeImageUrl(a.image_url) ? `<img src="${escapeHtml(safeImageUrl(a.image_url))}" alt="" class="w-10 h-10 rounded object-cover inline-block mr-2 align-middle">` : ''}
+          <span>🛡️</span>
+          <span>${escapeHtml(a.name)}</span>
+        </td>
+        <td>
+          <span class="text-xs font-semibold ${tierColors[a.tier] || 'text-white'}">
+            Bậc ${a.tier}
+          </span>
+        </td>
+        <td class="text-xs">
+          <span class="text-rose-400 font-semibold">+${Number(a.hp || 0).toLocaleString()} HP</span> /
+          <span class="text-sky-400 font-semibold">+${Number(a.def || 0).toLocaleString()} Thủ</span> /
+          <span class="text-emerald-400 font-semibold">-${(Number(a.dmg_reduction || 0) * 100).toFixed(1)}% ST</span>
+        </td>
+        <td class="text-xs">
+          <div class="font-medium text-sky-300">${escapeHtml(a.effect_name || 'Hộ Giáp')}</div>
+          <div class="text-[11px] text-slate-400 truncate max-w-xs" title="${escapeHtml(a.effect_desc || '')}">${escapeHtml(a.effect_desc || '')}</div>
+        </td>
+        <td>
+          <div class="flex items-center gap-2 text-xs">
+            ${a.is_natal ? '<span class="text-amber-400 font-semibold">Bản Mệnh</span>' : '<span class="text-slate-500">Thường</span>'}
+            ${a.is_equipped ? '<span class="text-emerald-400 font-semibold">• Đang Mang</span>' : ''}
+          </div>
+        </td>
+        <td class="text-right">
+          <button onclick="openItemImageModal(this, 'armors', ${a.id})" data-image-url="${escapeHtml(a.image_url || '')}" title="Đổi ảnh Linh Giáp" class="p-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-slate-700">
+            <i class="fa-solid fa-image"></i>
+          </button>
+          <button onclick="handleDeleteArmor(${a.id})" title="Xóa Linh Giáp" class="p-1.5 text-xs bg-red-950/60 hover:bg-red-800 text-red-300 rounded border border-red-800/40">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Lỗi nạp armors:', err);
+  }
+}
+
+function openCreateArmorModal() {
+  document.getElementById('form-armor').reset();
+  openModal('modal-armor-form');
+}
+
+async function handleArmorFormSubmit(e) {
+  e.preventDefault();
+  const userId = document.getElementById('armor-user-id').value;
+  const name = document.getElementById('armor-name').value.trim();
+  const tier = Number(document.getElementById('armor-tier').value);
+  const hp = Number(document.getElementById('armor-hp').value);
+  const def = Number(document.getElementById('armor-def').value);
+  const dmg_reduction = Number(document.getElementById('armor-dmg-reduction').value) || 0;
+  const effect_name = document.getElementById('armor-effect-name').value.trim();
+  const effect_desc = document.getElementById('armor-effect-desc').value.trim();
+  const image_url = document.getElementById('armor-image-url').value.trim();
+  const is_natal = document.getElementById('armor-is-natal').checked ? 1 : 0;
+  const is_equipped = document.getElementById('armor-is-equipped').checked ? 1 : 0;
+
+  try {
+    const res = await fetch('/api/armors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, name, tier, hp, def, dmg_reduction, effect_name, effect_desc, image_url, is_natal, is_equipped })
+    }).then(r => r.json());
+
+    if (!res.success) {
+      showToast(res.error, 'error');
+      return;
+    }
+
+    showToast(res.message, 'success');
+    closeModal('modal-armor-form');
+    loadArmors();
+  } catch (err) {
+    showToast('Lỗi ban thưởng linh giáp: ' + err.message, 'error');
+  }
+}
+
+async function handleDeleteArmor(id) {
+  if (!confirm('Xác nhận xóa linh giáp này?')) return;
+  try {
+    const res = await fetch(`/api/armors/${id}`, { method: 'DELETE' }).then(r => r.json());
+    if (!res.success) {
+      showToast(res.error, 'error');
+      return;
+    }
+    showToast(res.message, 'success');
+    loadArmors();
+  } catch (err) {
+    showToast('Lỗi xóa linh giáp: ' + err.message, 'error');
   }
 }
 
@@ -2554,6 +2720,8 @@ async function loadGachaItems() {
       let typeBadge = '';
       if (item.item_type === 'weapon') {
         typeBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">⚔️ Linh Khí</span>';
+      } else if (item.item_type === 'armor') {
+        typeBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-sky-500/10 text-sky-400 border border-sky-500/30">🛡️ Linh Giáp</span>';
       } else if (item.item_type === 'pet') {
         typeBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">🐾 Linh Thú</span>';
       } else {
@@ -2573,6 +2741,7 @@ async function loadGachaItems() {
       // Banner text
       let bannerText = '🌌 Mọi Banner';
       if (item.banner_type === 'weapon') bannerText = '⚔️ Thần Binh';
+      else if (item.banner_type === 'armor') bannerText = '🛡️ Huyền Giáp';
       else if (item.banner_type === 'pet') bannerText = '🐾 Vạn Thú';
       else if (item.banner_type === 'helper') bannerText = '🤝 Hộ Đạo';
       else if (item.banner_type === 'standard') bannerText = '🌌 Thường';
@@ -2583,6 +2752,8 @@ async function loadGachaItems() {
       let statsText = '';
       if (item.item_type === 'weapon') {
         statsText = `Công: <b class="text-amber-400">+${Number(item.atk).toLocaleString()}</b> | Thủ: <b class="text-sky-400">+${Number(item.def).toLocaleString()}</b>`;
+      } else if (item.item_type === 'armor') {
+        statsText = `HP: <b class="text-rose-400">+${Number(item.hp).toLocaleString()}</b> | Thủ: <b class="text-sky-400">+${Number(item.def).toLocaleString()}</b> | Giảm ST: <b class="text-emerald-400">${(Number(item.dmg_reduction || 0) * 100).toFixed(1)}%</b>`;
       } else if (item.item_type === 'pet') {
         statsText = `HP: <b>+${Number(item.hp).toLocaleString()}</b> | Công: <b class="text-amber-400">+${Number(item.atk).toLocaleString()}</b> | Thủ: <b class="text-sky-400">+${Number(item.def).toLocaleString()}</b>`;
       } else {
@@ -2646,7 +2817,7 @@ function handleGachaTypeChange() {
   const typeDetailLabel = document.getElementById('gacha-type-detail-label');
   const typeDetailSelect = document.getElementById('gacha-type-detail');
 
-  if (type === 'weapon') {
+  if (type === 'weapon' || type === 'armor') {
     if (elementGroup) elementGroup.classList.remove('hidden');
     if (typeDetailGroup) typeDetailGroup.classList.add('hidden');
   } else if (type === 'pet') {
@@ -2692,6 +2863,8 @@ function openCreateGachaModal() {
   document.getElementById('gacha-def').value = '500';
   document.getElementById('gacha-speed').value = '50';
   document.getElementById('gacha-crit').value = '0.05';
+  const dmgRedEl = document.getElementById('gacha-dmg-reduction');
+  if (dmgRedEl) dmgRedEl.value = '0';
   document.getElementById('gacha-is-active').value = '1';
   document.getElementById('gacha-image-url').value = '';
 
@@ -2722,6 +2895,8 @@ async function openEditGachaModal(id) {
     document.getElementById('gacha-def').value = item.def || 0;
     document.getElementById('gacha-speed').value = item.speed || 0;
     document.getElementById('gacha-crit').value = item.crit || 0.05;
+    const dmgRedEl = document.getElementById('gacha-dmg-reduction');
+    if (dmgRedEl) dmgRedEl.value = item.dmg_reduction || 0;
     document.getElementById('gacha-effect-name').value = item.effect_name || '';
     document.getElementById('gacha-effect-desc').value = item.effect_desc || '';
     document.getElementById('gacha-image-url').value = item.image_url || '';
@@ -2755,6 +2930,7 @@ async function handleGachaFormSubmit(e) {
     def: Number(document.getElementById('gacha-def').value) || 0,
     speed: Number(document.getElementById('gacha-speed').value) || 0,
     crit: Number(document.getElementById('gacha-crit').value) || 0.05,
+    dmg_reduction: Number(document.getElementById('gacha-dmg-reduction')?.value) || 0,
     effect_name: document.getElementById('gacha-effect-name').value.trim(),
     effect_desc: document.getElementById('gacha-effect-desc').value.trim(),
     image_url: document.getElementById('gacha-image-url').value.trim(),

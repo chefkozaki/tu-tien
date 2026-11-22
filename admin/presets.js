@@ -362,6 +362,17 @@ const SKILL_PRESETS = [
   }
 ];
 
+// Linh Giáp Presets
+const ARMOR_PRESETS = [
+  { name: 'Thạch Giáp Phàm Bào', tier: 1, hp: 600, def: 150, dmg_reduction: 0.05, effect_name: 'Thổ Thuẫn', effect_desc: 'Giáp đá cơ bản giúp giảm 5% sát thương nhận vào', is_natal: 0 },
+  { name: 'Huyền Thiết Chiến Giáp', tier: 2, hp: 850, def: 220, dmg_reduction: 0.08, effect_name: 'Thiết Bích', effect_desc: 'Chiến giáp huyền thiết chắc chắn, giảm 8% sát thương nhận vào', is_natal: 0 },
+  { name: 'Càn Khôn Đạo Bào', tier: 3, hp: 1900, def: 520, dmg_reduction: 0.12, effect_name: 'Càn Khôn Hộ Thể', effect_desc: 'Đạo bào tiên gia, tăng HP và giảm 12% sát thương nhận vào', is_natal: 0 },
+  { name: 'Long Lân Bảo Giáp', tier: 4, hp: 2800, def: 750, dmg_reduction: 0.16, effect_name: 'Long Lân Hộ Tâm', effect_desc: 'Vảy rồng luyện chế, tăng HP và giảm 16% sát thương nhận vào', is_natal: 0 },
+  { name: 'Thái Sơ Tinh Thần Bào', tier: 6, hp: 5800, def: 1500, dmg_reduction: 0.22, effect_name: 'Tinh Thần Hộ Thể', effect_desc: 'Ánh sao hộ thân, tăng HP bền bỉ và giảm 22% sát thương nhận vào', is_natal: 1 },
+  { name: 'Huyền Vũ Thần Giáp', tier: 6, hp: 6500, def: 1800, dmg_reduction: 0.25, effect_name: 'Huyền Vũ Trấn Thế', effect_desc: 'Thần giáp thượng cổ hộ thể, tăng mạnh HP và giảm 25% sát thương nhận vào', is_natal: 1 },
+  { name: 'Hỗn Độn Kim Thân Y', tier: 7, hp: 9000, def: 2600, dmg_reduction: 0.30, effect_name: 'Kim Thân Bất Hoại', effect_desc: 'Bất hoại kim thân, tăng cực đại HP và giảm 30% mọi sát thương gánh chịu', is_natal: 1 }
+];
+
 // Boss Thế Giới Templates
 const BOSS_PRESETS = [
   { name: 'Thôn Thiên Ma Thú (Thượng Cổ)', baseHp: 50000000 },
@@ -375,6 +386,7 @@ module.exports = {
   ITEM_PRESETS,
   PET_PRESETS,
   WEAPON_PRESETS,
+  ARMOR_PRESETS,
   HELPER_PRESETS,
   SKILL_PRESETS,
   BOSS_PRESETS

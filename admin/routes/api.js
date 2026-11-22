@@ -12,6 +12,7 @@ const {
   ITEM_PRESETS,
   PET_PRESETS,
   WEAPON_PRESETS,
+  ARMOR_PRESETS,
   HELPER_PRESETS,
   SKILL_PRESETS,
   BOSS_PRESETS
@@ -1140,6 +1141,198 @@ router.delete('/weapons/:id', async (req, res) => {
     res.json({ success: true, message: 'Đã xóa Linh Khí!' });
   } catch (error) {
     console.error('API DELETE /weapons/:id error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==========================================
+// 5B. ARMORS MANAGEMENT (LINH GIÁP)
+// ==========================================
+router.get('/armors', async (req, res) => {
+  try {
+    const db = getDb();
+    const { user_id, tier, search } = req.query;
+
+    let sql = `
+      SELECT a.*, COALESCE(p.dao_hieu, p.username) AS username
+      FROM tutien_armors a
+      LEFT JOIN tutien_players p ON a.user_id = p.user_id
+      WHERE 1=1
+    `;
+    const args = [];
+
+    if (user_id) {
+      sql += ' AND a.user_id = ?';
+      args.push(user_id);
+    }
+    if (tier) {
+      sql += ' AND a.tier = ?';
+      args.push(Number(tier));
+    }
+    if (search) {
+      sql += ' AND (a.name LIKE ? OR p.username LIKE ? OR p.dao_hieu LIKE ?)';
+      args.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    sql += ' ORDER BY a.id DESC LIMIT 100';
+    const result = await db.execute({ sql, args });
+    res.json({ success: true, data: sanitizeRows(result.rows) });
+  } catch (error) {
+    console.error('API GET /armors error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/armors/presets', async (req, res) => {
+  try {
+    const dbArmors = await getGachaItems({ item_type: 'armor' });
+    const formatted = dbArmors.map(a => ({
+      name: a.name,
+      tier: a.tier,
+      hp: a.hp,
+      def: a.def,
+      dmg_reduction: Number(a.dmg_reduction || 0.05),
+      effect_name: a.effect_name || 'Hộ Giáp',
+      effect_desc: a.effect_desc,
+      image_url: a.image_url,
+      is_natal: a.rarity >= 5 ? 1 : 0
+    }));
+    const all = [...ARMOR_PRESETS];
+    for (const item of formatted) {
+      if (!all.some(x => x.name === item.name)) all.push(item);
+    }
+    res.json({ success: true, data: all });
+  } catch (e) {
+    res.json({ success: true, data: ARMOR_PRESETS });
+  }
+});
+
+router.post('/armors', async (req, res) => {
+  try {
+    const {
+      user_id,
+      name,
+      tier = 1,
+      hp = 500,
+      def = 100,
+      dmg_reduction = 0.05,
+      effect_name = 'Hộ Giáp',
+      effect_desc = 'Tăng sinh lực và giảm sát thương nhận vào',
+      image_url,
+      is_natal = 0,
+      is_equipped = 0
+    } = req.body;
+    const imageUrl = validateImageUrl(image_url);
+    if (imageUrl === false) {
+      return res.status(400).json({ success: false, error: 'URL ảnh linh giáp phải là URL HTTP(S) hợp lệ (tối đa 2048 ký tự).' });
+    }
+
+    if (!user_id || !name) {
+      return res.status(400).json({ success: false, error: 'Thiếu thông tin bắt buộc (user_id, name)!' });
+    }
+
+    const db = getDb();
+    const player = await getPlayer(user_id);
+    if (!player) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy người chơi!' });
+    }
+
+    const safeReduction = Math.min(0.50, Math.max(0, Number(dmg_reduction) || 0));
+
+    await db.execute({
+      sql: `INSERT INTO tutien_armors
+        (user_id, name, tier, hp, def, dmg_reduction, effect_name, effect_desc, image_url, is_natal, is_equipped)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        user_id,
+        name,
+        Number(tier),
+        Number(hp),
+        Number(def),
+        safeReduction,
+        effect_name,
+        effect_desc,
+        imageUrl,
+        Number(is_natal),
+        Number(is_equipped)
+      ]
+    });
+
+    res.json({ success: true, message: `Đã ban thưởng Linh Giáp "${name}" cho ${player.dao_hieu || player.username}!` });
+  } catch (error) {
+    console.error('API POST /armors error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/armors/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    const {
+      name,
+      tier,
+      hp,
+      def,
+      dmg_reduction,
+      effect_name,
+      effect_desc,
+      image_url,
+      is_natal,
+      is_equipped,
+      devour_exp
+    } = req.body;
+    const imageUrl = validateImageUrl(image_url);
+    if (imageUrl === false) {
+      return res.status(400).json({ success: false, error: 'URL ảnh linh giáp phải là URL HTTP(S) hợp lệ (tối đa 2048 ký tự).' });
+    }
+
+    await db.execute({
+      sql: `UPDATE tutien_armors SET
+        name = COALESCE(?, name),
+        tier = COALESCE(?, tier),
+        hp = COALESCE(?, hp),
+        def = COALESCE(?, def),
+        dmg_reduction = COALESCE(?, dmg_reduction),
+        effect_name = COALESCE(?, effect_name),
+        effect_desc = COALESCE(?, effect_desc),
+        image_url = CASE WHEN ? = 1 THEN ? ELSE image_url END,
+        is_natal = COALESCE(?, is_natal),
+        is_equipped = COALESCE(?, is_equipped),
+        devour_exp = COALESCE(?, devour_exp)
+        WHERE id = ?`,
+      args: [
+        name || null,
+        tier !== undefined ? Number(tier) : null,
+        hp !== undefined ? Number(hp) : null,
+        def !== undefined ? Number(def) : null,
+        dmg_reduction !== undefined ? Math.min(0.50, Math.max(0, Number(dmg_reduction))) : null,
+        effect_name || null,
+        effect_desc || null,
+        image_url !== undefined ? 1 : 0,
+        imageUrl === undefined ? null : imageUrl,
+        is_natal !== undefined ? Number(is_natal) : null,
+        is_equipped !== undefined ? Number(is_equipped) : null,
+        devour_exp !== undefined ? Number(devour_exp) : null,
+        Number(id)
+      ]
+    });
+
+    res.json({ success: true, message: 'Đã cập nhật Linh Giáp!' });
+  } catch (error) {
+    console.error('API PUT /armors/:id error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/armors/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    await db.execute({ sql: 'DELETE FROM tutien_armors WHERE id = ?', args: [Number(id)] });
+    res.json({ success: true, message: 'Đã xóa Linh Giáp!' });
+  } catch (error) {
+    console.error('API DELETE /armors/:id error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

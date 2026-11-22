@@ -107,6 +107,11 @@
           <span>Linh Khí / Pháp Bảo</span>
         </button>
 
+        <button class="nav-tab-btn w-full" data-tab="tab-armors">
+          <i class="fa-solid fa-shield-halved text-sky-400 w-5"></i>
+          <span>Linh Giáp / Hộ Giáp</span>
+        </button>
+
         <button class="nav-tab-btn w-full" data-tab="tab-helpers">
           <i class="fa-solid fa-hands-holding-circle text-cyan-400 w-5"></i>
           <span>Trợ Thủ</span>
@@ -681,6 +686,62 @@
         </div>
       </section>
 
+      <!-- ================= 5B. TAB: ARMORS (LINH GIÁP) ================= -->
+      <section id="tab-armors" class="tab-view hidden space-y-4">
+        <!-- Action Bar -->
+        <div class="xianxia-card rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+            <div class="relative flex-1 min-w-[200px]">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input type="text" id="armor-search" placeholder="Tìm theo tên linh giáp hoặc chủ nhân..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500">
+            </div>
+
+            <select id="armor-filter-tier" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500">
+              <option value="">Tất Cả Bậc (Tier)</option>
+              <option value="1">Bậc 1 (Phàm)</option>
+              <option value="2">Bậc 2 (Tinh)</option>
+              <option value="3">Bậc 3 (Linh)</option>
+              <option value="4">Bậc 4 (Địa)</option>
+              <option value="5">Bậc 5 (Thiên)</option>
+              <option value="6">Bậc 6 (Thánh)</option>
+              <option value="7">Bậc 7 (Thần/Hỗn Độn)</option>
+            </select>
+
+            <select id="armor-filter-user" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500 max-w-[180px]">
+              <option value="">Tất Cả Người Chơi</option>
+            </select>
+          </div>
+
+          <button onclick="openCreateArmorModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg btn-cyan flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Ban Thưởng Linh Giáp Mới</span>
+          </button>
+        </div>
+
+        <!-- Armors Table -->
+        <div class="xianxia-card rounded-xl overflow-hidden border border-slate-800">
+          <div class="overflow-x-auto">
+            <table class="xianxia-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Chủ Nhân</th>
+                  <th>Linh Giáp</th>
+                  <th>Bậc (Tier)</th>
+                  <th>HP / Thủ / Giảm ST</th>
+                  <th>Hiệu Quả Hộ Giáp</th>
+                  <th>Bản Mệnh / Đang Mang</th>
+                  <th class="text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="armors-table-body">
+                <tr><td colspan="8" class="text-center py-8 text-slate-400">Đang tải danh sách linh giáp...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= 6. TAB: HELPERS ================= -->
       <section id="tab-helpers" class="tab-view hidden space-y-4">
         <!-- Action Bar -->
@@ -785,12 +846,13 @@
           <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[300px]">
             <div class="relative flex-1 min-w-[200px]">
               <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-              <input type="text" id="gacha-search" placeholder="Tìm theo tên Linh Khí, Linh Thú, Trợ Thủ..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500">
+              <input type="text" id="gacha-search" placeholder="Tìm theo tên Linh Khí, Linh Giáp, Linh Thú, Trợ Thủ..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500">
             </div>
 
             <select id="gacha-filter-type" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500">
               <option value="">Tất Cả Loại</option>
               <option value="weapon">⚔️ Linh Khí (Vũ Khí)</option>
+              <option value="armor">🛡️ Linh Giáp (Hộ Giáp)</option>
               <option value="pet">🐾 Linh Thú</option>
               <option value="helper">🤝 Trợ Thủ</option>
             </select>
@@ -805,6 +867,7 @@
             <select id="gacha-filter-banner" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500">
               <option value="">Tất Cả Banner</option>
               <option value="weapon">⚔️ Thần Binh Vạn Khí (Linh Khí)</option>
+              <option value="armor">🛡️ Huyền Giáp Kim Thân (Linh Giáp)</option>
               <option value="pet">🐾 Vạn Thú Quy Tông (Linh Thú)</option>
               <option value="helper">🤝 Hộ Đạo Tiên Duyên (Trợ Thủ)</option>
               <option value="standard">🌌 Thiên Mệnh Thường</option>
@@ -1704,6 +1767,101 @@
     </div>
   </div>
 
+  <!-- 6B. MODAL: THÊM / SỬA LINH GIÁP -->
+  <div id="modal-armor-form" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="modal-content-box rounded-xl w-full max-w-lg p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="armor-modal-title" class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <span>🛡️</span> Ban Thưởng Linh Giáp Mới
+        </h3>
+        <button onclick="closeModal('modal-armor-form')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="form-armor" onsubmit="handleArmorFormSubmit(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="armor-form-id">
+        <div id="armor-user-select-box">
+          <label class="block text-slate-300 font-medium mb-1">Chủ Nhân Nhận Linh Giáp:</label>
+          <select id="armor-user-id" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100"></select>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Chọn Từ Presets (Thần Giáp Hộ Thể):</label>
+          <select id="armor-preset-select" onchange="applyArmorPreset(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sky-300">
+            <option value="">-- Hoặc tự cấu hình thông số bên dưới --</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Tên Linh Giáp:</label>
+            <input type="text" id="armor-name" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Phẩm Bậc (Tier 1-7):</label>
+            <select id="armor-tier" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+              <option value="1">Bậc 1 (Phàm)</option>
+              <option value="2">Bậc 2 (Tinh)</option>
+              <option value="3">Bậc 3 (Linh)</option>
+              <option value="4">Bậc 4 (Địa)</option>
+              <option value="5">Bậc 5 (Thiên)</option>
+              <option value="6">Bậc 6 (Thánh)</option>
+              <option value="7">Bậc 7 (Thần/Hỗn Độn)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Sinh Lực (HP):</label>
+            <input type="number" id="armor-hp" value="600" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Phòng Thủ (DEF):</label>
+            <input type="number" id="armor-def" value="150" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Giảm ST (0 - 0.50):</label>
+            <input type="number" step="0.01" min="0" max="0.5" id="armor-dmg-reduction" value="0.08" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-emerald-300 font-semibold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Tên Hộ Giáp:</label>
+            <input type="text" id="armor-effect-name" value="Hộ Giáp" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-medium mb-1">Bản Mệnh / Trang Bị:</label>
+            <div class="flex items-center gap-4 mt-2">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="armor-is-natal">
+                <span>Bản Mệnh</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" id="armor-is-equipped">
+                <span>Trang Bị</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Mô Tả Hiệu Quả:</label>
+          <input type="text" id="armor-effect-desc" value="Tăng sinh lực và giảm sát thương nhận vào" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Ảnh Linh Giáp (URL HTTP/HTTPS):</label>
+          <input type="url" id="armor-image-url" maxlength="2048" placeholder="https://example.com/armor.jpg" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal('modal-armor-form')" class="px-4 py-2 bg-slate-800 rounded-lg text-slate-300">Hủy</button>
+          <button type="submit" class="px-4 py-2 btn-cyan rounded-lg font-semibold">Lưu Linh Giáp</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 7. MODAL: THÊM / SỬA TRỢ THỦ -->
   <div id="modal-helper-form" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
     <div class="modal-content-box rounded-xl w-full max-w-md p-5 space-y-4">
@@ -2067,6 +2225,7 @@
             <label class="block text-slate-300 font-medium mb-1">Loại Vật Phẩm: <span class="text-rose-400">*</span></label>
             <select id="gacha-type" onchange="handleGachaTypeChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-amber-400 font-semibold focus:outline-none focus:border-amber-500">
               <option value="weapon">⚔️ Linh Khí (Pháp Bảo / Vũ Khí)</option>
+              <option value="armor">🛡️ Linh Giáp (HP + Thủ + Giảm ST)</option>
               <option value="pet">🐾 Linh Thú (Thú Cưng Xuất Chiến)</option>
               <option value="helper">🤝 Trợ Thủ (Hộ Đạo Giả / Đạo Đồng)</option>
             </select>
@@ -2088,6 +2247,7 @@
             <select id="gacha-banner" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-500">
               <option value="all">Tất Cả Các Banner</option>
               <option value="weapon">⚔️ Thần Binh Vạn Khí (Chỉ Vũ Khí)</option>
+              <option value="armor">🛡️ Huyền Giáp Kim Thân (Chỉ Linh Giáp)</option>
               <option value="pet">🐾 Vạn Thú Quy Tông (Chỉ Linh Thú)</option>
               <option value="helper">🤝 Hộ Đạo Tiên Duyên (Chỉ Trợ Thủ)</option>
               <option value="standard">🌌 Thiên Mệnh Thần Cơ (Thường)</option>
@@ -2141,7 +2301,7 @@
             <span>Thiết Lập Chỉ Số Cốt Lõi (Do Admin Quyết Định)</span>
           </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-2.5">
             <div>
               <label class="block text-slate-400 text-[11px] mb-1">Khí Huyết (HP):</label>
               <input type="number" id="gacha-hp" value="0" min="0" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-sky-500">
@@ -2163,8 +2323,13 @@
             </div>
 
             <div>
-              <label class="block text-slate-400 text-[11px] mb-1">Bạo Kích (0 - 1.0):</label>
+              <label class="block text-slate-400 text-[11px] mb-1">Bạo Kích (0-1.0):</label>
               <input type="number" step="0.01" min="0" max="1" id="gacha-crit" value="0.05" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-slate-100 text-xs focus:outline-none focus:border-sky-500">
+            </div>
+
+            <div>
+              <label class="block text-emerald-400 text-[11px] mb-1">Giảm ST (0-0.5):</label>
+              <input type="number" step="0.01" min="0" max="0.5" id="gacha-dmg-reduction" value="0" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-emerald-300 text-xs focus:outline-none focus:border-emerald-500">
             </div>
           </div>
         </div>
@@ -2220,6 +2385,7 @@
           <label class="text-slate-300 font-medium">Chọn Đài Cầu Nguyện:</label>
           <select id="sim-banner-type" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-amber-300 font-semibold focus:outline-none">
             <option value="weapon">⚔️ Thần Binh Vạn Khí (Linh Khí Rate-Up)</option>
+            <option value="armor">🛡️ Huyền Giáp Kim Thân (Linh Giáp Rate-Up)</option>
             <option value="pet">🐾 Vạn Thú Quy Tông (Linh Thú Rate-Up)</option>
             <option value="helper">🤝 Hộ Đạo Tiên Duyên (Trợ Thủ Rate-Up)</option>
             <option value="standard">🌌 Thiên Mệnh Thần Cơ (Cầu Nguyện Thường)</option>
