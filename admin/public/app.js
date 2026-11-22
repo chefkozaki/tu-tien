@@ -1771,7 +1771,8 @@ async function handleDeleteHelper(id) {
 
 function openItemImageModal(button, itemType, itemId) {
   const imageUrl = safeImageUrl(button.dataset.imageUrl || '');
-  document.getElementById('item-image-modal-title').textContent = `Đổi ảnh ${itemType === 'pets' ? 'Linh Thú' : itemType === 'weapons' ? 'Linh Khí' : 'Trợ Thủ'} #${itemId}`;
+  const labelMap = { pets: 'Linh Thú', weapons: 'Linh Khí', armors: 'Linh Giáp', helpers: 'Trợ Thủ' };
+  document.getElementById('item-image-modal-title').textContent = `Đổi ảnh ${labelMap[itemType] || 'Vật Phẩm'} #${itemId}`;
   document.getElementById('item-image-type').value = itemType;
   document.getElementById('item-image-id').value = itemId;
   document.getElementById('item-image-url').value = imageUrl;
@@ -1792,7 +1793,7 @@ async function handleItemImageSubmit(e) {
   const itemType = document.getElementById('item-image-type').value;
   const itemId = document.getElementById('item-image-id').value;
   const image_url = document.getElementById('item-image-url').value.trim();
-  if (!['pets', 'weapons', 'helpers'].includes(itemType)) {
+  if (!['pets', 'weapons', 'armors', 'helpers'].includes(itemType)) {
     showToast('Loại vật phẩm không hợp lệ!', 'error');
     return;
   }
@@ -1812,6 +1813,7 @@ async function handleItemImageSubmit(e) {
     closeModal('modal-item-image');
     if (itemType === 'pets') loadPets();
     else if (itemType === 'weapons') loadWeapons();
+    else if (itemType === 'armors') loadArmors();
     else loadHelpers();
   } catch (err) {
     showToast('Lỗi cập nhật ảnh vật phẩm: ' + err.message, 'error');
