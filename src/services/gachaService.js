@@ -11,6 +11,15 @@ const BANNER_CONFIG = {
     icon: '⚔️',
     primaryRate: 0.85
   },
+  armor: {
+    id: 'armor',
+    name: 'Huyền Giáp Kim Thân',
+    subtitle: 'Cầu Nguyện Linh Giáp Hộ Thể',
+    desc: 'Mọi vật phẩm 4★ và 5★ trong banner này đều là Linh Giáp (tăng HP, Thủ và Giảm Sát Thương nhận vào).',
+    featuredType: 'armor',
+    icon: '🛡️',
+    primaryRate: 0.85
+  },
   pet: {
     id: 'pet',
     name: 'Vạn Thú Quy Tông',
@@ -33,10 +42,10 @@ const BANNER_CONFIG = {
     id: 'standard',
     name: 'Thiên Mệnh Thần Cơ',
     subtitle: 'Cầu Nguyện Thường Cố Định',
-    desc: 'Cầu nguyện vạn vật, tỷ lệ đồng đều giữa Linh Khí, Linh Thú và Trợ Thủ',
+    desc: 'Cầu nguyện vạn vật, tỷ lệ đồng đều giữa Linh Khí, Linh Giáp, Linh Thú và Trợ Thủ',
     featuredType: 'all',
     icon: '🌌',
-    primaryRate: 0.33
+    primaryRate: 0.25
   }
 };
 
@@ -44,7 +53,7 @@ const WISH_COST_SINGLE = 2000; // 2,000 Bạc / 1 lượt quay
 const WISH_COST_TEN = 18000;   // 18,000 Bạc / 10 lượt quay (giảm 10%)
 
 function getTargetTypes(bannerType) {
-  if (bannerType === 'weapon' || bannerType === 'pet' || bannerType === 'helper') {
+  if (bannerType === 'weapon' || bannerType === 'armor' || bannerType === 'pet' || bannerType === 'helper') {
     return [bannerType];
   }
   if (bannerType === 'pet_helper') {
@@ -72,6 +81,8 @@ async function getGachaItems(filters = {}) {
   if (filters.banner_type) {
     if (filters.banner_type === 'weapon') {
       sql += " AND (banner_type = 'weapon' OR (item_type = 'weapon' AND banner_type = 'all'))";
+    } else if (filters.banner_type === 'armor') {
+      sql += " AND (banner_type = 'armor' OR (item_type = 'armor' AND banner_type = 'all'))";
     } else if (filters.banner_type === 'pet') {
       sql += " AND (banner_type = 'pet' OR (item_type = 'pet' AND banner_type = 'all'))";
     } else if (filters.banner_type === 'helper') {
@@ -129,6 +140,7 @@ async function createGachaItem(itemData) {
     def = 0,
     speed = 0,
     crit = 0.05,
+    dmg_reduction = 0,
     effect_name = '',
     effect_desc = '',
     image_url = null,
@@ -140,9 +152,9 @@ async function createGachaItem(itemData) {
     throw new Error('Thiếu thông tin bắt buộc: Loại (item_type) và Tên (name)!');
   }
 
-  const validTypes = ['weapon', 'pet', 'helper'];
+  const validTypes = ['weapon', 'armor', 'pet', 'helper'];
   if (!validTypes.includes(item_type)) {
-    throw new Error(`Loại vật phẩm không hợp lệ: ${item_type}. Chỉ chấp nhận: weapon, pet, helper!`);
+    throw new Error(`Loại vật phẩm không hợp lệ: ${item_type}. Chỉ chấp nhận: weapon, armor, pet, helper!`);
   }
 
   const parsedRarity = Math.min(5, Math.max(3, Number(rarity) || 3));
@@ -150,8 +162,8 @@ async function createGachaItem(itemData) {
 
   const res = await db.execute({
     sql: `INSERT INTO tutien_gacha_items 
-      (item_type, name, rarity, banner_type, rate_up, element, tier, hp, atk, def, speed, crit, effect_name, effect_desc, image_url, type_detail, is_active, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (item_type, name, rarity, banner_type, rate_up, element, tier, hp, atk, def, speed, crit, dmg_reduction, effect_name, effect_desc, image_url, type_detail, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       item_type,
       name.trim(),
@@ -165,6 +177,7 @@ async function createGachaItem(itemData) {
       Number(def) || 0,
       Number(speed) || 0,
       Number(crit) || 0.05,
+      Number(dmg_reduction) || 0,
       (effect_name || '').trim(),
       (effect_desc || '').trim(),
       image_url || null,
@@ -200,6 +213,7 @@ async function updateGachaItem(id, itemData) {
     def = existing.def,
     speed = existing.speed,
     crit = existing.crit,
+    dmg_reduction = existing.dmg_reduction,
     effect_name = existing.effect_name,
     effect_desc = existing.effect_desc,
     image_url = existing.image_url,
@@ -223,6 +237,7 @@ async function updateGachaItem(id, itemData) {
       def = ?,
       speed = ?,
       crit = ?,
+      dmg_reduction = ?,
       effect_name = ?,
       effect_desc = ?,
       image_url = ?,
@@ -242,6 +257,7 @@ async function updateGachaItem(id, itemData) {
       Number(def) || 0,
       Number(speed) || 0,
       Number(crit) || 0.05,
+      Number(dmg_reduction) || 0,
       (effect_name || '').trim(),
       (effect_desc || '').trim(),
       image_url || null,
@@ -332,6 +348,8 @@ async function getUserPity(userId) {
       user_id: row.user_id,
       weapon_pity_4: Number(row.weapon_pity_4 || 0),
       weapon_pity_5: Number(row.weapon_pity_5 || 0),
+      armor_pity_4: Number(row.armor_pity_4 || 0),
+      armor_pity_5: Number(row.armor_pity_5 || 0),
       pet_pity_4: Number(row.pet_pity_4 ?? row.pet_helper_pity_4 ?? 0),
       pet_pity_5: Number(row.pet_pity_5 ?? row.pet_helper_pity_5 ?? 0),
       helper_pity_4: Number(row.helper_pity_4 ?? row.pet_helper_pity_4 ?? 0),
@@ -339,6 +357,7 @@ async function getUserPity(userId) {
       standard_pity_4: Number(row.standard_pity_4 || 0),
       standard_pity_5: Number(row.standard_pity_5 || 0),
       weapon_rate_up_guaranteed: Number(row.weapon_rate_up_guaranteed || 0) === 1,
+      armor_rate_up_guaranteed: Number(row.armor_rate_up_guaranteed || 0) === 1,
       pet_rate_up_guaranteed: Number(row.pet_rate_up_guaranteed || 0) === 1,
       helper_rate_up_guaranteed: Number(row.helper_rate_up_guaranteed || 0) === 1,
       total_wishes: Number(row.total_wishes || 0),
@@ -349,8 +368,8 @@ async function getUserPity(userId) {
   // Khởi tạo dòng pity mới
   await db.execute({
     sql: `INSERT INTO tutien_wish_pity 
-      (user_id, weapon_pity_4, weapon_pity_5, pet_pity_4, pet_pity_5, helper_pity_4, helper_pity_5, pet_helper_pity_4, pet_helper_pity_5, standard_pity_4, standard_pity_5, total_wishes, last_wish_at)
-      VALUES (?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)`,
+      (user_id, weapon_pity_4, weapon_pity_5, armor_pity_4, armor_pity_5, pet_pity_4, pet_pity_5, helper_pity_4, helper_pity_5, pet_helper_pity_4, pet_helper_pity_5, standard_pity_4, standard_pity_5, total_wishes, last_wish_at)
+      VALUES (?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)`,
     args: [userId]
   });
 
@@ -358,6 +377,8 @@ async function getUserPity(userId) {
     user_id: userId,
     weapon_pity_4: 0,
     weapon_pity_5: 0,
+    armor_pity_4: 0,
+    armor_pity_5: 0,
     pet_pity_4: 0,
     pet_pity_5: 0,
     helper_pity_4: 0,
@@ -365,6 +386,7 @@ async function getUserPity(userId) {
     standard_pity_4: 0,
     standard_pity_5: 0,
     weapon_rate_up_guaranteed: false,
+    armor_rate_up_guaranteed: false,
     pet_rate_up_guaranteed: false,
     helper_rate_up_guaranteed: false,
     total_wishes: 0,
@@ -565,6 +587,9 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
   if (bannerType === 'weapon') {
     currentPity4 = userPity.weapon_pity_4 || 0;
     currentPity5 = userPity.weapon_pity_5 || 0;
+  } else if (bannerType === 'armor') {
+    currentPity4 = userPity.armor_pity_4 || 0;
+    currentPity5 = userPity.armor_pity_5 || 0;
   } else if (bannerType === 'pet') {
     currentPity4 = userPity.pet_pity_4 || 0;
     currentPity5 = userPity.pet_pity_5 || 0;
@@ -580,11 +605,13 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
   }
   let rateUpGuaranteed = bannerType === 'weapon'
     ? userPity.weapon_rate_up_guaranteed
-    : bannerType === 'pet'
-      ? userPity.pet_rate_up_guaranteed
-      : bannerType === 'helper'
-        ? userPity.helper_rate_up_guaranteed
-        : false;
+    : bannerType === 'armor'
+      ? userPity.armor_rate_up_guaranteed
+      : bannerType === 'pet'
+        ? userPity.pet_rate_up_guaranteed
+        : bannerType === 'helper'
+          ? userPity.helper_rate_up_guaranteed
+          : false;
 
   // Thực hiện các lần quay
   const results = [];
@@ -629,6 +656,24 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
           item.atk || 0,
           item.def || 0,
           item.effect_name || 'Khí Linh',
+          item.effect_desc || '',
+          item.image_url || null
+        ]
+      });
+    } else if (item.item_type === 'armor') {
+      const defaultReduction = item.rarity === 5 ? 0.25 : (item.rarity === 4 ? 0.14 : 0.06);
+      insertStatements.push({
+        sql: `INSERT INTO tutien_armors
+          (user_id, name, tier, hp, def, dmg_reduction, effect_name, effect_desc, image_url, is_natal, devour_exp, is_equipped)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0)`,
+        args: [
+          userId,
+          item.name,
+          item.tier || 1,
+          item.hp || 500,
+          item.def || 100,
+          Number(item.dmg_reduction) > 0 ? Number(item.dmg_reduction) : defaultReduction,
+          item.effect_name || 'Hộ Giáp',
           item.effect_desc || '',
           item.image_url || null
         ]
@@ -685,6 +730,11 @@ async function performWish(userId, bannerType = 'standard', count = 1) {
   if (bannerType === 'weapon') {
     updatePitySql = `UPDATE tutien_wish_pity 
       SET weapon_pity_4 = ?, weapon_pity_5 = ?, weapon_rate_up_guaranteed = ?, total_wishes = total_wishes + ?, last_wish_at = ?
+      WHERE user_id = ?`;
+    pityArgs.push(currentPity4, currentPity5, rateUpGuaranteed ? 1 : 0, wishCount, Date.now(), userId);
+  } else if (bannerType === 'armor') {
+    updatePitySql = `UPDATE tutien_wish_pity 
+      SET armor_pity_4 = ?, armor_pity_5 = ?, armor_rate_up_guaranteed = ?, total_wishes = total_wishes + ?, last_wish_at = ?
       WHERE user_id = ?`;
     pityArgs.push(currentPity4, currentPity5, rateUpGuaranteed ? 1 : 0, wishCount, Date.now(), userId);
   } else if (bannerType === 'pet') {

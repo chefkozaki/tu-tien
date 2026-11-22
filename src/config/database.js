@@ -41,6 +41,23 @@ const DEFAULT_5_STAR_PETS = [
   }
 ];
 
+const DEFAULT_ARMOR_GACHA_ITEMS = [
+  // === 5★ LINH GIÁP ===
+  { item_type: 'armor', name: 'Huyền Vũ Thần Giáp', rarity: 5, banner_type: 'armor', rate_up: 1, element: 'Thủy', tier: 6, hp: 6500, atk: 0, def: 1800, speed: 0, crit: 0, dmg_reduction: 0.25, effect_name: 'Huyền Vũ Trấn Thế', effect_desc: 'Thần giáp thượng cổ hộ thể, tăng mạnh Sinh Lực và giảm 25% sát thương nhận vào.', type_detail: 'armor' },
+  { item_type: 'armor', name: 'Hỗn Độn Kim Thân Y', rarity: 5, banner_type: 'armor', rate_up: 1, element: 'Kim', tier: 7, hp: 9000, atk: 0, def: 2600, speed: 0, crit: 0, dmg_reduction: 0.30, effect_name: 'Kim Thân Bất Hoại', effect_desc: 'Bất hoại kim thân, tăng cực đại HP và giảm 30% mọi sát thương gánh chịu.', type_detail: 'armor' },
+  { item_type: 'armor', name: 'Thái Sơ Tinh Thần Bào', rarity: 5, banner_type: 'all', rate_up: 0, element: 'Thổ', tier: 6, hp: 5800, atk: 0, def: 1500, speed: 0, crit: 0, dmg_reduction: 0.22, effect_name: 'Tinh Thần Hộ Thể', effect_desc: 'Ánh sao hộ thân, tăng HP bền bỉ và giảm 22% sát thương nhận vào.', type_detail: 'armor' },
+
+  // === 4★ LINH GIÁP ===
+  { item_type: 'armor', name: 'Long Lân Bảo Giáp', rarity: 4, banner_type: 'armor', rate_up: 1, element: 'Hỏa', tier: 4, hp: 2800, atk: 0, def: 750, speed: 0, crit: 0, dmg_reduction: 0.16, effect_name: 'Long Lân Hộ Tâm', effect_desc: 'Vảy rồng luyện chế, tăng HP và giảm 16% sát thương nhận vào.', type_detail: 'armor' },
+  { item_type: 'armor', name: 'Băng Tâm Ngọc Y', rarity: 4, banner_type: 'armor', rate_up: 1, element: 'Băng', tier: 4, hp: 2400, atk: 0, def: 680, speed: 0, crit: 0, dmg_reduction: 0.15, effect_name: 'Hàn Băng Kết Giới', effect_desc: 'Kết giới băng sương giảm 15% sát thương địch đánh tới.', type_detail: 'armor' },
+  { item_type: 'armor', name: 'Càn Khôn Đạo Bào', rarity: 4, banner_type: 'all', rate_up: 0, element: 'Thổ', tier: 3, hp: 1900, atk: 0, def: 520, speed: 0, crit: 0, dmg_reduction: 0.12, effect_name: 'Càn Khôn Hộ Thể', effect_desc: 'Đạo bào tiên gia, tăng HP và giảm 12% sát thương nhận vào.', type_detail: 'armor' },
+
+  // === 3★ LINH GIÁP ===
+  { item_type: 'armor', name: 'Huyền Thiết Chiến Giáp', rarity: 3, banner_type: 'all', rate_up: 0, element: 'Kim', tier: 2, hp: 850, atk: 0, def: 220, speed: 0, crit: 0, dmg_reduction: 0.08, effect_name: 'Thiết Bích', effect_desc: 'Chiến giáp huyền thiết chắc chắn, giảm 8% sát thương nhận vào.', type_detail: 'armor' },
+  { item_type: 'armor', name: 'Thanh Vân Pháp Y', rarity: 3, banner_type: 'all', rate_up: 0, element: 'Phong', tier: 1, hp: 500, atk: 0, def: 120, speed: 0, crit: 0, dmg_reduction: 0.06, effect_name: 'Thanh Phong Hộ Y', effect_desc: 'Pháp y nhẹ nhàng, tăng HP và giảm 6% sát thương nhận vào.', type_detail: 'armor' },
+  { item_type: 'armor', name: 'Thạch Giáp Phàm Bào', rarity: 3, banner_type: 'all', rate_up: 0, element: 'Thổ', tier: 1, hp: 600, atk: 0, def: 150, speed: 0, crit: 0, dmg_reduction: 0.05, effect_name: 'Thổ Thuẫn', effect_desc: 'Giáp đá cơ bản giúp giảm 5% sát thương nhận vào.', type_detail: 'armor' }
+];
+
 function isCacheEnabled() {
   const envVal = process.env.TURSO_CACHE_ENABLED;
   if (envVal === undefined || envVal === null || envVal === '') {
@@ -363,6 +380,22 @@ async function initDatabase() {
       is_equipped INTEGER NOT NULL DEFAULT 0
     );`,
 
+    `CREATE TABLE IF NOT EXISTS tutien_armors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      tier INTEGER NOT NULL DEFAULT 1,
+      hp INTEGER NOT NULL DEFAULT 0,
+      def INTEGER NOT NULL DEFAULT 0,
+      dmg_reduction REAL NOT NULL DEFAULT 0.05,
+      effect_name TEXT NOT NULL DEFAULT 'Hộ Giáp',
+      effect_desc TEXT NOT NULL DEFAULT '',
+      image_url TEXT,
+      is_natal INTEGER NOT NULL DEFAULT 0,
+      devour_exp INTEGER NOT NULL DEFAULT 0,
+      is_equipped INTEGER NOT NULL DEFAULT 0
+    );`,
+
     `CREATE TABLE IF NOT EXISTS tutien_helpers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -466,6 +499,7 @@ async function initDatabase() {
       def INTEGER NOT NULL DEFAULT 0,
       speed INTEGER NOT NULL DEFAULT 0,
       crit REAL NOT NULL DEFAULT 0.05,
+      dmg_reduction REAL NOT NULL DEFAULT 0,
       effect_name TEXT DEFAULT '',
       effect_desc TEXT NOT NULL DEFAULT '',
       image_url TEXT,
@@ -478,6 +512,8 @@ async function initDatabase() {
       user_id TEXT PRIMARY KEY,
       weapon_pity_4 INTEGER NOT NULL DEFAULT 0,
       weapon_pity_5 INTEGER NOT NULL DEFAULT 0,
+      armor_pity_4 INTEGER NOT NULL DEFAULT 0,
+      armor_pity_5 INTEGER NOT NULL DEFAULT 0,
       pet_pity_4 INTEGER NOT NULL DEFAULT 0,
       pet_pity_5 INTEGER NOT NULL DEFAULT 0,
       helper_pity_4 INTEGER NOT NULL DEFAULT 0,
@@ -487,6 +523,7 @@ async function initDatabase() {
       standard_pity_4 INTEGER NOT NULL DEFAULT 0,
       standard_pity_5 INTEGER NOT NULL DEFAULT 0,
       weapon_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
+      armor_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
       pet_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
       helper_rate_up_guaranteed INTEGER NOT NULL DEFAULT 0,
       total_wishes INTEGER NOT NULL DEFAULT 0,
@@ -604,13 +641,22 @@ async function initDatabase() {
       await db.execute('ALTER TABLE tutien_wish_pity ADD COLUMN helper_pity_5 INTEGER NOT NULL DEFAULT 0');
     }
     for (const column of [
+      'armor_pity_4',
+      'armor_pity_5',
       'weapon_rate_up_guaranteed',
+      'armor_rate_up_guaranteed',
       'pet_rate_up_guaranteed',
       'helper_rate_up_guaranteed'
     ]) {
       if (!pityCols.includes(column)) {
         await db.execute(`ALTER TABLE tutien_wish_pity ADD COLUMN ${column} INTEGER NOT NULL DEFAULT 0`);
       }
+    }
+
+    const gachaColsRes = await db.execute('PRAGMA table_info(tutien_gacha_items)');
+    const gachaCols = gachaColsRes.rows.map(r => r.name);
+    if (!gachaCols.includes('dmg_reduction')) {
+      await db.execute('ALTER TABLE tutien_gacha_items ADD COLUMN dmg_reduction REAL NOT NULL DEFAULT 0');
     }
 
     // Tự động chuyển đổi tiến trình pity cũ (pet_helper) sang riêng biệt cho pet & helper
@@ -767,6 +813,37 @@ async function initDatabase() {
       ]
     })));
     console.log(`✅ Đã bổ sung ${missingFiveStarPets.length} vật phẩm Linh Thú 5★ mặc định vào Bể Cầu Nguyện Gacha!`);
+  }
+
+  // Bổ sung vật phẩm Linh Giáp mặc định vào Bể Cầu Nguyện Gacha nếu chưa có
+  const armorGachaCheck = await db.execute("SELECT COUNT(*) as cnt FROM tutien_gacha_items WHERE item_type = 'armor'");
+  if (Number(armorGachaCheck.rows[0].cnt) === 0) {
+    const now = Date.now();
+    await db.batch(DEFAULT_ARMOR_GACHA_ITEMS.map(item => ({
+      sql: `INSERT INTO tutien_gacha_items
+        (item_type, name, rarity, banner_type, rate_up, element, tier, hp, atk, def, speed, crit, dmg_reduction, effect_name, effect_desc, type_detail, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+      args: [
+        item.item_type,
+        item.name,
+        item.rarity,
+        item.banner_type,
+        item.rate_up,
+        item.element,
+        item.tier,
+        item.hp,
+        item.atk,
+        item.def,
+        item.speed,
+        item.crit,
+        item.dmg_reduction || 0,
+        item.effect_name,
+        item.effect_desc,
+        item.type_detail,
+        now
+      ]
+    })));
+    console.log(`✅ Đã bổ sung ${DEFAULT_ARMOR_GACHA_ITEMS.length} vật phẩm Linh Giáp (3★-5★) mặc định vào Bể Cầu Nguyện Gacha!`);
   }
 
   // 3. Đẩy schema hoặc seed data khởi tạo lên Turso nếu có cập nhật

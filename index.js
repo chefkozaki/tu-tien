@@ -359,6 +359,9 @@ client.on('messageCreate', async message => {
       command = client.commands.get('bag');
       targetCommandName = 'bag';
       args.unshift('split');
+    } else if (!command && ['giap', 'linhgiap'].includes(commandName)) {
+      command = client.commands.get('armor');
+      targetCommandName = 'armor';
     }
 
     if (!command) {

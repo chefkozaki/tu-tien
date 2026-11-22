@@ -356,11 +356,17 @@ async function getSectCombatPower(tx, sectId) {
   const members = memberResult.rows;
   if (members.length === 0) return 0;
 
-  const [weaponResult, petResult, helperResult, skillResult, resonanceResult] = await Promise.all([
+  const [weaponResult, armorResult, petResult, helperResult, skillResult, resonanceResult] = await Promise.all([
     tx.execute({
       sql: `SELECT w.* FROM tutien_weapons w
         JOIN tutien_players p ON p.user_id = w.user_id
         WHERE p.sect_id = ? AND w.is_equipped = 1`,
+      args: [sectId]
+    }),
+    tx.execute({
+      sql: `SELECT a.* FROM tutien_armors a
+        JOIN tutien_players p ON p.user_id = a.user_id
+        WHERE p.sect_id = ? AND a.is_equipped = 1`,
       args: [sectId]
     }),
     tx.execute({
@@ -391,6 +397,7 @@ async function getSectCombatPower(tx, sectId) {
     return grouped;
   }, new Map());
   const weapons = byUser(weaponResult.rows);
+  const armors = byUser(armorResult.rows);
   const pets = byUser(petResult.rows);
   const helpers = byUser(helperResult.rows);
   const skills = byUser(skillResult.rows);
@@ -416,7 +423,8 @@ async function getSectCombatPower(tx, sectId) {
       pets.get(member.user_id) || [],
       (helpers.get(member.user_id) || [])[0] || null,
       skills.get(member.user_id) || [],
-      petResonance
+      petResonance,
+      { armor: (armors.get(member.user_id) || [])[0] || null }
     );
     const equippedSkills = skills.get(member.user_id) || [];
     const averageSkillBonus = equippedSkills.length

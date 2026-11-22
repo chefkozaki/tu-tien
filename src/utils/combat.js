@@ -31,7 +31,7 @@ function applyPvpSoftCap(rawBonus, cap) {
  * @param {{ realm_id: number, level: number }} [options.equalizeRealm] - Chuẩn hóa cảnh giới/cấp độ cho chế độ Đồng Cảnh Giới
  */
 function calculateCombatStats(player, weapon, pets = [], helper = null, skills = [], petResonance = null, options = {}) {
-  const { isPvp = false, equalizeRealm = null } = options || {};
+  const { isPvp = false, equalizeRealm = null, armor = null } = options || {};
   const race = RACES[player.race] || RACES.nhan_toc;
 
   const effectiveRealmId = equalizeRealm ? equalizeRealm.realm_id : Number(player.realm_id || 0);
@@ -51,6 +51,7 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
   let lifesteal = 0;
   let physResist = 0;
   let ccResist = 0;
+  let dmgReduction = 0;
   const trueDamage = Boolean(race.talent?.trueDamage);
 
   // Race Passive Modifiers
@@ -91,6 +92,20 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
     }
     gearAtk += weaponAtk;
     gearDef += weaponDef;
+  }
+
+  // Armor Stats (Linh Giáp: tăng HP + Thủ + Giảm Sát Thương nhận vào)
+  if (armor) {
+    let armorHp = Number(armor.hp || 0);
+    let armorDef = Number(armor.def || 0);
+    if (armor.is_natal) {
+      const natalBonus = 1 + effectiveRealmId * (isPvp ? 0.22 : 0.3);
+      armorHp = Math.floor(armorHp * natalBonus);
+      armorDef = Math.floor(armorDef * natalBonus);
+    }
+    gearHp += armorHp;
+    gearDef += armorDef;
+    dmgReduction = Math.min(0.50, Math.max(0, dmgReduction + Number(armor.dmg_reduction || 0)));
   }
 
   // Pet Stats & Resonance (Trận Pháp Linh Thú)
@@ -165,6 +180,7 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
     critDmg: critDmg,
     lifesteal: lifesteal,
     physResist: physResist,
+    dmgReduction: dmgReduction,
     ccResist: ccResist,
     trueDamage: trueDamage,
     activeResonance: activeResonance,
@@ -355,8 +371,9 @@ function executeTurnAction(attacker, defender, elementalBonus, targetElementalMi
     damage *= (skillUsed.damage_mult || 1.3);
   }
 
-  // Điều chỉnh sát thương PvP
-  damage = Math.max(1, Math.floor(damage * pvpDmgMult));
+  // Điều chỉnh sát thương PvP & Giảm Sát Thương từ Linh Giáp
+  const armorMitigation = 1 - Math.min(0.50, Math.max(0, defender.dmgReduction || 0));
+  damage = Math.max(1, Math.floor(damage * pvpDmgMult * armorMitigation));
   defender.hp = Math.max(0, defender.hp - damage);
 
   let logMsg = `Hiệp ${turnNumber}: **${attacker.name}** `;
@@ -387,7 +404,7 @@ function executeTurnAction(attacker, defender, elementalBonus, targetElementalMi
 
   // Trợ thủ Hộ Đạo Giả trợ chiến
   if (attacker.helper && Math.random() < 0.35) {
-    const helperDmg = Math.max(1, Math.floor(attacker.atk * 0.35 * pvpDmgMult));
+    const helperDmg = Math.max(1, Math.floor(attacker.atk * 0.35 * pvpDmgMult * armorMitigation));
     defender.hp = Math.max(0, defender.hp - helperDmg);
     logs.push(`🛡️ Hộ Đạo Giả **[${attacker.helper.name}]** xuất kích, chém thêm **${helperDmg.toLocaleString()}** sát thương!`);
   }

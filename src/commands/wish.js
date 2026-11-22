@@ -27,6 +27,9 @@ function buildBannerEmbed(bannerKey, pityData, player) {
   if (bannerKey === 'weapon') {
     pity4 = pityData.weapon_pity_4 || 0;
     pity5 = pityData.weapon_pity_5 || 0;
+  } else if (bannerKey === 'armor') {
+    pity4 = pityData.armor_pity_4 || 0;
+    pity5 = pityData.armor_pity_5 || 0;
   } else if (bannerKey === 'pet') {
     pity4 = pityData.pet_pity_4 ?? pityData.pet_helper_pity_4 ?? 0;
     pity5 = pityData.pet_pity_5 ?? pityData.pet_helper_pity_5 ?? 0;
@@ -36,11 +39,13 @@ function buildBannerEmbed(bannerKey, pityData, player) {
   }
   const rateUpGuaranteed = bannerKey === 'weapon'
     ? pityData.weapon_rate_up_guaranteed
-    : bannerKey === 'pet'
-      ? pityData.pet_rate_up_guaranteed
-      : bannerKey === 'helper'
-        ? pityData.helper_rate_up_guaranteed
-        : false;
+    : bannerKey === 'armor'
+      ? pityData.armor_rate_up_guaranteed
+      : bannerKey === 'pet'
+        ? pityData.pet_rate_up_guaranteed
+        : bannerKey === 'helper'
+          ? pityData.helper_rate_up_guaranteed
+          : false;
 
   const embed = new EmbedBuilder()
     .setColor('#4338ca')
@@ -108,6 +113,11 @@ function buildWishResultEmbed(wishResult, player) {
       typeTag = '⚔️ [Linh Khí]';
       return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [Bậc ${item.tier}] (Công +${item.atk}, Thủ +${item.def})${badge}\n` +
              `   └ *${item.effect_name ? `${String(item.effect_name).slice(0, 30)}: ` : ''}${String(item.effect_desc || '').slice(0, 80)}*`;
+    } else if (item.item_type === 'armor') {
+      typeTag = '🛡️ [Linh Giáp]';
+      const dmgRedPct = (Number(item.dmg_reduction || 0) * 100).toFixed(1);
+      return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [Bậc ${item.tier}] (HP +${item.hp}, Thủ +${item.def}, Giảm ST ${dmgRedPct}%)${badge}\n` +
+             `   └ *${item.effect_name ? `${String(item.effect_name).slice(0, 30)}: ` : ''}${String(item.effect_desc || '').slice(0, 80)}*`;
     } else if (item.item_type === 'pet') {
       typeTag = '🐾 [Linh Thú]';
       return `**${idx + 1}.** ${starStr} ${typeTag} **${String(item.name).slice(0, 60)}** [Hệ ${String(item.element).slice(0, 20)}] (Máu +${item.hp}, Công +${item.atk}, Thủ +${item.def})${badge}\n` +
@@ -133,7 +143,7 @@ function buildWishResultEmbed(wishResult, player) {
       ? `🎯 **Rate-Up 5★ kế tiếp:** ${wishResult.rateUpGuaranteed ? '**Được bảo đảm!**' : '50/50'}\n`
       : '') +
     `💰 **Ngân Lượng Còn Lại:** \`${formatNumber(remainingSilver)}\` Bạc\n` +
-    `*(Vật phẩm đã được tự động thêm vào Bách Binh Các, Trân Thú Uyển hoặc Đạo Hữu Các!)*`;
+    `*(Vật phẩm đã được tự động thêm vào Bách Binh Các, Huyền Giáp Các, Trân Thú Uyển hoặc Đạo Hữu Các!)*`;
   const maxDescriptionLength = 3500;
   const displayedResults = [];
 
@@ -204,6 +214,13 @@ function buildActionRows(currentBanner) {
         default: currentBanner === 'weapon'
       },
       {
+        label: 'Huyền Giáp Kim Thân (Linh Giáp)',
+        description: 'Tăng tỷ lệ Linh Giáp 4★ - 5★ (HP & Giảm ST)',
+        value: 'armor',
+        emoji: '🛡️',
+        default: currentBanner === 'armor'
+      },
+      {
         label: 'Vạn Thú Quy Tông (Linh Thú)',
         description: 'Tăng tỷ lệ Linh Thú 4★ - 5★',
         value: 'pet',
@@ -219,7 +236,7 @@ function buildActionRows(currentBanner) {
       },
       {
         label: 'Thiên Mệnh Thần Cơ (Tổng Hợp)',
-        description: 'Bể tổng hợp toàn bộ Linh Khí, Linh Thú & Trợ Thủ',
+        description: 'Bể tổng hợp Linh Khí, Linh Giáp, Linh Thú & Trợ Thủ',
         value: 'standard',
         emoji: '🌌',
         default: currentBanner === 'standard'
@@ -234,7 +251,7 @@ function buildActionRows(currentBanner) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('wish')
-    .setDescription('Hệ thống Cầu Nguyện Linh Khí, Linh Thú và Trợ Thủ.')
+    .setDescription('Hệ thống Cầu Nguyện Linh Khí, Linh Giáp, Linh Thú và Trợ Thủ.')
     .addSubcommand(sub =>
       sub.setName('view')
         .setDescription('Xem thông tin các Đài Cầu Nguyện và tiến trình Bảo Hiểm')
@@ -244,6 +261,7 @@ module.exports = {
             .setRequired(false)
             .addChoices(
               { name: '⚔️ Thần Binh Vạn Khí (Linh Khí)', value: 'weapon' },
+              { name: '🛡️ Huyền Giáp Kim Thân (Linh Giáp)', value: 'armor' },
               { name: '🐾 Vạn Thú Quy Tông (Linh Thú)', value: 'pet' },
               { name: '🤝 Hộ Đạo Tiên Duyên (Trợ Thủ)', value: 'helper' },
               { name: '🌌 Thiên Mệnh Thần Cơ (Tổng Hợp)', value: 'standard' }
@@ -252,13 +270,14 @@ module.exports = {
     )
     .addSubcommand(sub =>
       sub.setName('pull')
-        .setDescription('Tiến hành Cầu Nguyện nhận Linh Khí, Linh Thú, Trợ Thủ')
+        .setDescription('Tiến hành Cầu Nguyện nhận Linh Khí, Linh Giáp, Linh Thú, Trợ Thủ')
         .addStringOption(opt =>
           opt.setName('banner')
             .setDescription('Chọn Đài Cầu Nguyện')
             .setRequired(true)
             .addChoices(
               { name: '⚔️ Thần Binh Vạn Khí (Linh Khí)', value: 'weapon' },
+              { name: '🛡️ Huyền Giáp Kim Thân (Linh Giáp)', value: 'armor' },
               { name: '🐾 Vạn Thú Quy Tông (Linh Thú)', value: 'pet' },
               { name: '🤝 Hộ Đạo Tiên Duyên (Trợ Thủ)', value: 'helper' },
               { name: '🌌 Thiên Mệnh Thần Cơ (Tổng Hợp)', value: 'standard' }

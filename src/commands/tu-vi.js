@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPlayer } = require('../services/playerService');
 const { getEquippedWeapon } = require('../services/weaponService');
+const { getEquippedArmor } = require('../services/armorService');
 const { getEquippedPets, checkResonance } = require('../services/petService');
 const { getEquippedHelper } = require('../services/helperService');
 const { getDongPhu } = require('../services/dongPhuService');
@@ -53,15 +54,16 @@ module.exports = {
     const xpBar = createProgressBar(xpCurrent, xpMax);
 
     // Lấy thông tin trang bị
-    const [weapon, pets, resonance, helper, dongPhu, petResonance] = await Promise.all([
+    const [weapon, armor, pets, resonance, helper, dongPhu, petResonance] = await Promise.all([
       getEquippedWeapon(player.user_id),
+      getEquippedArmor(player.user_id),
       getEquippedPets(player.user_id),
       checkResonance(player.user_id),
       getEquippedHelper(player.user_id),
       getDongPhu(player.user_id),
       getPetResonance()
     ]);
-    const combatStats = calculateCombatStats(player, weapon, pets, helper, [], petResonance);
+    const combatStats = calculateCombatStats(player, weapon, pets, helper, [], petResonance, { armor });
 
     const embed = createTuTienEmbed(player.realm_id)
       .setTitle(`📜 Hồ Sơ Tu Tiên • ${player.dao_hieu || player.username}`)
@@ -96,7 +98,7 @@ module.exports = {
                  `• **Công:** ${formatNumber(combatStats.atk)} | **Thủ:** ${formatNumber(combatStats.def)}\n` +
                  `• **Tốc độ:** ${formatNumber(combatStats.speed)}\n` +
                  `• **Bạo kích:** ${(combatStats.crit * 100).toFixed(1)}% | **ST bạo kích:** x${combatStats.critDmg.toFixed(2)}\n` +
-                 `• **Kháng ST vật lý:** ${(combatStats.physResist * 100).toFixed(1)}% | **Kháng khống chế:** ${(combatStats.ccResist * 100).toFixed(1)}%`,
+                 `• **Giảm ST nhận vào (Giáp):** ${((combatStats.dmgReduction || 0) * 100).toFixed(1)}% | **Kháng ST vật lý:** ${(combatStats.physResist * 100).toFixed(1)}% | **Kháng khống chế:** ${(combatStats.ccResist * 100).toFixed(1)}%`,
           inline: false
         },
         {
@@ -104,6 +106,13 @@ module.exports = {
           value: weapon 
             ? `**${String(weapon.name).slice(0, 100)}** [Bậc ${weapon.tier}] ${weapon.is_natal ? '🌟 *(Bản Mệnh)*' : ''}\n  • Công +${weapon.atk} | Thủ +${weapon.def}\n  • *${String(weapon.effect_desc || '').slice(0, 300)}*`
             : '*Chưa trang bị Linh Khí*',
+          inline: false
+        },
+        {
+          name: '🛡️ Linh Giáp (Tối đa 1)',
+          value: armor
+            ? `**${String(armor.name).slice(0, 100)}** [Bậc ${armor.tier}] ${armor.is_natal ? '🌟 *(Bản Mệnh)*' : ''}\n  • HP +${formatNumber(armor.hp)} | Thủ +${formatNumber(armor.def)} | Giảm ST **${(Number(armor.dmg_reduction || 0) * 100).toFixed(1)}%**\n  • *${String(armor.effect_desc || '').slice(0, 300)}*`
+            : '*Chưa trang bị Linh Giáp (`/armor equip` hoặc `/wish pull banner:armor`)*',
           inline: false
         },
         {

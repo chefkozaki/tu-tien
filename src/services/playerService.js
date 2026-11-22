@@ -38,11 +38,18 @@ async function createPlayer(userId, username, raceKey = 'nhan_toc', rootKey = 'h
     args: [userId, now]
   });
 
-  // Tặng tân thủ: 1 Linh Khí Phàm Phẩm, 1 Linh Thú Sơ Cấp, 15 Linh Kim Phàm
+  // Tặng tân thủ: 1 Linh Khí Phàm Phẩm, 1 Linh Giáp Phàm Phẩm, 1 Linh Thú Sơ Cấp, 15 Linh Kim Phàm
   await db.execute({
     sql: `INSERT INTO tutien_weapons 
       (user_id, name, tier, atk, def, effect_name, effect_desc, is_natal, is_equipped)
       VALUES (?, 'Thanh Phong Kiếm (Phàm)', 1, 50, 20, 'Kiếm Khí', 'Tăng 5% sát thương', 1, 1)`,
+    args: [userId]
+  });
+
+  await db.execute({
+    sql: `INSERT INTO tutien_armors
+      (user_id, name, tier, hp, def, dmg_reduction, effect_name, effect_desc, is_natal, is_equipped)
+      VALUES (?, 'Thanh Y Linh Giáp (Phàm)', 1, 200, 30, 0.05, 'Hộ Thể Sơ Cấp', 'Giáp tân thủ hộ thể, giảm 5% sát thương nhận vào', 1, 1)`,
     args: [userId]
   });
 

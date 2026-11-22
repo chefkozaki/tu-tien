@@ -1,6 +1,7 @@
 const { getDb } = require('../config/database');
 const { getPlayer } = require('./playerService');
 const { getEquippedWeapon } = require('./weaponService');
+const { getEquippedArmor } = require('./armorService');
 const { getEquippedPets } = require('./petService');
 const { getEquippedHelper } = require('./helperService');
 const { getEquippedSkills } = require('./skillService');
@@ -152,12 +153,13 @@ async function attackBoss(userId) {
     };
   }
   const weapon = await getEquippedWeapon(userId);
+  const armor = await getEquippedArmor(userId);
   const pets = await getEquippedPets(userId);
   const helper = await getEquippedHelper(userId);
   const skills = await getEquippedSkills(userId);
 
   const petResonance = await getPetResonance();
-  const combatStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance);
+  const combatStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance, { armor });
 
   // Tính sát thương 5 hiệp đánh boss
   let totalDmg = 0;

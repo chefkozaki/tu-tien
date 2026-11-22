@@ -36,8 +36,10 @@ module.exports = {
         `🐾 **3. LINH THÚ & TRẬN PHÁP:**\n` +
         `• Trang bị tối đa **3 Linh Thú**. Nếu cả 3 con cùng hệ sẽ kích hoạt **Cộng Hưởng Trận Pháp**.\n` +
         `• Tiến hóa: Nuốt lẫn nhau để tăng Sao (1-5⭐) tại \`/pets evolve\`.\n\n` +
-        `⚔️ **4. LINH KHÍ BẢN MỆNH:**\n` +
-        `• Trang bị tối đa **1 Linh Khí**. Đặt làm **Bản Mệnh Linh Khí** (\`/weapons bond\`) để vũ khí mạnh lên theo cảnh giới chủ nhân và nuốt các vũ khí rác khác để tăng bậc!\n\n` +
+        `⚔️ **4. LINH KHÍ & LINH GIÁP BẢN MỆNH:**\n` +
+        `• Trang bị tối đa **1 Linh Khí** (\`/weapons\`) và **1 Linh Giáp** (\`/armor\` hoặc \`aarmor\`, \`agiap\`).\n` +
+        `• **Linh Giáp** giúp tăng **HP**, **Thủ** và chỉ số **Giảm Sát Thương Nhận Vào (%)**! Cầu nguyện tại banner **Huyền Giáp Kim Thân** (\`/wish pull banner:armor\`).\n` +
+        `• Đặt làm **Bản Mệnh** (\`/weapons bond\`, \`/armor bond\`) để mạnh lên theo cảnh giới và thôn phệ đồ dư thừa (\`devour\`) để tăng bậc!\n\n` +
         `🤝 **5. TRỢ THỦ:**\n` +
         `• **Hộ Đạo Giả (Chiến Đấu):** Trực tiếp tham chiến đánh quái, đỡ đòn.\n` +
         `• **Đạo Đồng (Sinh Hoạt):** Tăng +30% tài nguyên AFK khi trạng thái AFK đang bật, tăng tỷ lệ luyện đan và giảm giá Chợ Đen 15%.\n\n` +

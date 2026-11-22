@@ -1826,6 +1826,7 @@ router.post('/reset-game-data', async (req, res) => {
       { table: 'tutien_inventory', sql: 'DELETE FROM tutien_inventory' },
       { table: 'tutien_pets', sql: 'DELETE FROM tutien_pets' },
       { table: 'tutien_weapons', sql: 'DELETE FROM tutien_weapons' },
+      { table: 'tutien_armors', sql: 'DELETE FROM tutien_armors' },
       { table: 'tutien_helpers', sql: 'DELETE FROM tutien_helpers' },
       { table: 'tutien_skills', sql: 'DELETE FROM tutien_skills' },
       { table: 'tutien_dongphu', sql: 'DELETE FROM tutien_dongphu' },

@@ -2,6 +2,7 @@ const { getDb } = require('../config/database');
 const { REALMS } = require('../config/constants');
 const { getPlayer, addSilver } = require('./playerService');
 const { getEquippedWeapon } = require('./weaponService');
+const { getEquippedArmor } = require('./armorService');
 const { getEquippedPets } = require('./petService');
 const { getEquippedHelper } = require('./helperService');
 const { getEquippedSkills } = require('./skillService');
@@ -76,6 +77,7 @@ async function duelPlayers(challengerId, targetId, mode = 'rank') {
   }
 
   const [w1, w2] = await Promise.all([getEquippedWeapon(challengerId), getEquippedWeapon(targetId)]);
+  const [a1, a2] = await Promise.all([getEquippedArmor(challengerId), getEquippedArmor(targetId)]);
   const [pets1, pets2] = await Promise.all([getEquippedPets(challengerId), getEquippedPets(targetId)]);
   const [h1, h2] = await Promise.all([getEquippedHelper(challengerId), getEquippedHelper(targetId)]);
   const [skills1, skills2] = await Promise.all([getEquippedSkills(challengerId), getEquippedSkills(targetId)]);
@@ -89,9 +91,8 @@ async function duelPlayers(challengerId, targetId, mode = 'rank') {
       }
     : null;
 
-  const combatStatOptions = { isPvp: true, equalizeRealm };
-  const p1Stats = calculateCombatStats(p1, w1, pets1, h1, skills1, petResonance, combatStatOptions);
-  const p2Stats = calculateCombatStats(p2, w2, pets2, h2, skills2, petResonance, combatStatOptions);
+  const p1Stats = calculateCombatStats(p1, w1, pets1, h1, skills1, petResonance, { isPvp: true, equalizeRealm, armor: a1 });
+  const p2Stats = calculateCombatStats(p2, w2, pets2, h2, skills2, petResonance, { isPvp: true, equalizeRealm, armor: a2 });
 
   const result = simulateCombat(p1Stats, p2Stats, 20, { isPvp: true });
   const db = getDb();

@@ -1,6 +1,7 @@
 const { getDb } = require('../config/database');
 const { getPlayer, addSilver, addXp } = require('./playerService');
 const { getEquippedWeapon } = require('./weaponService');
+const { getEquippedArmor } = require('./armorService');
 const { getEquippedPets } = require('./petService');
 const { getEquippedHelper } = require('./helperService');
 const { getEquippedSkills } = require('./skillService');
@@ -63,12 +64,13 @@ async function challengeTower(userId) {
 
   const currentFloor = player.tower_floor || 1;
   const weapon = await getEquippedWeapon(userId);
+  const armor = await getEquippedArmor(userId);
   const pets = await getEquippedPets(userId);
   const helper = await getEquippedHelper(userId);
   const skills = await getEquippedSkills(userId);
 
   const petResonance = await getPetResonance();
-  const playerStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance);
+  const playerStats = calculateCombatStats(player, weapon, pets, helper, skills, petResonance, { armor });
 
   const guardianStats = createTowerGuardianStats(currentFloor);
   const battleResult = simulateCombat(playerStats, guardianStats);

@@ -4,6 +4,16 @@
 
 ### Tính năng mới
 
+- **Hệ thống Linh Giáp (HP + Thủ + Giảm Sát Thương nhận vào) & Cầu Nguyện Giáp:**
+  - **Cơ sở dữ liệu:** Thêm bảng `tutien_armors`, bổ sung cột `dmg_reduction` cho `tutien_gacha_items`, cột pity riêng (`armor_pity_4`, `armor_pity_5`, `armor_rate_up_guaranteed`) cho `tutien_wish_pity`, và tự động khởi tạo 9 Linh Giáp mặc định (3★–5★).
+  - **Cầu Nguyện (`/wish`):** Thêm Đài Cầu Nguyện mới **🛡️ Huyền Giáp Kim Thân (`banner:armor`)** cùng hỗ trợ Linh Giáp trong banner Tổng Hợp (`standard`).
+  - **Lệnh quản lý mới (`/armor` / `aarmor` / `agiap` / `alinhgiap`):**
+    - `/armor list`: Xem danh sách Linh Giáp (HP, Thủ, Giảm ST %, Bản Mệnh, Đang Trang Bị).
+    - `/armor equip`: Trang bị Linh Giáp hộ thể.
+    - `/armor bond`: Tế luyện **Bản Mệnh Linh Giáp** (tăng tiến HP & Thủ theo cảnh giới).
+    - `/armor devour [all]`: Thôn phệ Linh Giáp dư thừa tăng HP, Thủ, Giảm ST (%) và bậc.
+  - **Tích hợp Chiến Đấu & Hồ Sơ:** Linh Giáp cộng HP, Thủ và **Giảm Sát Thương Nhận Vào** (tối đa 50%) trong PvP (`/duel`), Tháp (`/tower`), Boss Thế Giới (`/boss`), Tông Môn và hiển thị trực tiếp trong `/profile`. Tân thủ `/start` được tặng 1 **Thanh Y Linh Giáp (Phàm)**.
+
 - **Cân bằng hệ thống Đấu Pháp Đài (`/duel`):**
   - **Giới hạn chênh lệch cảnh giới (`±2` cảnh giới):** Chế độ Đấu Xếp Hạng (`mode:rank`, mặc định) chỉ cho phép thách đấu trong phạm vi `±2` đại cảnh giới để tránh áp đảo tân thủ.
   - **Chế độ Đồng Cảnh Giới (`/duel target:@user mode:fair` hoặc `aduel @user fair`):** Không giới hạn cảnh giới, tự động chuẩn hóa cả 2 về cùng mốc cảnh giới & cấp độ để so tài thuần túy theo Tộc, Linh Căn, Trận Pháp, Linh Khí và Công Pháp.
