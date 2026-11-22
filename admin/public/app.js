@@ -3052,7 +3052,10 @@ async function runGachaSimulation(count = 10) {
 
       let typeIcon = '⚔️';
       let typeLabel = 'Linh Khí';
-      if (item.item_type === 'pet') {
+      if (item.item_type === 'armor') {
+        typeIcon = '🛡️';
+        typeLabel = 'Linh Giáp';
+      } else if (item.item_type === 'pet') {
         typeIcon = '🐾';
         typeLabel = 'Linh Thú';
       } else if (item.item_type === 'helper') {

@@ -13,6 +13,9 @@
     - `/armor bond`: Tế luyện **Bản Mệnh Linh Giáp** (tăng tiến HP & Thủ theo cảnh giới).
     - `/armor devour [all]`: Thôn phệ Linh Giáp dư thừa tăng HP, Thủ, Giảm ST (%) và bậc.
   - **Tích hợp Chiến Đấu & Hồ Sơ:** Linh Giáp cộng HP, Thủ và **Giảm Sát Thương Nhận Vào** (tối đa 50%) trong PvP (`/duel`), Tháp (`/tower`), Boss Thế Giới (`/boss`), Tông Môn và hiển thị trực tiếp trong `/profile`. Tân thủ `/start` được tặng 1 **Thanh Y Linh Giáp (Phàm)**.
+  - **Admin Panel:**
+    - Thêm tab **🛡️ Linh Giáp / Hộ Giáp** với đầy đủ API CRUD (`/api/armors`, `/api/armors/presets`), lọc theo bậc/người chơi, Ban Thưởng Linh Giáp theo Presets, đổi ảnh và xóa.
+    - Cập nhật tab **Cầu Nguyện (Wish / Gacha)** & trình **Giả Lập Quay**: hỗ trợ loại `Linh Giáp (armor)`, đài **Huyền Giáp Kim Thân (`armor`)** và cấu hình chỉ số **Giảm Sát Thương (`dmg_reduction`)**.
 
 - **Cân bằng hệ thống Đấu Pháp Đài (`/duel`):**
   - **Giới hạn chênh lệch cảnh giới (`±2` cảnh giới):** Chế độ Đấu Xếp Hạng (`mode:rank`, mặc định) chỉ cho phép thách đấu trong phạm vi `±2` đại cảnh giới để tránh áp đảo tân thủ.
