@@ -32,9 +32,21 @@ function getDailyBossSpawnTime(timestamp = Date.now()) {
   return Date.UTC(parts.year, parts.month, parts.day, 20, 0, 0) - VIETNAM_OFFSET_MS;
 }
 
+function getPreviousDailyBossSpawnTime(timestamp = Date.now()) {
+  const parts = getVietnamDateParts(timestamp);
+  return Date.UTC(parts.year, parts.month, parts.day - 1, 20, 0, 0) - VIETNAM_OFFSET_MS;
+}
+
 function getNextDailyBossSpawnTime(timestamp = Date.now()) {
   const parts = getVietnamDateParts(timestamp);
   return Date.UTC(parts.year, parts.month, parts.day + 1, 20, 0, 0) - VIETNAM_OFFSET_MS;
+}
+
+function getCurrentBossCycleStart(timestamp = Date.now()) {
+  const todaysSpawnTime = getDailyBossSpawnTime(timestamp);
+  return timestamp >= todaysSpawnTime
+    ? todaysSpawnTime
+    : getPreviousDailyBossSpawnTime(timestamp);
 }
 
 function formatBossSchedule(timestamp) {
@@ -48,39 +60,57 @@ function formatBossSchedule(timestamp) {
   });
 }
 
-async function getActiveBoss() {
+async function getActiveBoss(now = Date.now()) {
   const db = getDb();
-  const now = Date.now();
   const todaysSpawnTime = getDailyBossSpawnTime(now);
+  const currentCycleStart = getCurrentBossCycleStart(now);
 
   const result = await withTransaction(db, async tx => {
     try {
-      const latestResult = await tx.execute(
-        'SELECT * FROM tutien_world_boss ORDER BY id DESC LIMIT 1'
-      );
-      const latest = latestResult.rows[0];
-
-      if (latest?.status === 'alive') {
-        if (now >= todaysSpawnTime && Number(latest.spawn_time) >= todaysSpawnTime) {
-          await tx.commit();
-          return { boss: latest, created: false };
-        }
-        await tx.commit();
-        return { boss: null, created: false };
+      // 1. Tự động đánh dấu hết hạn (expired) mọi boss 'alive' thuộc chu kỳ cũ (< currentCycleStart)
+      // Tránh tình trạng boss cũ bị kẹt trạng thái 'alive' làm tắc chu kỳ spawn ngày mới
+      const expiredRes = await tx.execute({
+        sql: `UPDATE tutien_world_boss
+          SET status = 'expired', defeated_at = COALESCE(defeated_at, ?)
+          WHERE status = 'alive' AND spawn_time < ?`,
+        args: [now, currentCycleStart]
+      });
+      if (expiredRes.rowsAffected > 0) {
+        console.log(`⚠️ [Boss] Đã dọn dẹp ${expiredRes.rowsAffected} Boss Thế Giới cũ quá chu kỳ (trước ${formatBossSchedule(currentCycleStart)}).`);
       }
 
-      if (latest?.status === 'defeated') {
-        const defeatedAt = Number(latest.defeated_at || latest.spawn_time);
-        const nextSpawnTime = getNextDailyBossSpawnTime(defeatedAt);
-        if (now < nextSpawnTime) {
-          await tx.commit();
-          return { boss: null, created: false, nextSpawnTime };
-        }
-      } else if (now < todaysSpawnTime) {
+      // 2. Nếu hiện đang có Boss còn sống hợp lệ trong chu kỳ hiện tại (bao gồm boss Admin triệu hồi) -> trả về ngay
+      const aliveResult = await tx.execute({
+        sql: `SELECT * FROM tutien_world_boss
+          WHERE status = 'alive' AND spawn_time >= ?
+          ORDER BY id DESC LIMIT 1`,
+        args: [currentCycleStart]
+      });
+      if (aliveResult.rows[0]) {
+        await tx.commit();
+        return { boss: aliveResult.rows[0], created: false };
+      }
+
+      // 3. Nếu chưa đến mốc 20:00 hôm nay -> chưa tự động spawn boss ngày hôm nay
+      if (now < todaysSpawnTime) {
         await tx.commit();
         return { boss: null, created: false, nextSpawnTime: todaysSpawnTime };
       }
 
+      // 4. Đã đến hoặc qua mốc 20:00 hôm nay: kiểm tra chu kỳ 20:00 hôm nay đã từng spawn boss chưa
+      const todaysBossResult = await tx.execute({
+        sql: `SELECT id FROM tutien_world_boss
+          WHERE spawn_time >= ?
+          ORDER BY id DESC LIMIT 1`,
+        args: [todaysSpawnTime]
+      });
+      if (todaysBossResult.rows[0]) {
+        // Boss hôm nay đã từng xuất hiện và đã kết thúc -> chờ 20:00 ngày mai
+        await tx.commit();
+        return { boss: null, created: false, nextSpawnTime: getNextDailyBossSpawnTime(now) };
+      }
+
+      // 5. Đã đến 20:00 hôm nay và chưa có boss nào cho chu kỳ hôm nay -> Spawn Boss mới!
       const template = BOSS_LIST[Math.floor(Math.random() * BOSS_LIST.length)];
       await tx.execute({
         sql: `INSERT INTO tutien_world_boss (name, current_hp, max_hp, status, spawn_time, damage_data)
@@ -93,7 +123,9 @@ async function getActiveBoss() {
       await tx.commit();
       return { boss: createdResult.rows[0], created: true };
     } catch (error) {
-      await tx.rollback();
+      try {
+        await tx.rollback();
+      } catch (_) {}
       throw error;
     }
   });
@@ -112,7 +144,7 @@ async function attackBoss(userId) {
     const now = Date.now();
     const todaysSpawnTime = getDailyBossSpawnTime(now);
     const nextSpawnTime = now >= todaysSpawnTime
-      ? getDailyBossSpawnTime(now + 86400000)
+      ? getNextDailyBossSpawnTime(now)
       : todaysSpawnTime;
     return {
       success: false,
@@ -200,7 +232,9 @@ async function attackBoss(userId) {
         rewardSummary
       };
     } catch (error) {
-      await tx.rollback();
+      try {
+        await tx.rollback();
+      } catch (_) {}
       throw error;
     }
   });
@@ -265,6 +299,8 @@ module.exports = {
   getActiveBoss,
   attackBoss,
   getDailyBossSpawnTime,
+  getPreviousDailyBossSpawnTime,
   getNextDailyBossSpawnTime,
+  getCurrentBossCycleStart,
   formatBossSchedule
 };

@@ -4,6 +4,7 @@ const {
   getActiveBoss,
   attackBoss,
   getDailyBossSpawnTime,
+  getNextDailyBossSpawnTime,
   formatBossSchedule
 } = require('../services/bossService');
 const {
@@ -97,14 +98,15 @@ module.exports = {
     if (sub === 'info') {
       const boss = await getActiveBoss();
       if (!boss) {
-        const nextSpawnTime = getDailyBossSpawnTime();
-        const scheduledToday = Date.now() >= nextSpawnTime;
+        const now = Date.now();
+        const todaysSpawnTime = getDailyBossSpawnTime(now);
+        const scheduledToday = now >= todaysSpawnTime;
         return interaction.reply({
           embeds: [createErrorEmbed(
             'Boss Thế Giới Chưa Xuất Hiện',
             scheduledToday
-              ? `Boss đã bị tiêu diệt hoặc đang chờ chu kỳ tiếp theo. Lần xuất hiện kế tiếp: **${formatBossSchedule(getDailyBossSpawnTime(Date.now() + 86400000))}**.`
-              : `Boss Thế Giới chỉ xuất hiện lúc **20:00 hàng ngày**. Lần xuất hiện kế tiếp: **${formatBossSchedule(nextSpawnTime)}**.`
+              ? `Boss đã bị tiêu diệt hoặc đang chờ chu kỳ tiếp theo. Lần xuất hiện kế tiếp: **${formatBossSchedule(getNextDailyBossSpawnTime(now))}**.`
+              : `Boss Thế Giới chỉ xuất hiện lúc **20:00 hàng ngày**. Lần xuất hiện kế tiếp: **${formatBossSchedule(todaysSpawnTime)}**.`
           )],
           ephemeral: true
         });

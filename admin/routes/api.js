@@ -1644,7 +1644,10 @@ router.post('/boss/action', async (req, res) => {
       const now = Date.now();
 
       // Mark old bosses as defeated
-      await db.execute("UPDATE tutien_world_boss SET status = 'defeated' WHERE status = 'alive'");
+      await db.execute({
+        sql: "UPDATE tutien_world_boss SET status = 'defeated', defeated_at = COALESCE(defeated_at, ?) WHERE status = 'alive'",
+        args: [now]
+      });
 
       // Insert new
       await db.execute({
@@ -1674,8 +1677,8 @@ router.post('/boss/action', async (req, res) => {
 
     if (action === 'kill') {
       await db.execute({
-        sql: "UPDATE tutien_world_boss SET current_hp = '0', status = 'defeated' WHERE id = ?",
-        args: [boss.id]
+        sql: "UPDATE tutien_world_boss SET current_hp = '0', status = 'defeated', defeated_at = ? WHERE id = ?",
+        args: [Date.now(), boss.id]
       });
       return res.json({ success: true, message: 'Đã đánh bại Boss Thế Giới!' });
     }
@@ -1687,8 +1690,8 @@ router.post('/boss/action', async (req, res) => {
       const status = curr === 0n ? 'defeated' : 'alive';
 
       await db.execute({
-        sql: 'UPDATE tutien_world_boss SET current_hp = ?, status = ? WHERE id = ?',
-        args: [curr.toString(), status, boss.id]
+        sql: 'UPDATE tutien_world_boss SET current_hp = ?, status = ?, defeated_at = ? WHERE id = ?',
+        args: [curr.toString(), status, curr === 0n ? Date.now() : null, boss.id]
       });
       return res.json({ success: true, message: `Đã giáng đòn trừ ${dmg.toString()} HP của Boss!` });
     }

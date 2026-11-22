@@ -56,18 +56,32 @@ client.once('ready', async (c) => {
   // Set Presence
   client.user.setActivity('con đường Tu Tiên Nghịch Thiên | /help', { type: 0 });
 
-  try {
-    await getActiveBoss();
-    setInterval(async () => {
-      try {
-        await getActiveBoss();
-      } catch (err) {
+  // --- Boss Thế Giới Timer ---
+  // Chạy getActiveBoss() ngay khi bot sẵn sàng, sau đó mỗi 60 giây.
+  // Với Embedded Replica Cache, không còn gọi mạng mỗi phút => không bao giờ timeout.
+  // Có cờ chống chạy chồng chéo (re-entrancy guard) để đảm bảo an toàn tuyệt đối.
+  let isCheckingBoss = false;
+  async function runBossCheck() {
+    if (isCheckingBoss) return;
+    isCheckingBoss = true;
+    try {
+      await getActiveBoss();
+    } catch (err) {
+      const isNetworkError = err?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT'
+        || err?.message?.includes('fetch failed')
+        || err?.message?.includes('Connect Timeout');
+      if (isNetworkError) {
+        console.warn('⚠️ [Boss] Không thể kết nối Turso (timeout mạng). Boss check sẽ thử lại sau 60 giây.');
+      } else {
         console.error('❌ Lỗi kiểm tra chu kỳ Boss Thế Giới:', err);
       }
-    }, 60000);
-  } catch (err) {
-    console.error('❌ Lỗi khởi tạo cơ sở dữ liệu Turso:', err);
+    } finally {
+      isCheckingBoss = false;
+    }
   }
+
+  await runBossCheck();
+  setInterval(runBossCheck, 60000);
 
 });
 

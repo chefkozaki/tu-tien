@@ -1,5 +1,19 @@
 # Changelog
 
+## Thay đổi trong ngày — 22/11/2026
+
+### Sửa lỗi (Bug Fixes)
+
+- **Sửa lỗi Boss Thế Giới không spawn đúng hạn, bị nhảy sang ngày hôm sau và lỗi `ConnectTimeoutError`:**
+  - Viết lại logic kiểm tra chu kỳ Boss Thế Giới theo mốc chu kỳ 20:00 (giờ VN) trong `src/services/bossService.js`:
+    - Tự động dọn dẹp (`expired`) các boss `alive` thuộc chu kỳ cũ thay vì trả về `null` vĩnh viễn gây tắc chu kỳ spawn.
+    - Ngăn spawn sớm trước 20:00 và ngăn spawn loop khi boss hôm nay đã bị đánh bại.
+    - Boss bị tiêu diệt sau 00:00 (qua nửa đêm) không còn làm bỏ qua lượt spawn 20:00 cùng ngày.
+    - Boss do Admin triệu hồi thủ công trước 20:00 hiển thị và chiến đấu được ngay lập tức, không còn bị ẩn hay làm kẹt boss 20:00.
+  - Bọc `tx.rollback()` an toàn và thêm cờ chống chồng chéo (`isCheckingBoss`) kèm xử lý cảnh báo lỗi timeout mạng cho vòng lặp kiểm tra Boss trong `index.js`.
+  - Cập nhật `defeated_at` đầy đủ khi Admin tiêu diệt hoặc triệu hồi đè Boss trong `admin/routes/api.js`.
+  - Kết hợp với Turso Embedded Replica Cache, chu kỳ kiểm tra Boss mỗi 60 giây chạy hoàn toàn cục bộ (< 1ms), loại bỏ hoàn toàn lỗi `UND_ERR_CONNECT_TIMEOUT` khi gọi Turso từ hosting.
+
 ## Thay đổi trong ngày — 20/11/2026
 
 ### Tính năng mới & Tối ưu hóa hiệu năng
