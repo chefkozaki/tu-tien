@@ -1,5 +1,18 @@
 # Changelog
 
+## Thay đổi trong ngày — 24/11/2026
+
+### Cân bằng & Cải tiến
+
+- **Cải tổ cơ chế Đấu Pháp Đài PvP (`/duel` — Công bằng & 0% RNG):**
+  - **Giữ 100% chỉ số gốc ở Đấu Xếp Hạng (`mode:rank`):** Tách logic nén chỉ số (`useFairScaling`) trong [`src/utils/combat.js`](file:///home/kozaki/Documents/tu-tien/src/utils/combat.js) và [`src/services/pvpService.js`](file:///home/kozaki/Documents/tu-tien/src/services/pvpService.js). Chế độ Xếp Hạng giữ nguyên **100% chỉ số thực** giống hệt `/profile` (bỏ Soft Cap trang bị/linh thú, bỏ giảm hệ số cảnh giới/bản mệnh/tâm pháp bị động), chỉ giữ hệ số nhịp độ chung `65%` sát thương cho cả 2 bên để trận đấu không kết thúc ngay Hiệp 1. Chế độ **Đồng Cảnh Giới (`mode:fair`)** vẫn giữ chuẩn hóa cảnh giới và Soft Cap để so tài build.
+  - **Bạo Kích ổn định (Không RNG may rủi):** Trong PvP, tắt quay số ngẫu nhiên Bạo Kích; quy đổi thẳng chỉ số Crit của mỗi người thành hệ số sát thương ổn định trên từng đòn đánh (`1 + crit × (critDmg - 1)`), vừa bảo đảm công bằng tuyệt đối vừa giữ nguyên giá trị của Ma Tộc và trang bị/công pháp tăng Crit.
+  - **Thi triển Kỹ Năng chủ động 100% theo thứ tự Ô (`Ô 1 ➔ 4`):** Loại bỏ ngưỡng hên xui `45%` khi tung chiêu trong PvP; cứ có kỹ năng chủ động hết hồi chiêu là chắc chắn xuất chiêu ngay theo đúng thứ tự ô đang trang bị.
+  - **Chu kỳ cố định cho Hộ Đạo Giả & Choáng:** Thay thế quay số ngẫu nhiên bằng thanh tích điểm cố định (`helperGauge` và `stunGauge`), bổ sung miễn nhiễm choáng tạm thời sau khi vừa mất lượt để tránh khóa cứng liên hoàn, và kích hoạt đúng hiệu ứng **Long Uy** của Long Tộc (miễn khống chế 5 hiệp khi HP xuống dưới `30%`).
+  - **Luân phiên đi trước khi bằng Tốc Độ:** Khi hai đấu thủ có cùng `speed` trong PvP, quyền ra đòn trước tự động luân phiên theo hiệp lẻ/chẵn thay vì cố định ưu tiên người thách đấu suốt cả trận.
+  - **Cập nhật hiển thị `/duel` ([`src/commands/dau-phap.js`](file:///home/kozaki/Documents/tu-tien/src/commands/dau-phap.js)):** Bổ sung khối **Chỉ Số Xuất Trận** (HP, Công, Thủ, Tốc, Chí mạng ổn định `+X%`) ngay trên Embed kết quả để đối chiếu trực tiếp với `/profile`, cùng tối đa 8 dòng nhật ký quyết đấu cuối cùng.
+  - **Giữ nguyên PvE:** Mọi cơ chế của Thí Luyện Tháp (`/tower`), Boss Thế Giới (`/boss`) và Tông Môn giữ nguyên 100% như trước.
+
 ## Thay đổi trong ngày — 22/11/2026
 
 ### Tính năng mới

@@ -51,12 +51,27 @@ module.exports = {
       });
     }
 
-    // Hiển thị tóm tắt 6 hiệp cuối
-    const logSummary = result.logs.slice(-6).join('\n');
+    // Bỏ qua 3 dòng mở đầu (đã hiển thị riêng khối Chỉ Số Xuất Trận), lấy tối đa 8 dòng diễn biến cuối
+    const recentLogs = result.logs.slice(3).slice(-8);
+    while (recentLogs.length > 1 && recentLogs.join('\n').length > 2600) {
+      recentLogs.shift();
+    }
+    let logSummary = recentLogs.join('\n');
+    if (logSummary.length > 2600) {
+      logSummary = `...${logSummary.slice(-2597)}`;
+    }
 
     const modeLabel = result.mode === 'fair'
       ? `⚖️ Đồng Cảnh Giới (${REALMS[result.equalizeRealm.realm_id]?.name || `Bậc ${result.equalizeRealm.realm_id}`} • Tầng ${result.equalizeRealm.level})`
-      : '⚔️ Đấu Xếp Hạng (Elo • ±2 Cảnh Giới)';
+      : '⚔️ Đấu Xếp Hạng (Elo • ±2 Cảnh Giới • 100% Chỉ Số)';
+
+    const s1 = result.challengerStats;
+    const s2 = result.targetStats;
+    const statsSummary = (s1 && s2)
+      ? `📊 **Chỉ Số Xuất Trận:**\n` +
+        `• **${result.challengerName}:** HP \`${formatNumber(s1.maxHp)}\` | Công \`${formatNumber(s1.atk)}\` | Thủ \`${formatNumber(s1.def)}\` | Tốc \`${formatNumber(s1.speed)}\` | Chí mạng ổn định \`+${s1.expectedCritBonusPct}%\`\n` +
+        `• **${result.targetName}:** HP \`${formatNumber(s2.maxHp)}\` | Công \`${formatNumber(s2.atk)}\` | Thủ \`${formatNumber(s2.def)}\` | Tốc \`${formatNumber(s2.speed)}\` | Chí mạng ổn định \`+${s2.expectedCritBonusPct}%\`\n\n`
+      : '';
 
     const outcomeLine = result.isDraw
       ? `⚖️ **KẾT QUẢ:** **HÒA NHAU!** (${result.challengerName}: ${result.challengerHpPercent}% HP vs ${result.targetName}: ${result.targetHpPercent}% HP)`
@@ -71,8 +86,9 @@ module.exports = {
       .setTitle(`⚔️ Đấu Pháp Đài: ${result.challengerName} VS ${result.targetName}`)
       .setDescription(
         `**Chế Độ:** ${modeLabel}\n` +
-        `Hai vị đại năng thi triển tuyệt kỹ thần thông, linh thú thét gào, lôi đình giáng thế!\n\n` +
+        `Luật Đấu Pháp Công Bằng: Chí mạng ổn định • Xuất chiêu 100% theo ô khi hồi xong • Bằng tốc độ luân phiên đi trước!\n\n` +
         `${outcomeLine}\n\n` +
+        `${statsSummary}` +
         `📜 **Nhật Ký Quyết Đấu:**\n${logSummary}\n\n` +
         `${rewardSummary}`
       );

@@ -91,10 +91,30 @@ async function duelPlayers(challengerId, targetId, mode = 'rank') {
       }
     : null;
 
-  const p1Stats = calculateCombatStats(p1, w1, pets1, h1, skills1, petResonance, { isPvp: true, equalizeRealm, armor: a1 });
-  const p2Stats = calculateCombatStats(p2, w2, pets2, h2, skills2, petResonance, { isPvp: true, equalizeRealm, armor: a2 });
+  const p1Stats = calculateCombatStats(p1, w1, pets1, h1, skills1, petResonance, {
+    isPvp: true,
+    useFairScaling: isFairMode,
+    equalizeRealm,
+    armor: a1
+  });
+  const p2Stats = calculateCombatStats(p2, w2, pets2, h2, skills2, petResonance, {
+    isPvp: true,
+    useFairScaling: isFairMode,
+    equalizeRealm,
+    armor: a2
+  });
 
-  const result = simulateCombat(p1Stats, p2Stats, 20, { isPvp: true });
+  const summarizeStats = s => ({
+    maxHp: s.maxHp,
+    atk: s.atk,
+    def: s.def,
+    speed: s.speed,
+    crit: s.crit,
+    critDmg: s.critDmg,
+    expectedCritBonusPct: Number((Math.max(0, Number(s.crit || 0)) * Math.max(0, Number(s.critDmg || 1.5) - 1) * 100).toFixed(1))
+  });
+
+  const result = simulateCombat(p1Stats, p2Stats, 20, { isPvp: true, isFairMode });
   const db = getDb();
 
   let winnerGain = 0;
@@ -143,6 +163,8 @@ async function duelPlayers(challengerId, targetId, mode = 'rank') {
     targetName: p2.dao_hieu || p2.username,
     challengerHpPercent: result.attackerHpPercent,
     targetHpPercent: result.defenderHpPercent,
+    challengerStats: summarizeStats(p1Stats),
+    targetStats: summarizeStats(p2Stats),
     logs: result.logs
   };
 }

@@ -27,18 +27,25 @@ function applyPvpSoftCap(rawBonus, cap) {
  * - Trợ Thủ Chiến Đấu
  *
  * @param {object} options
- * @param {boolean} [options.isPvp=false] - Bật chuẩn hóa & soft cap cho PvP
+ * @param {boolean} [options.isPvp=false] - Đánh dấu ngữ cảnh PvP
  * @param {{ realm_id: number, level: number }} [options.equalizeRealm] - Chuẩn hóa cảnh giới/cấp độ cho chế độ Đồng Cảnh Giới
+ * @param {object|null} [options.armor] - Linh giáp đang trang bị
+ * @param {boolean} [options.useFairScaling] - Bật chuẩn hóa & soft cap cho chế độ Đồng Cảnh Giới
  */
 function calculateCombatStats(player, weapon, pets = [], helper = null, skills = [], petResonance = null, options = {}) {
-  const { isPvp = false, equalizeRealm = null, armor = null } = options || {};
+  const {
+    isPvp = false,
+    equalizeRealm = null,
+    armor = null,
+    useFairScaling = Boolean(isPvp && equalizeRealm)
+  } = options || {};
   const race = RACES[player.race] || RACES.nhan_toc;
 
   const effectiveRealmId = equalizeRealm ? equalizeRealm.realm_id : Number(player.realm_id || 0);
   const effectiveLevel = equalizeRealm ? equalizeRealm.level : Number(player.level || 1);
 
-  // Trong PvP giảm độ dốc realmMultiplier (1.0/cảnh giới thay vì 1.5) để hạn chế one-shot khi lệch 1-2 cảnh giới
-  const realmMultiplier = isPvp
+  // Trong chế độ Đồng Cảnh Giới (Fair) giảm độ dốc realmMultiplier để so tài build cân bằng hơn
+  const realmMultiplier = useFairScaling
     ? 1 + effectiveRealmId * 1.0 + (effectiveLevel - 1) * 0.10
     : 1 + effectiveRealmId * 1.5 + (effectiveLevel - 1) * 0.15;
 
@@ -86,7 +93,7 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
     let weaponDef = weapon.def;
     if (weapon.is_natal) {
       // Bản mệnh linh khí tăng tiến theo cảnh giới chủ nhân
-      const natalBonus = 1 + effectiveRealmId * (isPvp ? 0.22 : 0.3);
+      const natalBonus = 1 + effectiveRealmId * (useFairScaling ? 0.22 : 0.3);
       weaponAtk = Math.floor(weaponAtk * natalBonus);
       weaponDef = Math.floor(weaponDef * natalBonus);
     }
@@ -99,7 +106,7 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
     let armorHp = Number(armor.hp || 0);
     let armorDef = Number(armor.def || 0);
     if (armor.is_natal) {
-      const natalBonus = 1 + effectiveRealmId * (isPvp ? 0.22 : 0.3);
+      const natalBonus = 1 + effectiveRealmId * (useFairScaling ? 0.22 : 0.3);
       armorHp = Math.floor(armorHp * natalBonus);
       armorDef = Math.floor(armorDef * natalBonus);
     }
@@ -143,8 +150,8 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
     gearDef += Math.floor(50 * helperTierBonus);
   }
 
-  // Trong PvP áp dụng Soft Cap theo cảnh giới cho tổng chỉ số từ Linh Khí + Linh Thú + Trợ Thủ
-  if (isPvp) {
+  // Trong chế độ Đồng Cảnh Giới (Fair) áp dụng Soft Cap theo cảnh giới cho tổng chỉ số từ Linh Khí + Linh Thú + Trợ Thủ
+  if (useFairScaling) {
     const capScale = 1.2 + effectiveRealmId * 0.25;
     hp += applyPvpSoftCap(gearHp, baseHp * capScale);
     atk += applyPvpSoftCap(gearAtk, baseAtk * capScale);
@@ -170,14 +177,17 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
   // Áp dụng Công Pháp Bị Động (type === 'passive')
   const allSkills = Array.isArray(skills) ? skills : [];
   const passiveSkills = allSkills.filter(s => s.type === 'passive');
-  const activeSkills = allSkills.filter(s => s.type !== 'passive');
+  const activeSkills = allSkills
+    .filter(s => s.type !== 'passive')
+    .slice()
+    .sort((x, y) => (Number(x.slot || 99) - Number(y.slot || 99)) || (Number(x.id || 0) - Number(y.id || 0)));
   let passiveRegen = 0;
 
   for (const ps of passiveSkills) {
     const val = Math.max(0, Number(ps.effect_value || 0));
     if (val <= 0) continue;
-    // Trong PvP giới hạn nhẹ hệ số tăng từ tâm pháp (80%) để tránh chồng quá cao
-    const effVal = isPvp ? val * 0.8 : val;
+    // Trong chế độ Đồng Cảnh Giới (Fair) giới hạn nhẹ hệ số tăng từ tâm pháp (80%) để tránh chồng quá cao
+    const effVal = useFairScaling ? val * 0.8 : val;
     switch (ps.effect_type) {
       case 'stat_hp':
         hp = Math.floor(hp * (1 + effVal));
@@ -232,10 +242,11 @@ function calculateCombatStats(player, weapon, pets = [], helper = null, skills =
 /**
  * Mô phỏng trận đấu theo lượt giữa 2 chiến binh (PvP hoặc PvE)
  * @param {object} options
- * @param {boolean} [options.isPvp=false] - Bật PvP Damage Reduction (65%)
+ * @param {boolean} [options.isPvp=false] - Bật PvP Damage Reduction (65%) và cơ chế công bằng (không RNG)
+ * @param {boolean} [options.isFairMode=false] - Chế độ Đồng Cảnh Giới
  */
 function simulateCombat(attackerStats, defenderStats, maxTurns = 20, options = {}) {
-  const { isPvp = false } = options || {};
+  const { isPvp = false, isFairMode = false } = options || {};
   const pvpDmgMult = isPvp ? PVP_DAMAGE_MULTIPLIER : 1;
 
   const logs = [];
@@ -245,14 +256,23 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20, options = {
     burnTurns: 0,
     burnPct: 0,
     stunned: false,
+    stunImmunityTurns: 0,
+    ccImmuneTurns: 0,
     armorBreakTurns: 0,
     armorBreakPct: 0,
+    helperGauge: 0.30,
+    stunGauge: 0,
     skillCooldowns: {}
   });
   let a = initRuntime(attackerStats);
   let d = initRuntime(defenderStats);
 
-  logs.push(`⚔️ **Trận Đấu Bắt Đầu!**${isPvp ? ' *(Chế độ PvP: Sát thương điều chỉnh 65%)*' : ''}`);
+  const pvpSubtitle = isPvp
+    ? (isFairMode
+        ? ' *(Đồng Cảnh Giới: Chuẩn hóa cảnh giới • Chí mạng & Kỹ năng cố định • Nhịp độ ST 65%)*'
+        : ' *(Đấu Xếp Hạng: 100% chỉ số gốc • Chí mạng & Kỹ năng cố định • Nhịp độ ST 65%)*')
+    : '';
+  logs.push(`⚔️ **Trận Đấu Bắt Đầu!**${pvpSubtitle}`);
   logs.push(`• **${a.name}** [HP: ${a.maxHp.toLocaleString()} | Công: ${a.atk.toLocaleString()} | Thủ: ${a.def.toLocaleString()}]`);
   logs.push(`• **${d.name}** [HP: ${d.maxHp.toLocaleString()} | Công: ${d.atk.toLocaleString()} | Thủ: ${d.def.toLocaleString()}]`);
 
@@ -285,7 +305,9 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20, options = {
 
   let turn = 1;
   while (a.hp > 0 && d.hp > 0 && turn <= maxTurns) {
-    const isAFaster = a.speed >= d.speed;
+    const isAFaster = a.speed > d.speed
+      ? true
+      : (a.speed < d.speed ? false : (isPvp ? turn % 2 === 1 : true));
     const first = isAFaster ? a : d;
     const second = isAFaster ? d : a;
     const firstBonus = isAFaster ? aElementalBonus : dElementalBonus;
@@ -294,11 +316,11 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20, options = {
     const secondTargetMitigation = isAFaster ? aElementalMitigation : dElementalMitigation;
 
     // First attacker turn
-    executeTurnAction(first, second, firstBonus, firstTargetMitigation, pvpDmgMult, logs, turn);
+    executeTurnAction(first, second, firstBonus, firstTargetMitigation, pvpDmgMult, logs, turn, isPvp);
     if (second.hp <= 0) break;
 
     // Second attacker turn
-    executeTurnAction(second, first, secondBonus, secondTargetMitigation, pvpDmgMult, logs, turn);
+    executeTurnAction(second, first, secondBonus, secondTargetMitigation, pvpDmgMult, logs, turn, isPvp);
     if (first.hp <= 0) break;
 
     // Hồi phục từ Cộng Hưởng Trận Pháp & Công Pháp Bị Động (stat_regen) + sát thương Thiêu Đốt (burn)
@@ -319,6 +341,9 @@ function simulateCombat(attackerStats, defenderStats, maxTurns = 20, options = {
       if (fighter.armorBreakTurns > 0) {
         fighter.armorBreakTurns--;
         if (fighter.armorBreakTurns === 0) fighter.armorBreakPct = 0;
+      }
+      if (fighter.ccImmuneTurns > 0) {
+        fighter.ccImmuneTurns--;
       }
       for (const k of Object.keys(fighter.skillCooldowns)) {
         if (fighter.skillCooldowns[k] > 0) fighter.skillCooldowns[k]--;
@@ -389,19 +414,25 @@ function applyDamageToDefender(defender, rawDamage) {
   return { hpDamage: remaining, absorbed };
 }
 
-function executeTurnAction(attacker, defender, elementalBonus, targetElementalMitigation, pvpDmgMult, logs, turnNumber) {
-  // Kiểm tra trạng thái Choáng (Stun)
-  if (attacker.stunned) {
-    attacker.stunned = false;
-    logs.push(`Hiệp ${turnNumber}: ⚡ **${attacker.name}** đang bị choáng, bỏ lỡ lượt xuất chiêu!`);
-    return;
-  }
-
+function executeTurnAction(attacker, defender, elementalBonus, targetElementalMitigation, pvpDmgMult, logs, turnNumber, isPvp = false) {
   // Long Tộc: Long Uy (HP < 30%)
   if (attacker.race === 'long_toc' && !attacker.longUyTriggered && (attacker.hp / attacker.maxHp) <= 0.30) {
     attacker.longUyTriggered = true;
     attacker.atk = Math.floor(attacker.atk * 1.40);
-    logs.push(`🐉 **${attacker.name}** gầm vang! Kích hoạt thiên phú **Long Uy** (+40% Sát thương)!`);
+    attacker.ccImmuneTurns = 5;
+    attacker.stunned = false;
+    logs.push(`🐉 **${attacker.name}** gầm vang! Kích hoạt thiên phú **Long Uy** (+40% Sát thương & Miễn khống chế 5 hiệp)!`);
+  }
+
+  // Kiểm tra trạng thái Choáng (Stun)
+  if (attacker.stunned) {
+    attacker.stunned = false;
+    if (isPvp) attacker.stunImmunityTurns = 1;
+    logs.push(`Hiệp ${turnNumber}: ⚡ **${attacker.name}** đang bị choáng, bỏ lỡ lượt xuất chiêu!`);
+    return;
+  }
+  if (attacker.stunImmunityTurns > 0) {
+    attacker.stunImmunityTurns--;
   }
 
   // Rợ Tộc: Cuồng Chiến
@@ -415,15 +446,22 @@ function executeTurnAction(attacker, defender, elementalBonus, targetElementalMi
   let skillUsed = null;
   let skillCountered = false;
   let skillResonated = false;
-  const activeSkills = (attacker.skills || []).filter(s => s.type !== 'passive');
+  const activeSkills = (attacker.skills || [])
+    .filter(s => s.type !== 'passive')
+    .slice()
+    .sort((x, y) => (Number(x.slot || 99) - Number(y.slot || 99)) || (Number(x.id || 0) - Number(y.id || 0)));
   const readySkills = activeSkills.filter(s => {
     const key = String(s.id || s.name);
     return (attacker.skillCooldowns?.[key] || 0) <= 0;
   });
-  if (readySkills.length > 0 && Math.random() < 0.45) {
-    skillUsed = readySkills[Math.floor(Math.random() * readySkills.length)];
-    const key = String(skillUsed.id || skillUsed.name);
-    if (attacker.skillCooldowns) {
+  if (readySkills.length > 0) {
+    if (isPvp) {
+      skillUsed = readySkills[0];
+    } else if (Math.random() < 0.45) {
+      skillUsed = readySkills[Math.floor(Math.random() * readySkills.length)];
+    }
+    if (skillUsed && attacker.skillCooldowns) {
+      const key = String(skillUsed.id || skillUsed.name);
       attacker.skillCooldowns[key] = Math.max(1, Number(skillUsed.cooldown || 2));
     }
   }
@@ -456,9 +494,15 @@ function executeTurnAction(attacker, defender, elementalBonus, targetElementalMi
   }
 
   // Bạo kích
-  const isCrit = Math.random() < attacker.crit;
-  if (isCrit) {
-    damage *= attacker.critDmg;
+  let isCrit = false;
+  if (isPvp) {
+    const pvpCritMult = 1 + Math.max(0, Number(attacker.crit || 0)) * Math.max(0, Number(attacker.critDmg || 1.5) - 1);
+    damage *= pvpCritMult;
+  } else {
+    isCrit = Math.random() < attacker.crit;
+    if (isCrit) {
+      damage *= attacker.critDmg;
+    }
   }
 
   // Hệ số kỹ năng
@@ -508,9 +552,22 @@ function executeTurnAction(attacker, defender, elementalBonus, targetElementalMi
       logs.push(`💥 **${defender.name}** bị phá giáp (-${Math.round(defender.armorBreakPct * 100)}% Thủ trong 2 hiệp)!`);
     } else if (skillUsed.effect_type === 'stun' && defender.hp > 0) {
       const stunChance = Math.max(0, (effVal || 0.25) * (1 - Math.min(0.8, defender.ccResist || 0)));
-      if (Math.random() < stunChance) {
-        defender.stunned = true;
-        logs.push(`⚡ **${defender.name}** bị choáng, mất lượt hành động kế tiếp!`);
+      const isTargetCcImmune = defender.stunned || (defender.ccImmuneTurns || 0) > 0 || (defender.stunImmunityTurns || 0) > 0;
+      if (!isTargetCcImmune && stunChance > 0) {
+        let shouldStun = false;
+        if (isPvp) {
+          attacker.stunGauge = (attacker.stunGauge || 0) + stunChance;
+          if (attacker.stunGauge >= 1.0) {
+            attacker.stunGauge -= 1.0;
+            shouldStun = true;
+          }
+        } else {
+          shouldStun = Math.random() < stunChance;
+        }
+        if (shouldStun) {
+          defender.stunned = true;
+          logs.push(`⚡ **${defender.name}** bị choáng, mất lượt hành động kế tiếp!`);
+        }
       }
     } else if (skillUsed.effect_type === 'lifesteal' && hpDamage > 0) {
       const skillHeal = Math.floor(hpDamage * (effVal || 0.25));
@@ -535,10 +592,22 @@ function executeTurnAction(attacker, defender, elementalBonus, targetElementalMi
   }
 
   // Trợ thủ Hộ Đạo Giả trợ chiến
-  if (attacker.helper && defender.hp > 0 && Math.random() < 0.35) {
-    const helperDmg = Math.max(1, Math.floor(attacker.atk * 0.35 * pvpDmgMult * armorMitigation));
-    applyDamageToDefender(defender, helperDmg);
-    logs.push(`🛡️ Hộ Đạo Giả **[${attacker.helper.name}]** xuất kích, chém thêm **${helperDmg.toLocaleString()}** sát thương!`);
+  if (attacker.helper && defender.hp > 0) {
+    let shouldHelperStrike = false;
+    if (isPvp) {
+      attacker.helperGauge = (attacker.helperGauge || 0) + 0.35;
+      if (attacker.helperGauge >= 1.0) {
+        attacker.helperGauge -= 1.0;
+        shouldHelperStrike = true;
+      }
+    } else {
+      shouldHelperStrike = Math.random() < 0.35;
+    }
+    if (shouldHelperStrike) {
+      const helperDmg = Math.max(1, Math.floor(attacker.atk * 0.35 * pvpDmgMult * armorMitigation));
+      applyDamageToDefender(defender, helperDmg);
+      logs.push(`🛡️ Hộ Đạo Giả **[${attacker.helper.name}]** xuất kích, chém thêm **${helperDmg.toLocaleString()}** sát thương!`);
+    }
   }
 }
 
